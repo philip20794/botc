@@ -1,0 +1,239 @@
+name: blood_on_the_clocktower
+description: "A new Flutter project."
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  intl: any
+  shared_preferences: ^2.0.18
+  provider: ^6.0.3
+  auto_size_text: ^3.0.0
+  collection: ^1.16.0
+  universal_html: ^2.2.4
+  pdfrx: ^1.0.84
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  google_sign_in: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/images/grim_logo.png
+  adaptive_icon_background: assets/images/grim_logo.png
+  adaptive_icon_foreground: assets/images/grim_logo.png
+
+flutter_native_splash:
+  color: "#c9f2f8"
+  image: assets/images/grim_logo.png
+  android: true
+  ios: true
+  web: false
+  android_12:
+    image: assets/images/grim_logo.png
+    icon_background_color: "#c9f2f8"
+
+flutter:
+  generate: true
+  uses-material-design: true
+  fonts:
+    - family: CustomIcons
+      fonts:
+        - asset: fonts/CustomIcons.ttf
+  assets:
+    - assets/characters/de.json
+    - assets/characters/en.json
+    - assets/images/grim_logo.png
+    - assets/images/dead_character_overlay.png
+    - assets/images/backgrounds/background_grim_bottom.jpg
+    - assets/images/backgrounds/background_grim_full.jpg
+    - assets/images/backgrounds/background_grim_middel.jpg
+    - assets/images/backgrounds/background_grim_top.jpg
+    - assets/images/backgrounds/token.png
+    - assets/images/characters/Icon_acrobat.png
+    - assets/images/characters/Icon_alchemist.png
+    - assets/images/characters/Icon_alhadikhia.png
+    - assets/images/characters/Icon_alsaahir.png
+    - assets/images/characters/Icon_amnesiac.png
+    - assets/images/characters/Icon_angel.png
+    - assets/images/characters/Icon_apprentice.png
+    - assets/images/characters/Icon_artist.png
+    - assets/images/characters/Icon_assassin.png
+    - assets/images/characters/Icon_atheist.png
+    - assets/images/characters/Icon_balloonist.png
+    - assets/images/characters/Icon_banshee.png
+    - assets/images/characters/Icon_barber.png
+    - assets/images/characters/Icon_barista.png
+    - assets/images/characters/Icon_baron.png
+    - assets/images/characters/Icon_beggar.png
+    - assets/images/characters/Icon_bishop.png
+    - assets/images/characters/Icon_boffin.png
+    - assets/images/characters/Icon_bonecollector.png
+    - assets/images/characters/Icon_boomdandy.png
+    - assets/images/characters/Icon_bootlegger.png
+    - assets/images/characters/Icon_bountyhunter.png
+    - assets/images/characters/Icon_buddhist.png
+    - assets/images/characters/Icon_bureaucrat.png
+    - assets/images/characters/Icon_butcher.png
+    - assets/images/characters/Icon_butler.png
+    - assets/images/characters/Icon_cannibal.png
+    - assets/images/characters/Icon_cerenovus.png
+    - assets/images/characters/Icon_chambermaid.png
+    - assets/images/characters/Icon_chef.png
+    - assets/images/characters/Icon_choirboy.png
+    - assets/images/characters/Icon_clockmaker.png
+    - assets/images/characters/Icon_courtier.png
+    - assets/images/characters/Icon_cultleader.png
+    - assets/images/characters/Icon_damsel.png
+    - assets/images/characters/Icon_deviant.png
+    - assets/images/characters/Icon_devilsadvocate.png
+    - assets/images/characters/Icon_djinn.png
+    - assets/images/characters/Icon_doomsayer.png
+    - assets/images/characters/Icon_dreamer.png
+    - assets/images/characters/Icon_drunk.png
+    - assets/images/characters/Icon_duchess.png
+    - assets/images/characters/Icon_empath.png
+    - assets/images/characters/Icon_engineer.png
+    - assets/images/characters/Icon_eviltwin.png
+    - assets/images/characters/Icon_exorcist.png
+    - assets/images/characters/Icon_fanggu.png
+    - assets/images/characters/Icon_farmer.png
+    - assets/images/characters/Icon_fearmonger.png
+    - assets/images/characters/Icon_ferryman.png
+    - assets/images/characters/Icon_fibbin.png
+    - assets/images/characters/Icon_fiddler.png
+    - assets/images/characters/Icon_fisherman.png
+    - assets/images/characters/Icon_flowergirl.png
+    - assets/images/characters/Icon_fool.png
+    - assets/images/characters/Icon_fortuneteller.png
+    - assets/images/characters/Icon_gambler.png
+    - assets/images/characters/Icon_gangster.png
+    - assets/images/characters/Icon_gardener.png
+    - assets/images/characters/Icon_general.png
+    - assets/images/characters/Icon_gnome.png
+    - assets/images/characters/Icon_goblin.png
+    - assets/images/characters/Icon_godfather.png
+    - assets/images/characters/Icon_golem.png
+    - assets/images/characters/Icon_goon.png
+    - assets/images/characters/Icon_gossip.png
+    - assets/images/characters/Icon_grandmother.png
+    - assets/images/characters/Icon_gunslinger.png
+    - assets/images/characters/Icon_harlot.png
+    - assets/images/characters/Icon_harpy.png
+    - assets/images/characters/Icon_hatter.png
+    - assets/images/characters/Icon_hellslibrarian.png
+    - assets/images/characters/Icon_heretic.png
+    - assets/images/characters/Icon_highpriestess.png
+    - assets/images/characters/Icon_huntsman.png
+    - assets/images/characters/Icon_imp.png
+    - assets/images/characters/Icon_innkeeper.png
+    - assets/images/characters/Icon_investigator.png
+    - assets/images/characters/Icon_judge.png
+    - assets/images/characters/Icon_juggler.png
+    - assets/images/characters/Icon_kazali.png
+    - assets/images/characters/Icon_king.png
+    - assets/images/characters/Icon_klutz.png
+    - assets/images/characters/Icon_knight.png
+    - assets/images/characters/Icon_legion.png
+    - assets/images/characters/Icon_leviathan.png
+    - assets/images/characters/Icon_librarian.png
+    - assets/images/characters/Icon_lilmonsta.png
+    - assets/images/characters/Icon_lleech.png
+    - assets/images/characters/Icon_lordoftyphon.png
+    - assets/images/characters/Icon_lunatic.png
+    - assets/images/characters/Icon_lycanthrope.png
+    - assets/images/characters/Icon_magician.png
+    - assets/images/characters/Icon_marionette.png
+    - assets/images/characters/Icon_mastermind.png
+    - assets/images/characters/Icon_mathematician.png
+    - assets/images/characters/Icon_matron.png
+    - assets/images/characters/Icon_mayor.png
+    - assets/images/characters/Icon_mezepheles.png
+    - assets/images/characters/Icon_minstrel.png
+    - assets/images/characters/Icon_monk.png
+    - assets/images/characters/Icon_moonchild.png
+    - assets/images/characters/Icon_mutant.png
+    - assets/images/characters/Icon_nightwatchman.png
+    - assets/images/characters/Icon_noble.png
+    - assets/images/characters/Icon_nodashii.png
+    - assets/images/characters/Icon_ogre.png
+    - assets/images/characters/Icon_ojo.png
+    - assets/images/characters/Icon_oracle.png
+    - assets/images/characters/Icon_organgrinder.png
+    - assets/images/characters/Icon_pacifist.png
+    - assets/images/characters/Icon_philosopher.png
+    - assets/images/characters/Icon_pithag.png
+    - assets/images/characters/Icon_pixie.png
+    - assets/images/characters/Icon_plaguedoctor.png
+    - assets/images/characters/Icon_po.png
+    - assets/images/characters/Icon_poisoner.png
+    - assets/images/characters/Icon_politician.png
+    - assets/images/characters/Icon_poppygrower.png
+    - assets/images/characters/Icon_preacher.png
+    - assets/images/characters/Icon_professor.png
+    - assets/images/characters/Icon_psychopath.png
+    - assets/images/characters/Icon_pukka.png
+    - assets/images/characters/Icon_puzzlemaster.png
+    - assets/images/characters/Icon_ravenkeeper.png
+    - assets/images/characters/Icon_recluse.png
+    - assets/images/characters/Icon_revolutionary.png
+    - assets/images/characters/Icon_riot.png
+    - assets/images/characters/Icon_sage.png
+    - assets/images/characters/Icon_sailor.png
+    - assets/images/characters/Icon_saint.png
+    - assets/images/characters/Icon_savant.png
+    - assets/images/characters/Icon_scapegoat.png
+    - assets/images/characters/Icon_scarletwoman.png
+    - assets/images/characters/Icon_seamstress.png
+    - assets/images/characters/Icon_sentinel.png
+    - assets/images/characters/Icon_shabaloth.png
+    - assets/images/characters/Icon_shugenja.png
+    - assets/images/characters/Icon_slayer.png
+    - assets/images/characters/Icon_snakecharmer.png
+    - assets/images/characters/Icon_snitch.png
+    - assets/images/characters/Icon_soldier.png
+    - assets/images/characters/Icon_spiritofivory.png
+    - assets/images/characters/Icon_spy.png
+    - assets/images/characters/Icon_steward.png
+    - assets/images/characters/Icon_stormcatcher.png
+    - assets/images/characters/Icon_summoner.png
+    - assets/images/characters/Icon_sweetheart.png
+    - assets/images/characters/Icon_tealady.png
+    - assets/images/characters/Icon_thief.png
+    - assets/images/characters/Icon_tinker.png
+    - assets/images/characters/Icon_towncrier.png
+    - assets/images/characters/Icon_toymaker.png
+    - assets/images/characters/Icon_undertaker.png
+    - assets/images/characters/Icon_vigormortis.png
+    - assets/images/characters/Icon_villageidiot.png
+    - assets/images/characters/Icon_virgin.png
+    - assets/images/characters/Icon_vizier.png
+    - assets/images/characters/Icon_vortox.png
+    - assets/images/characters/Icon_voudon.png
+    - assets/images/characters/Icon_washerwoman.png
+    - assets/images/characters/Icon_widow.png
+    - assets/images/characters/Icon_witch.png
+    - assets/images/characters/Icon_wizard.png
+    - assets/images/characters/Icon_xaan.png
+    - assets/images/characters/Icon_yaggababble.png
+    - assets/images/characters/Icon_zealot.png
+    - assets/images/characters/Icon_zombuul.png
+    - assets/rules/Logo_bad_moon_rising.png
+    - assets/rules/Logo_sects_and_violets.png
+    - assets/rules/Logo_traveller_and_fabled.png
+    - assets/rules/Logo_trouble_brewing.png
+    - assets/rules/Logo_main.png

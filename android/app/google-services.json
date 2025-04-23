@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "185166663266",
+    "project_id": "b-o-t-c",
+    "storage_bucket": "b-o-t-c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:185166663266:android:a47de85e8391d61027cb3b",
+        "android_client_info": {
+          "package_name": "de.blood_on_the_clocktower.blood_on_the_clocktower"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "185166663266-u38kuij8d54e0atjf651jojjouj528hb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAps8u-sjxArEwMkw3cJqUYFurjYflQTrM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "185166663266-u38kuij8d54e0atjf651jojjouj528hb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
