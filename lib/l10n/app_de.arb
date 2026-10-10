@@ -94,5 +94,13 @@
   "login": "Login",
   "register": "Registrieren",
   "switchToRegister": "Zum Benutzer erstellen",
-  "switchToLogin": "Zurück zum login"
+  "switchToLogin": "Zurück zum login",
+  "roleNotes": "Verdachts\u00fcbersicht",
+  "chooseRolesFor": "Rollen w\u00e4hlen f\u00fcr",
+  "searchRoles": "Rollen suchen",
+  "clearRoles": "L\u00f6schen",
+  "clearAllRoleNotes": "Alle Verdachtsrollen l\u00f6schen?",
+  "maxFourRoles": "Maximal vier Rollen pro Spieler",
+  "noRoleNotesYet": "Keine Rollen ausgew\u00e4hlt",
+  "noRolesFound": "Keine Rollen gefunden"
 }

@@ -4,7 +4,7 @@ import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
 import 'package:blood_on_the_clocktower/screens/settings_character_circle.dart';
 import 'package:blood_on_the_clocktower/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';

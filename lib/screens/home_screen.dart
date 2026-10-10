@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/screens/all_characters_screen.dart';
 import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
 import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/screens/playername_screen.dart';
+import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/show_characters_to_players.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -11,7 +12,7 @@ import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,21 +21,34 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _loadedCharactersForLanguageCode;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final languageService = Provider.of<LanguageService>(context);
+    final languageCode = languageService.locale.languageCode;
+
+    if (_loadedCharactersForLanguageCode == languageCode) {
+      return;
+    }
+
+    _loadedCharactersForLanguageCode = languageCode;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      Provider.of<CharacterService>(context, listen: false)
+          .loadAllCharactersFromJson(languageService.locale);
+    });
+  }
+
   void setPlayerName() {
     GameStateService gameStateService =
         Provider.of<GameStateService>(context, listen: false);
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
-    setState(() {
-      for (var character
-          in characterService.gameCharactersWithoutDrunkAndFabled) {
-        var index = characterService.getCharacterIndex(character);
-        if (index > -1 && gameStateService.playerNames.length > index) {
-          var playerName = gameStateService.playerNames[index];
-          characterService.setNameOfCharacter(character, playerName);
-        }
-      }
-    });
+    characterService.syncPlayerNames(gameStateService.playerNames);
   }
 
   void _shuffleCharacters() {
@@ -52,16 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
     var localizedStrings = AppLocalizations.of(context)!;
     final gameStateService = Provider.of<GameStateService>(context);
     final characterService = Provider.of<CharacterService>(context);
-    final languageService = Provider.of<LanguageService>(context);
-
-    if (!gameStateService.initIsDone) {
-      setState(() {
-        gameStateService.init();
-        characterService.init();
-        characterService.loadAllCharactersFromJson(languageService.locale);
-        gameStateService.initIsDone = true;
-      });
-    }
 
     var gameIsRunning = gameStateService.nightCount > -1;
     var playerDone = gameStateService.playerNames.length > 5;
@@ -85,54 +89,69 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           _buildIconButton(Icons.settings, AppSettingsScreen(), 20, 10),
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: 40),
-                _buildCard(localizedStrings.allCharacters, Icons.list_alt,
-                    AllCharactersScreen(), false, null),
-                SizedBox(height: 50),
-                Card(
-                  color: const Color(0xFF6f678a).withOpacity(0.9),
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  child: ListTile(
-                    leading: Icon(CustomIcons.script,
-                        color: gameIsRunning ? Colors.grey : Colors.white),
-                    title:
-                        Center(child: SelectGameset(disabled: gameIsRunning)),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(height: 40),
+                  _buildCard(localizedStrings.allCharacters, Icons.list_alt,
+                      AllCharactersScreen(), false, null),
+                  SizedBox(height: 50),
+                  Card(
+                    color: const Color(0xFF6f678a).withOpacity(0.9),
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    child: ListTile(
+                      leading: Icon(CustomIcons.script,
+                          color: gameIsRunning ? Colors.grey : Colors.white),
+                      title:
+                          Center(child: SelectGameset(disabled: gameIsRunning)),
+                    ),
                   ),
-                ),
-                _buildArrowDown(gameIsRunning),
-                _buildCard(localizedStrings.players, Icons.groups,
-                    PlayernameScreen(), gameIsRunning, null),
-                _buildArrowDown(!playerDone || gameIsRunning),
-                _buildCard(localizedStrings.characterSelection, Icons.dashboard,
-                    CharacterAuswahlScreen(), gameIsRunning, null),
-                _buildArrowDown(false),
-                _buildCard(
-                    localizedStrings.showCharactersToPlayers,
-                    Icons.remove_red_eye,
-                    ShowCharactersToPlayers(),
-                    false,
-                    () => {
-                          if (!gameIsRunning) {_shuffleCharacters()}
-                        }),
-                _buildArrowDown(!allDone),
-                _buildCard(
-                    localizedStrings.playground,
-                    Icons.play_arrow,
-                    SpielbereichScreen(),
-                    false,
-                    () => {
-                          if (!gameIsRunning)
-                            {
-                              gameStateService.startNewGame(
-                                  characterService.gameCharactersWithoutDrunk)
-                            }
-                        }),
-              ],
+                  _buildArrowDown(gameIsRunning),
+                  _buildCard(localizedStrings.players, Icons.groups,
+                      PlayernameScreen(), gameIsRunning, null),
+                  SizedBox(height: 16),
+                  _buildCard(
+                      localizedStrings.roleNotes,
+                      Icons.manage_search,
+                      RoleNotesScreen(),
+                      gameStateService.playerNames.isEmpty,
+                      null),
+                  SizedBox(height: 16),
+                  _buildArrowDown(!playerDone || gameIsRunning),
+                  _buildCard(
+                      localizedStrings.characterSelection,
+                      Icons.dashboard,
+                      CharacterAuswahlScreen(),
+                      gameIsRunning,
+                      null),
+                  _buildArrowDown(false),
+                  _buildCard(
+                      localizedStrings.showCharactersToPlayers,
+                      Icons.remove_red_eye,
+                      ShowCharactersToPlayers(),
+                      false,
+                      () => {
+                            if (!gameIsRunning) {_shuffleCharacters()}
+                          }),
+                  _buildArrowDown(!allDone),
+                  _buildCard(
+                      localizedStrings.playground,
+                      Icons.play_arrow,
+                      SpielbereichScreen(),
+                      false,
+                      () => {
+                            if (!gameIsRunning)
+                              {
+                                gameStateService.startNewGame(
+                                    characterService.gameCharactersWithoutDrunk)
+                              }
+                          }),
+                  SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ],

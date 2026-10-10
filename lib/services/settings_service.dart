@@ -20,6 +20,7 @@ class SettingsService extends ChangeNotifier {
   final String _settingsOffsetYKey = 'offsetY';
   final String _settingsTokenOffsetYKey = 'tokenOffsetY';
   final String _settingsTokenOffsetXKey = 'tokenOffsetX';
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   bool hideDescription = true;
   bool hideHotToRun = true;
   bool hideTipsAndTricks = true;
@@ -42,7 +43,7 @@ class SettingsService extends ChangeNotifier {
   }
 
   void _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     _characterKnobSize =
         prefs.getDouble(_settingsCharacterKnobSizeKey) ?? _characterKnobSize;
     _tokenKnobSize =
@@ -59,7 +60,7 @@ class SettingsService extends ChangeNotifier {
   }
 
   void _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsCharacterKnobSizeKey, _characterKnobSize);
     prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize);
     prefs.setDouble(_settingsRadiusXKey, _radiusX);
@@ -72,64 +73,91 @@ class SettingsService extends ChangeNotifier {
   }
 
   Future<void> setCharacterKnobSize(double value) async {
+    if (_characterKnobSize == value) {
+      return;
+    }
     _characterKnobSize = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsCharacterKnobSizeKey, _characterKnobSize);
     notifyListeners();
   }
 
   Future<void> setTokenKnobSize(double value) async {
+    if (_tokenKnobSize == value) {
+      return;
+    }
     _tokenKnobSize = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize);
     notifyListeners();
   }
 
   Future<void> setRadiusX(double value) async {
+    if (_radiusX == value) {
+      return;
+    }
     _radiusX = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsRadiusXKey, _radiusX);
     notifyListeners();
   }
 
   Future<void> setRadiusY(double value) async {
+    if (_radiusY == value) {
+      return;
+    }
     _radiusY = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsRadiusYKey, _radiusY);
     notifyListeners();
   }
 
   Future<void> setStartAngleDiv(double value) async {
+    if (_startAngleDiv == value) {
+      return;
+    }
     _startAngleDiv = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsStartAngleDivKey, _startAngleDiv);
     notifyListeners();
   }
 
   Future<void> setOffsetX(double value) async {
+    if (_offsetX == value) {
+      return;
+    }
     _offsetX = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsOffsetXKey, _offsetX);
     notifyListeners();
   }
 
   Future<void> setOffsetY(double value) async {
+    if (_offsetY == value) {
+      return;
+    }
     _offsetY = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsOffsetYKey, _offsetY);
     notifyListeners();
   }
 
   Future<void> setTokenOffsetY(double value) async {
+    if (_tokenOffsetY == value) {
+      return;
+    }
     _tokenOffsetY = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsTokenOffsetYKey, _tokenOffsetY);
     notifyListeners();
   }
 
   Future<void> setTokenOffsetX(double value) async {
+    if (_tokenOffsetX == value) {
+      return;
+    }
     _tokenOffsetX = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs;
     prefs.setDouble(_settingsTokenOffsetXKey, _tokenOffsetX);
     notifyListeners();
   }

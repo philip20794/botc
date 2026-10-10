@@ -3,9 +3,8 @@ import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class MyApp extends StatelessWidget {
@@ -13,16 +12,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    LanguageService languageService = Provider.of<LanguageService>(context);
-    final gameStateService = Provider.of<GameStateService>(context);
-    var gameIsRunning = gameStateService.nightCount > -1;
-
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.black,
-      systemNavigationBarDividerColor: Color(0xFF040004),
-      systemNavigationBarColor: Color(0xFF040004),
-      statusBarIconBrightness: Brightness.light,
-    ));
+    final locale =
+        context.select<LanguageService, Locale>((service) => service.locale);
+    final gameIsRunning = context
+        .select<GameStateService, bool>((service) => service.nightCount > -1);
 
     return MaterialApp(
         localizationsDelegates: const [
@@ -32,7 +25,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         title: "Blood on the Clocktower",
-        locale: languageService.locale,
+        locale: locale,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,

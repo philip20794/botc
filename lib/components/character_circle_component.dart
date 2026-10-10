@@ -80,6 +80,7 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent>
     final addToOffSetY = (screenHeigth - itemHeight * numRows) / 2;
 
     var pos = 0;
+    final nextPositions = <int, Offset>{};
 
     int top = 0;
     int bottom = numRows - 1;
@@ -98,7 +99,7 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent>
               settingsService.offsetY +
               addToOffSetY;
 
-          characterService.setCharacterPosition(pos, Offset(x, y));
+          nextPositions[pos] = Offset(x, y);
           pos += 1;
         }
         left++; // Bewege den linken Rand eine Spalte nach rechts
@@ -117,7 +118,7 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent>
               settingsService.offsetY +
               addToOffSetY;
 
-          characterService.setCharacterPosition(pos, Offset(x, y));
+          nextPositions[pos] = Offset(x, y);
           pos += 1;
         }
       }
@@ -132,7 +133,7 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent>
             settingsService.offsetY +
             addToOffSetY;
 
-        characterService.setCharacterPosition(pos, Offset(x, y));
+        nextPositions[pos] = Offset(x, y);
         pos += 1;
       }
       right--; // Bewege den rechten Rand eine Spalte nach links
@@ -149,12 +150,14 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent>
               settingsService.offsetY +
               addToOffSetY;
 
-          characterService.setCharacterPosition(pos, Offset(x, y));
+          nextPositions[pos] = Offset(x, y);
           pos += 1;
         }
         bottom--; // Bewege den unteren Rand eine Reihe nach oben
       }
     }
+
+    characterService.setCharacterPositions(nextPositions);
   }
 
   @override
@@ -162,7 +165,6 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent>
     final characterService = Provider.of<CharacterService>(context);
     final gameStateService = Provider.of<GameStateService>(context);
     final characters = widget.characters;
-    gameStateService.initUnusedGameTokens(widget.charactersForToken);
 
     return Stack(
       children: _buildCharacterWidgets(

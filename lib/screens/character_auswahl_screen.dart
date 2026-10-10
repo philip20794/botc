@@ -9,7 +9,7 @@ import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class CharacterAuswahlScreen extends StatefulWidget {
   bool hideTravellers = true;
@@ -25,21 +25,14 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
   int randomMinusOrPlusOne = 1;
   int randomTwoOrZero = 2;
   int randomZeroToThree = 2;
+  bool? _lastSyncedSelectionDone;
 
   void setPlayerName() {
     GameStateService gameStateService =
         Provider.of<GameStateService>(context, listen: false);
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
-    setState(() {
-      for (var character in characterService.gameCharactersWithoutDrunk) {
-        var index = characterService.getCharacterIndex(character);
-        if (index > -1 && gameStateService.playerNames.length > index) {
-          var playerName = gameStateService.playerNames[index];
-          characterService.setNameOfCharacter(character, playerName);
-        }
-      }
-    });
+    characterService.syncPlayerNames(gameStateService.playerNames);
   }
 
   void _shuffleCharacters() {
@@ -119,6 +112,15 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
     }
 
     final selectedCharacterCounts = getFractionCounts();
+    final selectionDone = done(context, selectedCharacterCounts);
+    if (_lastSyncedSelectionDone != selectionDone) {
+      _lastSyncedSelectionDone = selectionDone;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          gameStateService.setChracterSelectionDone(selectionDone);
+        }
+      });
+    }
 
     return Scaffold(
         appBar: AppBar(
@@ -196,7 +198,7 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
           travellersAreSelectable: true,
           fabledAreSelectable: true,
           isForSetupGame: true,
-          forSetupIsDone: done(context, getFractionCounts()),
+          forSetupIsDone: selectionDone,
         ));
   }
 
@@ -243,8 +245,6 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
 
   bool done(BuildContext context, Map<Fraction, int> counts) {
     var allDone = true;
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
     for (var fraction in Fraction.values) {
       if (fraction == Fraction.traveller || fraction == Fraction.fabled) {
         continue;
@@ -256,7 +256,6 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
         break;
       }
     }
-    gameStateService.setChracterSelectionDone(allDone);
     return allDone;
   }
 

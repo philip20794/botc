@@ -38,6 +38,7 @@ class LanguageService extends ChangeNotifier {
 
   void setLocale(Locale locale) {
     if (!L10n.all.contains(locale)) return; // Check if the locale is supported
+    if (_locale == locale) return;
     _locale = locale;
     _saveLocale();
     notifyListeners();

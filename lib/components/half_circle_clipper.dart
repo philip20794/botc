@@ -97,5 +97,7 @@ class HalfCircleTextPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant HalfCircleTextPainter oldDelegate) {
+    return oldDelegate.text != text;
+  }
 }

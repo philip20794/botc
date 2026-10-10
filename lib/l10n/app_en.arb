@@ -94,5 +94,13 @@
   "login": "Login",
   "register": "Register",
   "switchToRegister": "Go to create account",
-  "switchToLogin": "Back to login"
+  "switchToLogin": "Back to login",
+  "roleNotes": "Role notes",
+  "chooseRolesFor": "Choose roles for",
+  "searchRoles": "Search roles",
+  "clearRoles": "Clear",
+  "clearAllRoleNotes": "Clear all role notes?",
+  "maxFourRoles": "Maximum four roles per player",
+  "noRoleNotesYet": "No roles selected",
+  "noRolesFound": "No roles found"
  }

@@ -39,16 +39,17 @@ class GameStateService extends ChangeNotifier {
     init();
   }
 
-  init() async {
-    await _loadIsLocked();
-    await _loadCharacterTokens();
-    await _loadCharacterAliveState();
-    await _loadPlayerNames();
-    await _loadGameset();
-    await _loadNightCount();
-    await _loadNightStateNumber();
-    await _loadShowCharactersToPlayers();
-    await _loadChracterSelectionDone();
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _loadIsLocked(prefs);
+    _loadCharacterTokens(prefs);
+    _loadCharacterAliveState(prefs);
+    _loadPlayerNames(prefs);
+    _loadGameset(prefs);
+    _loadNightCount(prefs);
+    _loadNightStateNumber(prefs);
+    _loadShowCharactersToPlayers(prefs);
+    _loadChracterSelectionDone(prefs);
     notifyListeners();
   }
 
@@ -97,6 +98,9 @@ class GameStateService extends ChangeNotifier {
   get forceUpdateLayout => _forceUpdateLayout;
 
   void closeMenu() {
+    if (_openMenuId == null && openTokenMenuId == null) {
+      return;
+    }
     _openMenuId = null;
     openTokenMenuId = null;
     notifyListeners();
@@ -126,24 +130,21 @@ class GameStateService extends ChangeNotifier {
     resetCharacterAliveState();
   }
 
-  Future<void> _loadIsLocked() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadIsLocked(SharedPreferences prefs) {
     final bool? isLocked = prefs.getBool(_storageIsLockedKey);
     if (isLocked != null) {
       _isLocked = isLocked;
     }
   }
 
-  Future<void> _loadNightCount() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadNightCount(SharedPreferences prefs) {
     final int? nightCount = prefs.getInt(_storageNightCountKey);
     if (nightCount != null) {
       _nightCount = nightCount;
     }
   }
 
-  Future<void> _loadChracterSelectionDone() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadChracterSelectionDone(SharedPreferences prefs) {
     final bool? chracterSelectionDone =
         prefs.getBool(_chracterSelectionDoneKey);
     if (chracterSelectionDone != null) {
@@ -152,14 +153,16 @@ class GameStateService extends ChangeNotifier {
   }
 
   Future<void> setChracterSelectionDone(bool chracterSelectionDone) async {
+    if (_chracterSelectionDone == chracterSelectionDone) {
+      return;
+    }
     _chracterSelectionDone = chracterSelectionDone;
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(_chracterSelectionDoneKey, chracterSelectionDone);
     notifyListeners();
   }
 
-  Future<void> _loadNightStateNumber() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadNightStateNumber(SharedPreferences prefs) {
     final double? nightStateNumber =
         prefs.getDouble(_storageNightStateNumberKey);
     if (nightStateNumber != null) {
@@ -168,14 +171,16 @@ class GameStateService extends ChangeNotifier {
   }
 
   Future<void> setShowCharactersToPlayers(bool showCharactersToPlayers) async {
+    if (charactersWhereShownToPlayers == showCharactersToPlayers) {
+      return;
+    }
     charactersWhereShownToPlayers = showCharactersToPlayers;
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(_storageShowCharactersToPlayersKey, showCharactersToPlayers);
     notifyListeners();
   }
 
-  Future<void> _loadShowCharactersToPlayers() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadShowCharactersToPlayers(SharedPreferences prefs) {
     final bool? showCharactersToPlayers =
         prefs.getBool(_storageShowCharactersToPlayersKey);
     if (showCharactersToPlayers != null) {
@@ -183,8 +188,7 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadGameset() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadGameset(SharedPreferences prefs) {
     final String? gamesetString = prefs.getString(_storageGamesetKey);
     if (gamesetString != null) {
       _gameset = Gameset.values
@@ -192,8 +196,7 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadPlayerNames() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadPlayerNames(SharedPreferences prefs) {
     final String? playerNamesJson = prefs.getString(_storagePlayerNamesKey);
     if (playerNamesJson != null) {
       final List<dynamic> playerNamesList = jsonDecode(playerNamesJson);
@@ -202,8 +205,7 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadCharacterTokens() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadCharacterTokens(SharedPreferences prefs) {
     final String? characterTokensJson =
         prefs.getString(_storageCharacterTokensKey);
     if (characterTokensJson != null) {
@@ -218,8 +220,7 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadCharacterAliveState() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadCharacterAliveState(SharedPreferences prefs) {
     final String? characterAliveStateJson =
         prefs.getString(_storageCharacterAliveStateKey);
     if (characterAliveStateJson != null) {
@@ -253,6 +254,9 @@ class GameStateService extends ChangeNotifier {
   }
 
   void addPlayerName(String playerName) async {
+    if (playerName.isEmpty) {
+      return;
+    }
     playerNames.add(playerName); // _playerNames bleibt List<String>
     final prefs = await SharedPreferences.getInstance();
     final String data =
@@ -262,6 +266,9 @@ class GameStateService extends ChangeNotifier {
   }
 
   void removePlayerName(String playerName) async {
+    if (!playerNames.contains(playerName)) {
+      return;
+    }
     playerNames.remove(playerName);
     final prefs = await SharedPreferences.getInstance();
     final String data =
@@ -271,6 +278,9 @@ class GameStateService extends ChangeNotifier {
   }
 
   void clearAllPlayerNames() async {
+    if (playerNames.isEmpty) {
+      return;
+    }
     playerNames.clear();
     final prefs = await SharedPreferences.getInstance();
     final String data = jsonEncode(playerNames);
@@ -615,6 +625,9 @@ class GameStateService extends ChangeNotifier {
   }
 
   void setIsLocked(bool isLocked) async {
+    if (_isLocked == isLocked) {
+      return;
+    }
     _isLocked = isLocked;
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(_storageIsLockedKey, isLocked);

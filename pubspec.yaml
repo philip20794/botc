@@ -17,7 +17,7 @@ dependencies:
   auto_size_text: ^3.0.0
   collection: ^1.16.0
   universal_html: ^2.2.4
-  pdfrx: ^1.0.84
+  pdfrx: 2.1.5
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
   cloud_firestore: ^5.4.4

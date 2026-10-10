@@ -12,7 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class CharacterWidget extends StatefulWidget {
   final Character character;
@@ -98,13 +98,11 @@ class _CharacterWidgetState extends State<CharacterWidget> {
         Provider.of<GameStateService>(context, listen: false);
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
-    setState(() {
-      var index = characterService.getCharacterIndex(widget.character);
-      if (index > -1 && gameStateService.playerNames.length > index) {
-        var playerName = gameStateService.playerNames[index];
-        characterService.setNameOfCharacter(widget.character, playerName);
-      }
-    });
+    var index = characterService.getCharacterIndex(widget.character);
+    if (index > -1 && gameStateService.playerNames.length > index) {
+      var playerName = gameStateService.playerNames[index];
+      characterService.setNameOfCharacter(widget.character, playerName);
+    }
   }
 
   void toggleShowCharacter() {

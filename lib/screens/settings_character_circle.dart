@@ -5,7 +5,7 @@ import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class SettingsCharacterCircle extends StatefulWidget {
   @override
@@ -143,9 +143,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 60,
                 max: 140,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setCharacterKnobSize(newValue);
-                  });
+                  settingsService.setCharacterKnobSize(newValue);
                 },
                 helpText: 'Adjust the size of the character knob.',
               ),
@@ -155,9 +153,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 2,
                 max: 5,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setStartAngleDiv(newValue);
-                  });
+                  settingsService.setStartAngleDiv(newValue);
                 },
                 helpText: 'Adjust the starting angle of the circle.',
               ),
@@ -167,9 +163,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 5,
                 max: 109,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setRadiusX(newValue);
-                  });
+                  settingsService.setRadiusX(newValue);
                 },
                 helpText: 'Adjust the horizontal radius of the circle.',
               ),
@@ -179,9 +173,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 30,
                 max: 235,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setRadiusY(newValue);
-                  });
+                  settingsService.setRadiusY(newValue);
                 },
                 helpText: 'Adjust the vertical radius of the circle.',
               ),
@@ -207,9 +199,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 10,
                 max: 60,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setTokenKnobSize(newValue);
-                  });
+                  settingsService.setTokenKnobSize(newValue);
                 },
                 helpText: 'Adjust the size of the token knob.',
               ),
@@ -219,9 +209,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -35,
                 max: 70,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setTokenOffsetX(newValue);
-                  });
+                  settingsService.setTokenOffsetX(newValue);
                 },
                 helpText: 'Adjust the size of the token knob.',
               ),
@@ -231,9 +219,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -40,
                 max: 80,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setTokenOffsetY(newValue);
-                  });
+                  settingsService.setTokenOffsetY(newValue);
                 },
                 helpText: 'Adjust the size of the token knob.',
               ),
@@ -247,9 +233,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -145,
                 max: 55,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setOffsetX(newValue);
-                  });
+                  settingsService.setOffsetX(newValue);
                 },
                 helpText: 'Adjust the X-axis offset of the circle.',
               ),
@@ -259,9 +243,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -185,
                 max: 25,
                 onChanged: (newValue) {
-                  setState(() {
-                    settingsService.setOffsetY(newValue);
-                  });
+                  settingsService.setOffsetY(newValue);
                 },
                 helpText: 'Adjust the Y-axis offset of the circle.',
               ),

@@ -6,7 +6,7 @@ import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class ShowCharactersToPlayers extends StatefulWidget {
   @override
@@ -31,16 +31,20 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
     CharacterService characterService = Provider.of<CharacterService>(context);
     GameStateService gameStateService = Provider.of<GameStateService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
-    if (currentCharacterIndex >=
-        characterService.gameCharactersWithoutDrunkAndFabled.length) {
+    final characters = characterService.gameCharactersWithoutDrunkAndFabled;
+    if (currentCharacterIndex >= characters.length) {
       isGameMaster = true;
-      gameStateService.setShowCharactersToPlayers(true);
+      if (!gameStateService.showCharactersToPlayers) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            gameStateService.setShowCharactersToPlayers(true);
+          }
+        });
+      }
     }
 
-    Character? currentCharacter = isGameMaster
-        ? null
-        : characterService
-            .gameCharactersWithoutDrunkAndFabled[currentCharacterIndex];
+    Character? currentCharacter =
+        isGameMaster ? null : characters[currentCharacterIndex];
 
     return WillPopScope(
       onWillPop: () async {

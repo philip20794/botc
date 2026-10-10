@@ -13,6 +13,9 @@ class CharacterService extends ChangeNotifier {
   final List<Character> _gameCharactersBackup = [];
   final List<Character> _allCharacters = [];
   Map<int, Offset> _characterPositions = {};
+  String? _allCharactersLocaleCode;
+  String? _loadingAllCharactersLocaleCode;
+  Future<void>? _allCharactersLoadFuture;
   final String _storageKey = 'character_list';
   final String _storageKeyBackup = 'character_list_backup';
   final String _storageKeyPositions = 'character_positions_2';
@@ -28,10 +31,11 @@ class CharacterService extends ChangeNotifier {
     init();
   }
 
-  void init() async {
-    await _loadGameCharacters();
-    await _loadCharacterPositions();
-    await _loadGameCharactersBackup();
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _loadGameCharacters(prefs);
+    _loadCharacterPositions(prefs);
+    _loadGameCharactersBackup(prefs);
     notifyListeners();
   }
 
@@ -48,7 +52,6 @@ class CharacterService extends ChangeNotifier {
 
   void reset() {
     clearGameCards();
-    notifyListeners();
   }
 
   bool everyPlayerGotACharacter() {
@@ -65,15 +68,13 @@ class CharacterService extends ChangeNotifier {
     addCharacterToGameWithFractionFabled = false;
   }
 
-  Future<void> _loadGameCharacters() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadGameCharacters(SharedPreferences prefs) {
     final String? cardListJson = prefs.getString(_storageKey);
     if (cardListJson != null) {
       final List<dynamic> cardList = jsonDecode(cardListJson);
       _gameCharacters.clear();
       _gameCharacters
           .addAll(cardList.map((item) => Character.fromJson(item)).toList());
-      notifyListeners();
     }
   }
 
@@ -86,20 +87,17 @@ class CharacterService extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadGameCharactersBackup() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadGameCharactersBackup(SharedPreferences prefs) {
     final String? cardListJson = prefs.getString(_storageKeyBackup);
     if (cardListJson != null) {
       final List<dynamic> cardList = jsonDecode(cardListJson);
       _gameCharactersBackup.clear();
       _gameCharactersBackup
           .addAll(cardList.map((item) => Character.fromJson(item)).toList());
-      notifyListeners();
     }
   }
 
-  Future<void> _loadCharacterPositions() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadCharacterPositions(SharedPreferences prefs) {
     final String? characterPositionsJson =
         prefs.getString(_storageKeyPositions);
     if (characterPositionsJson != null) {
@@ -108,7 +106,10 @@ class CharacterService extends ChangeNotifier {
       _characterPositions.clear();
       characterPositionsMap.forEach((key, value) {
         final int index = int.parse(key);
-        _characterPositions[index] = Offset(value['dx'], value['dy']);
+        _characterPositions[index] = Offset(
+          (value['dx'] as num).toDouble(),
+          (value['dy'] as num).toDouble(),
+        );
       });
     }
   }
@@ -149,14 +150,35 @@ class CharacterService extends ChangeNotifier {
   }
 
   Future<void> loadAllCharactersFromJson(Locale locale) async {
-    _allCharacters.clear();
-    if (_allCharacters.isEmpty) {
-      final String allCardsJson = await rootBundle
-          .loadString('assets/characters/${locale.languageCode}.json');
-      final List<dynamic> allCardsList = jsonDecode(allCardsJson);
-      _allCharacters.addAll(
-          allCardsList.map((item) => Character.fromJson(item)).toList());
+    final localeCode = locale.languageCode;
+    if (_allCharacters.isNotEmpty && _allCharactersLocaleCode == localeCode) {
+      return;
     }
+    final activeLoad = _allCharactersLoadFuture;
+    if (activeLoad != null && _loadingAllCharactersLocaleCode == localeCode) {
+      return activeLoad;
+    }
+
+    _loadingAllCharactersLocaleCode = localeCode;
+    final loadFuture = _loadAllCharactersFromJson(localeCode);
+    _allCharactersLoadFuture = loadFuture;
+    try {
+      await loadFuture;
+    } finally {
+      _allCharactersLoadFuture = null;
+      _loadingAllCharactersLocaleCode = null;
+    }
+  }
+
+  Future<void> _loadAllCharactersFromJson(String localeCode) async {
+    final String allCardsJson =
+        await rootBundle.loadString('assets/characters/$localeCode.json');
+    final List<dynamic> allCardsList = jsonDecode(allCardsJson);
+    _allCharacters.clear();
+    _allCharacters
+        .addAll(allCardsList.map((item) => Character.fromJson(item)).toList());
+    _allCharactersLocaleCode = localeCode;
+    notifyListeners();
   }
 
   int getCharacterIndex(Character character) {
@@ -165,8 +187,30 @@ class CharacterService extends ChangeNotifier {
 
   void setNameOfCharacter(Character character, String name) {
     final index = _gameCharacters.indexOf(character);
-    if (index != -1) {
+    if (index != -1 && _gameCharacters[index].playerName != name) {
       _gameCharacters[index].playerName = name;
+      _saveGameCharacters();
+      notifyListeners();
+    }
+  }
+
+  void syncPlayerNames(List<String> playerNames) {
+    var changed = false;
+    final assignableCharacters = gameCharactersWithoutDrunkAndFabled;
+
+    for (var i = 0; i < assignableCharacters.length; i++) {
+      if (playerNames.length <= i) {
+        break;
+      }
+      final character = assignableCharacters[i];
+      final playerName = playerNames[i];
+      if (character.playerName != playerName) {
+        character.playerName = playerName;
+        changed = true;
+      }
+    }
+
+    if (changed) {
       _saveGameCharacters();
       notifyListeners();
     }
@@ -197,13 +241,13 @@ class CharacterService extends ChangeNotifier {
 
   void shuffelCharacters() {
     _clearPlayerNamesOnGameCards();
-    resetGameCharactersWithBackup();
+    resetGameCharactersWithBackup(notify: false);
     _gameCharacters.shuffle();
-    putAllFabledCharactersAtTheEnd();
+    putAllFabledCharactersAtTheEnd(notify: false);
     notifyListeners();
   }
 
-  void putAllFabledCharactersAtTheEnd() {
+  void putAllFabledCharactersAtTheEnd({bool notify = true}) {
     _gameCharacters.sort((a, b) {
       if (a.fraction == Fraction.fabled && b.fraction != Fraction.fabled) {
         return 1;
@@ -214,13 +258,14 @@ class CharacterService extends ChangeNotifier {
         return 0;
       }
     });
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   void endGame() {
     _clearPlayerNamesOnGameCards();
     resetGameCharactersWithBackup();
-    notifyListeners();
   }
 
   void _clearPlayerNamesOnGameCards() {
@@ -234,15 +279,28 @@ class CharacterService extends ChangeNotifier {
     }
   }
 
-  void resetGameCharactersWithBackup() {
+  void resetGameCharactersWithBackup({bool notify = true}) {
     _gameCharacters.clear();
     _gameCharacters.addAll(_gameCharactersBackup);
     _saveGameCharacters();
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   void setCharacterPosition(int pos, Offset position) {
+    if (_characterPositions[pos] == position) {
+      return;
+    }
     _characterPositions[pos] = position;
+    _saveCharacterPositions();
+  }
+
+  void setCharacterPositions(Map<int, Offset> positions) {
+    if (_offsetMapsEqual(_characterPositions, positions)) {
+      return;
+    }
+    _characterPositions = Map<int, Offset>.from(positions);
     _saveCharacterPositions();
   }
 
@@ -343,4 +401,16 @@ class CharacterService extends ChangeNotifier {
   List<Character> get allCharacters => _allCharacters;
 
   Map<int, Offset> get characterPositions => _characterPositions;
+
+  bool _offsetMapsEqual(Map<int, Offset> a, Map<int, Offset> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
