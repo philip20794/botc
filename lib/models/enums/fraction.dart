@@ -5,4 +5,5 @@ enum Fraction {
   demon,
   traveller,
   fabled,
+  loric,
 }

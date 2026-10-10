@@ -64,6 +64,9 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 context: context,
                 delegate: PdfSearchDelegate(),
               );
+              if (!context.mounted) {
+                return;
+              }
               if (searchText != null && searchText.isNotEmpty) {
                 _searchText(searchText);
               }

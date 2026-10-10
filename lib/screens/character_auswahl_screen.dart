@@ -3,10 +3,10 @@ import 'dart:math';
 import 'package:blood_on_the_clocktower/components/select_character_component.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
-import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/screens/show_characters_to_players.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
@@ -40,6 +40,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
         Provider.of<CharacterService>(context, listen: false);
     final gameStateService =
         Provider.of<GameStateService>(context, listen: false);
+    if (gameStateService.gameIsRunning()) {
+      return;
+    }
     gameStateService.reset(characterService.gameCharactersBackup);
     characterService.shuffelCharacters();
     setPlayerName();
@@ -60,10 +63,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
     CharacterService characterService = Provider.of<CharacterService>(context);
     GameStateService gameStateService = Provider.of<GameStateService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
 
     Fraction getFractionWithMaxDistanceToMaxCount() {
       var fractionWithMaxDistanceToMaxCount = Fraction.townsfolk;
@@ -75,7 +77,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
       }
 
       for (var fraction in Fraction.values) {
-        if (fraction == Fraction.traveller || fraction == Fraction.fabled) {
+        if (fraction == Fraction.traveller ||
+            fraction == Fraction.fabled ||
+            fraction == Fraction.loric) {
           continue;
         }
         var maxCounts = getMaxCount(context, fraction);
@@ -112,7 +116,26 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
     }
 
     final selectedCharacterCounts = getFractionCounts();
-    final selectionDone = done(context, selectedCharacterCounts);
+    final characterSelectionDone = done(context, selectedCharacterCounts);
+    final regularPlayerCount = gameStateService.playerNames.length -
+        characterService.gameCharacters
+            .where((character) => character.fraction == Fraction.traveller)
+            .length;
+    final requiredBluffCount =
+        gameStateService.requiredDemonBluffCount(regularPlayerCount);
+    final bluffsComplete =
+        gameStateService.hasRequiredDemonBluffs(regularPlayerCount);
+    final selectionDone = characterSelectionDone && bluffsComplete;
+    final validationMessages = <String>[
+      if (requiredBluffCount > 0 && !bluffsComplete)
+        localizedStrings.demonBluffsMissing(
+          gameStateService.demonBluffRoleIds.length,
+          requiredBluffCount,
+        ),
+      if (requiredBluffCount == 0 &&
+          gameStateService.demonBluffRoleIds.isNotEmpty)
+        localizedStrings.demonBluffsNotUsed,
+    ];
     if (_lastSyncedSelectionDone != selectionDone) {
       _lastSyncedSelectionDone = selectionDone;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -199,6 +222,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
           fabledAreSelectable: true,
           isForSetupGame: true,
           forSetupIsDone: selectionDone,
+          validationMessages: validationMessages,
+          blockConfirmWhenDisabled: !bluffsComplete,
+          demonBluffsEnabled: requiredBluffCount > 0,
         ));
   }
 
@@ -228,6 +254,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
       case Fraction.fabled:
         label = 'Fabled';
         break;
+      case Fraction.loric:
+        label = 'Loric';
+        break;
     }
 
     return Container(
@@ -246,7 +275,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
   bool done(BuildContext context, Map<Fraction, int> counts) {
     var allDone = true;
     for (var fraction in Fraction.values) {
-      if (fraction == Fraction.traveller || fraction == Fraction.fabled) {
+      if (fraction == Fraction.traveller ||
+          fraction == Fraction.fabled ||
+          fraction == Fraction.loric) {
         continue;
       }
       final count = counts[fraction] ?? 0;
@@ -603,12 +634,23 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
         return 100000;
       case Fraction.fabled:
         return 1000000;
+      case Fraction.loric:
+        return 10000000;
     }
   }
 
-  void _getRandomCharacters(Map<Fraction, int> counts) {
+  Future<void> _getRandomCharacters(Map<Fraction, int> counts) async {
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
+    final gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
+    final previousRoleIds = characterService.gameCharacters
+        .map((character) => character.roleId)
+        .toList();
+    final previousBluffs = gameStateService.demonBluffRoleIds;
     characterService.clearGameCards();
     var done = false;
     _addRandomCharacterOfFraction(Fraction.demon);
@@ -627,6 +669,49 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
         done = true;
       }
     }
+    final regularPlayerCount = gameStateService.playerNames.length -
+        characterService.gameCharacters
+            .where((character) => character.fraction == Fraction.traveller)
+            .length;
+    if (gameStateService.requiredDemonBluffCount(regularPlayerCount) == 0) {
+      await gameStateService.clearDemonBluffs();
+      return;
+    }
+
+    final selectedRoleIds = characterService.gameCharacters
+        .map((character) => character.roleId)
+        .toSet();
+    final availableBluffs = allCharactersOfGameset
+        .where((character) =>
+            (character.fraction == Fraction.townsfolk ||
+                character.fraction == Fraction.outsider) &&
+            !selectedRoleIds.contains(character.roleId))
+        .toList();
+    if (availableBluffs.length < 3) {
+      characterService.clearGameCards();
+      for (final roleId in previousRoleIds) {
+        Character? previousCharacter;
+        for (final character in allCharactersOfGameset) {
+          if (character.roleId == roleId) {
+            previousCharacter = character;
+            break;
+          }
+        }
+        if (previousCharacter != null) {
+          characterService.addCharacter(previousCharacter);
+        }
+      }
+      await gameStateService.setDemonBluffRoleIds(previousBluffs);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.notEnoughBluffs)),
+      );
+      return;
+    }
+    availableBluffs.shuffle();
+    await gameStateService.setDemonBluffRoleIds(
+      availableBluffs.take(3).map((character) => character.roleId),
+    );
   }
 
   bool isFractionNotDone(Fraction fraction) {
@@ -641,10 +726,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
         Provider.of<CharacterService>(context, listen: false);
     GameStateService gameStateService =
         Provider.of<GameStateService>(context, listen: false);
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
     List<Character> charactersOfFraction = allCharactersOfGameset
         .where((character) => character.fraction == fraction)
         .toList();

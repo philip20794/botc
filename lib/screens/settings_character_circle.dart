@@ -13,10 +13,7 @@ class SettingsCharacterCircle extends StatefulWidget {
       _SettingsCharacterCircleState();
 }
 
-class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   var numberOfCharacters = 12.0;
   List<Character> randomCharacters = [];
   final GlobalKey<CharacterCircleComponentState> _characterCircleKey =
@@ -25,11 +22,6 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     generateRandomCharacter(context);
   }
 
@@ -40,16 +32,13 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
         Provider.of<GameStateService>(context, listen: false);
     randomCharacters =
         characterService.getRandomCharacter(numberOfCharacters.toInt());
-    characterService.getRandomCharacter(numberOfCharacters.toInt());
     gameStateService.initUnusedGameTokens(randomCharacters);
     gameStateService.addRandomUnusedTokensToRandomCharacters(randomCharacters);
     gameStateService.setIsLocked(false);
   }
 
   void updateNumberOfCharacters(double newValue) {
-    setState(() {
-      numberOfCharacters = newValue;
-    });
+    numberOfCharacters = newValue;
     generateRandomCharacter(context);
   }
 
@@ -143,7 +132,8 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 60,
                 max: 140,
                 onChanged: (newValue) {
-                  settingsService.setCharacterKnobSize(newValue);
+                  settingsService.setCharacterKnobSize(newValue,
+                      persist: false);
                 },
                 helpText: 'Adjust the size of the character knob.',
               ),
@@ -153,7 +143,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 2,
                 max: 5,
                 onChanged: (newValue) {
-                  settingsService.setStartAngleDiv(newValue);
+                  settingsService.setStartAngleDiv(newValue, persist: false);
                 },
                 helpText: 'Adjust the starting angle of the circle.',
               ),
@@ -163,7 +153,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 5,
                 max: 109,
                 onChanged: (newValue) {
-                  settingsService.setRadiusX(newValue);
+                  settingsService.setRadiusX(newValue, persist: false);
                 },
                 helpText: 'Adjust the horizontal radius of the circle.',
               ),
@@ -173,7 +163,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 30,
                 max: 235,
                 onChanged: (newValue) {
-                  settingsService.setRadiusY(newValue);
+                  settingsService.setRadiusY(newValue, persist: false);
                 },
                 helpText: 'Adjust the vertical radius of the circle.',
               ),
@@ -199,7 +189,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: 10,
                 max: 60,
                 onChanged: (newValue) {
-                  settingsService.setTokenKnobSize(newValue);
+                  settingsService.setTokenKnobSize(newValue, persist: false);
                 },
                 helpText: 'Adjust the size of the token knob.',
               ),
@@ -209,7 +199,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -35,
                 max: 70,
                 onChanged: (newValue) {
-                  settingsService.setTokenOffsetX(newValue);
+                  settingsService.setTokenOffsetX(newValue, persist: false);
                 },
                 helpText: 'Adjust the size of the token knob.',
               ),
@@ -219,7 +209,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -40,
                 max: 80,
                 onChanged: (newValue) {
-                  settingsService.setTokenOffsetY(newValue);
+                  settingsService.setTokenOffsetY(newValue, persist: false);
                 },
                 helpText: 'Adjust the size of the token knob.',
               ),
@@ -233,7 +223,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -145,
                 max: 55,
                 onChanged: (newValue) {
-                  settingsService.setOffsetX(newValue);
+                  settingsService.setOffsetX(newValue, persist: false);
                 },
                 helpText: 'Adjust the X-axis offset of the circle.',
               ),
@@ -243,7 +233,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
                 min: -185,
                 max: 25,
                 onChanged: (newValue) {
-                  settingsService.setOffsetY(newValue);
+                  settingsService.setOffsetY(newValue, persist: false);
                 },
                 helpText: 'Adjust the Y-axis offset of the circle.',
               ),
@@ -280,6 +270,10 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle>
               onChanged: (newValue) {
                 onChanged(newValue); // Bestehende Funktion aufrufen
                 refreshCharacterCircle(); // Zusätzliche Funktion aufrufen
+              },
+              onChangeEnd: (_) {
+                Provider.of<SettingsService>(context, listen: false)
+                    .saveSettings();
               },
             ),
           ),

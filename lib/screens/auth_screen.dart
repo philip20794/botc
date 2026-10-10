@@ -18,9 +18,16 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _message; // Variable für Feedback-Nachricht
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
-    final authService = Provider.of<AuthService>(context);
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     return Scaffold(
       backgroundColor: const Color(0xFFc9f2f8),
@@ -167,6 +174,12 @@ class _AuthScreenState extends State<AuthScreen> {
           _passwordController.text,
         );
         // Nach erfolgreicher Anmeldung zurück navigieren
+        if (!mounted) {
+          return;
+        }
+        if (!mounted) {
+          return;
+        }
         Navigator.pop(context);
       } else {
         await authService.registerWithEmail(
@@ -182,6 +195,9 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) {
+        return;
+      }
       // Spezifische Firebase-Fehlerbehandlung
       setState(() {
         _message = e.message; // Setze die spezifische Fehlermeldung
@@ -189,6 +205,9 @@ class _AuthScreenState extends State<AuthScreen> {
             "Fehlermeldung: ${e.code}: ${_message}"); // Fehlerdetails in der Konsole
       });
     } catch (e) {
+      if (!mounted) {
+        return;
+      }
       // Allgemeine Fehlerbehandlung
       setState(() {
         _message =

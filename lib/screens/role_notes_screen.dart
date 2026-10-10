@@ -7,7 +7,9 @@ import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/material.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -432,7 +434,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
             child: Padding(
               padding: EdgeInsets.all(roleTokenSize * 0.06),
               child: Image.asset(
-                'assets/images/characters/$roleImage.png',
+                roleImageAssetPath(roleImage),
                 cacheWidth: _imageCacheWidth(context, roleTokenSize),
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.medium,
@@ -450,8 +452,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
         Provider.of<RoleNotesService>(context, listen: false);
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
     final languageService =
         Provider.of<LanguageService>(context, listen: false);
 
@@ -462,7 +463,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
       }
     }
 
-    final availableRoles = _availableRoles(characterService, gameStateService);
+    final availableRoles = _availableRoles(characterService, scriptService);
     final selectedRoleImages =
         roleNotesService.roleImagesFor(playerName).toList();
     var query = '';
@@ -704,7 +705,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
           avatar: CircleAvatar(
             backgroundColor: Colors.transparent,
             backgroundImage: ResizeImage(
-              AssetImage('assets/images/characters/$roleImage.png'),
+              AssetImage(roleImageAssetPath(roleImage)),
               width: _imageCacheWidth(context, 32),
             ),
           ),
@@ -743,7 +744,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
           children: [
             Expanded(
               child: Image.asset(
-                'assets/images/characters/${character.image}.png',
+                roleImageAssetPath(character.image),
                 cacheWidth: _imageCacheWidth(context, tileWidth),
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.medium,
@@ -812,11 +813,10 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
   }
 
   List<Character> _availableRoles(
-      CharacterService characterService, GameStateService gameStateService) {
-    final roles = characterService.allCharacters
-        .where((character) =>
-            character.gameset.contains(gameStateService.gameset) &&
-            character.fraction != Fraction.fabled)
+      CharacterService characterService, ScriptService scriptService) {
+    final roles = scriptService
+        .resolveCharacters(characterService.allCharacters)
+        .where((character) => character.fraction != Fraction.fabled)
         .toList();
     roles.sort((a, b) {
       final fractionCompare =
@@ -843,6 +843,8 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
         return 4;
       case Fraction.fabled:
         return 5;
+      case Fraction.loric:
+        return 6;
     }
   }
 

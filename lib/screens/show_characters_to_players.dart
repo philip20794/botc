@@ -18,7 +18,6 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
   int currentCharacterIndex = 0;
   bool isCharacterVisible = false;
   bool isDialogVisible = true;
-  bool isGameMaster = false;
   bool iCanHaveSeenMyCharacter = false;
 
   @override
@@ -32,8 +31,8 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
     GameStateService gameStateService = Provider.of<GameStateService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
     final characters = characterService.gameCharactersWithoutDrunkAndFabled;
-    if (currentCharacterIndex >= characters.length) {
-      isGameMaster = true;
+    final isGameMaster = currentCharacterIndex >= characters.length;
+    if (isGameMaster) {
       if (!gameStateService.showCharactersToPlayers) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -100,13 +99,15 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
             ),
             if (isDialogVisible)
               Center(
-                child: buildPlayerDialog(context, currentCharacter),
+                child:
+                    buildPlayerDialog(context, currentCharacter, isGameMaster),
               )
             else
               Stack(
                 children: [
                   Center(
-                    child: buildCharacterView(context, currentCharacter),
+                    child: buildCharacterView(
+                        context, currentCharacter, isGameMaster),
                   ),
                   if (!isGameMaster) _buildHoldToShowButton(context)
                 ],
@@ -117,7 +118,8 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
     );
   }
 
-  Widget buildPlayerDialog(BuildContext context, Character? character) {
+  Widget buildPlayerDialog(
+      BuildContext context, Character? character, bool isGameMaster) {
     var localizedStrings = AppLocalizations.of(context)!;
     String dialogText = isGameMaster
         ? localizedStrings.giveTheDeviceToTheStoryteller
@@ -182,7 +184,8 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
     ]);
   }
 
-  Widget buildCharacterView(BuildContext context, Character? character) {
+  Widget buildCharacterView(
+      BuildContext context, Character? character, bool isGameMaster) {
     final gameService = Provider.of<GameStateService>(context);
     final characterService = Provider.of<CharacterService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
@@ -321,9 +324,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
                     if (currentCharacterIndex >=
                         Provider.of<CharacterService>(context, listen: false)
                             .gameCharactersWithoutDrunkAndFabled
-                            .length) {
-                      isGameMaster = true;
-                    }
+                            .length) {}
                   });
                 },
               ),

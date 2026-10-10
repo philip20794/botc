@@ -2,9 +2,10 @@ import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
-import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -282,12 +283,17 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
       case Fraction.fabled:
         character = characterService.getCharacterByImage('Icon_buddhist');
         break;
+      case Fraction.loric:
+        return CircleAvatar(
+          radius: maxWidth / 12 - 6,
+          backgroundColor: Colors.transparent,
+          backgroundImage: AssetImage(roleImageAssetPath('')),
+        );
     }
     return CircleAvatar(
       radius: maxWidth / 12 - 6,
       backgroundColor: Colors.transparent,
-      backgroundImage:
-          AssetImage('assets/images/characters/${character.image}.png'),
+      backgroundImage: AssetImage(roleImageAssetPath(character.image)),
     );
   }
 
@@ -296,12 +302,9 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
     final gameCharacters = characterService.gameCharactersBackupWithoutDrunk;
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
 
     var allCharactersOfGamesetThatAreNotInGame = allCharactersOfGameset
         .where((element) => !gameCharacters.contains(element))
@@ -368,8 +371,8 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
                   },
                   leading: CircleAvatar(
                     radius: 40,
-                    backgroundImage: AssetImage(
-                        'assets/images/characters/${newCharacter.image}.png'),
+                    backgroundImage:
+                        AssetImage(roleImageAssetPath(newCharacter.image)),
                     backgroundColor: Colors.transparent,
                   ),
                   title: Text(newCharacter.name,

@@ -272,6 +272,36 @@ abstract class AppLocalizations {
   /// **'Möchtest du wirklich fortfahren?'**
   String get reallyContinue;
 
+  /// No description provided for @demonBluffsMissing.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur {selected} von {required} erforderlichen Dämonen-Bluffs wurden ausgewählt.'**
+  String demonBluffsMissing(int selected, int required);
+
+  /// No description provided for @notEnoughBluffs.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Skript enthält nicht genug nicht ausgewählte gute Charaktere für drei Dämonen-Bluffs.'**
+  String get notEnoughBluffs;
+
+  /// No description provided for @demonBluffs.
+  ///
+  /// In de, this message translates to:
+  /// **'Bluffs'**
+  String get demonBluffs;
+
+  /// No description provided for @noDemonBluffs.
+  ///
+  /// In de, this message translates to:
+  /// **'Vor dem Start dieser Partie wurden keine Dämonen-Bluffs ausgewählt.'**
+  String get noDemonBluffs;
+
+  /// No description provided for @demonBluffsNotUsed.
+  ///
+  /// In de, this message translates to:
+  /// **'Dämonen-Bluffs werden nur bei sieben oder mehr regulären Spielern verwendet.'**
+  String get demonBluffsNotUsed;
+
   /// No description provided for @yesContinue.
   ///
   /// In de, this message translates to:
@@ -715,6 +745,204 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Keine Rollen gefunden'**
   String get noRolesFound;
+
+  /// No description provided for @importScript.
+  ///
+  /// In de, this message translates to:
+  /// **'Skript importieren'**
+  String get importScript;
+
+  /// No description provided for @manageScripts.
+  ///
+  /// In de, this message translates to:
+  /// **'Skripte verwalten'**
+  String get manageScripts;
+
+  /// No description provided for @customScripts.
+  ///
+  /// In de, this message translates to:
+  /// **'Eigene Skripte'**
+  String get customScripts;
+
+  /// No description provided for @selectScriptFile.
+  ///
+  /// In de, this message translates to:
+  /// **'JSON-Datei auswählen'**
+  String get selectScriptFile;
+
+  /// No description provided for @scriptPreview.
+  ///
+  /// In de, this message translates to:
+  /// **'Skriptvorschau'**
+  String get scriptPreview;
+
+  /// No description provided for @scriptAuthor.
+  ///
+  /// In de, this message translates to:
+  /// **'Autor: {author}'**
+  String scriptAuthor(Object author);
+
+  /// No description provided for @scriptRoleCount.
+  ///
+  /// In de, this message translates to:
+  /// **'Rollen: {count}'**
+  String scriptRoleCount(Object count);
+
+  /// No description provided for @storytellerComplexity.
+  ///
+  /// In de, this message translates to:
+  /// **'Komplexität für die Spielleitung'**
+  String get storytellerComplexity;
+
+  /// No description provided for @playerComplexity.
+  ///
+  /// In de, this message translates to:
+  /// **'Spielerkomplexität'**
+  String get playerComplexity;
+
+  /// No description provided for @editComplexities.
+  ///
+  /// In de, this message translates to:
+  /// **'Schwierigkeitsbewertungen bearbeiten'**
+  String get editComplexities;
+
+  /// No description provided for @notRated.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht bewertet'**
+  String get notRated;
+
+  /// No description provided for @save.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get save;
+
+  /// No description provided for @resetComplexities.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf Standardwerte zurücksetzen'**
+  String get resetComplexities;
+
+  /// No description provided for @unknownImportedRoles.
+  ///
+  /// In de, this message translates to:
+  /// **'Unbekannte Charaktere'**
+  String get unknownImportedRoles;
+
+  /// No description provided for @mapRole.
+  ///
+  /// In de, this message translates to:
+  /// **'Rolle zuordnen'**
+  String get mapRole;
+
+  /// No description provided for @confirmImport.
+  ///
+  /// In de, this message translates to:
+  /// **'Skript speichern'**
+  String get confirmImport;
+
+  /// No description provided for @resolveRolesBeforeSaving.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordne vor dem Speichern alle Charaktere zu.'**
+  String get resolveRolesBeforeSaving;
+
+  /// No description provided for @scriptFileError.
+  ///
+  /// In de, this message translates to:
+  /// **'Die ausgewählte Datei konnte nicht gelesen werden.'**
+  String get scriptFileError;
+
+  /// No description provided for @scriptImportError.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Skript konnte nicht importiert werden.'**
+  String get scriptImportError;
+
+  /// No description provided for @scriptInvalidJson.
+  ///
+  /// In de, this message translates to:
+  /// **'Die ausgewählte Datei ist kein gültiges JSON.'**
+  String get scriptInvalidJson;
+
+  /// No description provided for @scriptInvalidStructure.
+  ///
+  /// In de, this message translates to:
+  /// **'Dies ist keine gültige BOTC-Skriptdatei.'**
+  String get scriptInvalidStructure;
+
+  /// No description provided for @scriptInvalidMetadata.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Metadaten des Skripts sind unvollständig oder ungültig.'**
+  String get scriptInvalidMetadata;
+
+  /// No description provided for @scriptInvalidRole.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Skript enthält einen ungültigen Rolleneintrag.'**
+  String get scriptInvalidRole;
+
+  /// No description provided for @scriptUnknownRole.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine bekannte Rolle entspricht \"{roleId}\".'**
+  String scriptUnknownRole(Object roleId);
+
+  /// No description provided for @scriptAmbiguousRole.
+  ///
+  /// In de, this message translates to:
+  /// **'Mehrere Rollen entsprechen \"{roleId}\".'**
+  String scriptAmbiguousRole(Object roleId);
+
+  /// No description provided for @scriptDuplicateRole.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Rolle \"{roleId}\" kommt mehrfach vor.'**
+  String scriptDuplicateRole(Object roleId);
+
+  /// No description provided for @scriptUnsupportedRole.
+  ///
+  /// In de, this message translates to:
+  /// **'\"{roleId}\" ist eine Charakterdefinition und muss manuell zugeordnet werden.'**
+  String scriptUnsupportedRole(Object roleId);
+
+  /// No description provided for @deleteScript.
+  ///
+  /// In de, this message translates to:
+  /// **'Skript löschen'**
+  String get deleteScript;
+
+  /// No description provided for @deleteScriptConfirmation.
+  ///
+  /// In de, this message translates to:
+  /// **'\"{scriptName}\" löschen? Dies kann nicht rückgängig gemacht werden.'**
+  String deleteScriptConfirmation(Object scriptName);
+
+  /// No description provided for @scriptDeleted.
+  ///
+  /// In de, this message translates to:
+  /// **'Skript gelöscht'**
+  String get scriptDeleted;
+
+  /// No description provided for @scriptSaved.
+  ///
+  /// In de, this message translates to:
+  /// **'Skript gespeichert'**
+  String get scriptSaved;
+
+  /// No description provided for @scriptChangeWhileRunning.
+  ///
+  /// In de, this message translates to:
+  /// **'Skripte können während einer laufenden Partie nicht geändert werden.'**
+  String get scriptChangeWhileRunning;
+
+  /// No description provided for @noCustomScripts.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine eigenen Skripte gespeichert.'**
+  String get noCustomScripts;
 }
 
 class _AppLocalizationsDelegate

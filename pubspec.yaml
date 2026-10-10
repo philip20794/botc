@@ -22,6 +22,7 @@ dependencies:
   firebase_auth: ^5.3.1
   cloud_firestore: ^5.4.4
   google_sign_in: ^6.2.1
+  file_picker: ^10.3.10
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,8 @@ flutter:
   assets:
     - assets/characters/de.json
     - assets/characters/en.json
+    - assets/ui/script_meta/storyteller_complexity.png
+    - assets/ui/script_meta/player_complexity.png
     - assets/images/grim_logo.png
     - assets/images/dead_character_overlay.png
     - assets/images/backgrounds/background_grim_bottom.jpg

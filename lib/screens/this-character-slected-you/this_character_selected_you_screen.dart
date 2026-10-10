@@ -2,16 +2,24 @@ import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
-import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class ThisCharacterSelectedYouScreen extends StatefulWidget {
+  final bool showDemonBluffsOnly;
+
+  const ThisCharacterSelectedYouScreen({
+    super.key,
+    this.showDemonBluffsOnly = false,
+  });
+
   @override
   _ThisCharacterSelectedYouScreenState createState() =>
       _ThisCharacterSelectedYouScreenState();
@@ -29,12 +37,9 @@ class _ThisCharacterSelectedYouScreenState
   void selectRandomCharacters() {
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
     final gameCharacters = characterService.gameCharactersBackup;
     var chraractersNotInGame = allCharactersOfGameset
         .where((element) =>
@@ -56,6 +61,9 @@ class _ThisCharacterSelectedYouScreenState
   @override
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
+    if (widget.showDemonBluffsOnly) {
+      return _buildDemonBluffs(context, localizedStrings);
+    }
     var tokensWithNoAction = [
       Basictoken.this_is_the_demon,
       Basictoken.these_are_your_minions,
@@ -126,7 +134,9 @@ class _ThisCharacterSelectedYouScreenState
                   SizedBox(height: 16.0), // Abstand zwischen den Elementen
                   // Character Image
 
-                  if (!tokensWithNoAction.contains(selectedToken)) ...[
+                  if (!tokensWithNoAction.contains(selectedToken) &&
+                      selectedToken !=
+                          Basictoken.these_chracters_are_not_in_play) ...[
                     _buildCharacterSelection(context, character,
                         (Character newCharacter) {
                       setState(() {
@@ -136,8 +146,12 @@ class _ThisCharacterSelectedYouScreenState
                   ],
 
                   if (selectedToken ==
-                          Basictoken.these_chracters_are_not_in_play ||
-                      selectedToken == Basictoken.these_are_all_outsiders) ...[
+                      Basictoken.these_chracters_are_not_in_play) ...[
+                    _buildStoredDemonBluffTokens(context, localizedStrings),
+                  ],
+
+                  if (selectedToken ==
+                      Basictoken.these_are_all_outsiders) ...[
                     _buildCharacterSelection(context, character2,
                         (Character newCharacter) {
                       setState(() {
@@ -150,15 +164,12 @@ class _ThisCharacterSelectedYouScreenState
                         character3 = newCharacter;
                       });
                     }, true, 3),
-                    if (selectedToken ==
-                        Basictoken.these_are_all_outsiders) ...[
-                      _buildCharacterSelection(context, character4,
-                          (Character newCharacter) {
-                        setState(() {
-                          character4 = newCharacter;
-                        });
-                      }, true, 4),
-                    ],
+                    _buildCharacterSelection(context, character4,
+                        (Character newCharacter) {
+                      setState(() {
+                        character4 = newCharacter;
+                      });
+                    }, true, 4),
                   ],
 
                   if (character?.image == 'Icon_cerenovus' &&
@@ -188,7 +199,9 @@ class _ThisCharacterSelectedYouScreenState
                           ? CircleAvatar(
                               radius: 150, // Halbe Breite als Radius
                               backgroundImage: AssetImage(
-                                  'assets/images/characters/${characterToBeMadAbout?.image}.png'),
+                                roleImageAssetPath(
+                                    characterToBeMadAbout?.image ?? ''),
+                              ),
                               backgroundColor: Color(0xFFb5987d),
                             )
                           : GestureDetector(
@@ -215,10 +228,70 @@ class _ThisCharacterSelectedYouScreenState
               ),
             ),
           ),
-          if (selectedToken == Basictoken.these_chracters_are_not_in_play) ...[
-            _randomButton(context),
-          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildDemonBluffs(
+      BuildContext context, AppLocalizations localizedStrings) {
+    final roleIds = context.select<GameStateService, List<String>>(
+      (service) => service.demonBluffRoleIds,
+    );
+    final allCharacters = context.select<CharacterService, List<Character>>(
+      (service) => service.allCharacters,
+    );
+    final bluffs = <Character>[];
+    for (final roleId in roleIds) {
+      for (final character in allCharacters) {
+        if (character.roleId == roleId) {
+          bluffs.add(character);
+          break;
+        }
+      }
+    }
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(localizedStrings.demonBluffs,
+            style: const TextStyle(color: Colors.white)),
+      ),
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(
+                'assets/images/backgrounds/background_grim_middel.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: bluffs.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(localizedStrings.noDemonBluffs,
+                      textAlign: TextAlign.center,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 18)),
+                ),
+              )
+            : Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final character in bluffs)
+                      CharacterAvatar(
+                        character: character,
+                        showIsSelected: false,
+                        showName: true,
+                        size: 150,
+                      ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -395,11 +468,9 @@ class _ThisCharacterSelectedYouScreenState
         Provider.of<CharacterService>(context, listen: false);
     final gameCharacters =
         characterService.gameCharactersBackupWithoutDrunkAndFabled;
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset = scriptService
+        .resolveCharacters(characterService.allCharacters)
         .where((element) => element.fraction != Fraction.fabled)
         .toList();
 

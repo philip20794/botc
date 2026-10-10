@@ -21,6 +21,7 @@ class SettingsService extends ChangeNotifier {
   final String _settingsTokenOffsetYKey = 'tokenOffsetY';
   final String _settingsTokenOffsetXKey = 'tokenOffsetX';
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+  late final Future<void> initialized;
   bool hideDescription = true;
   bool hideHotToRun = true;
   bool hideTipsAndTricks = true;
@@ -39,10 +40,10 @@ class SettingsService extends ChangeNotifier {
   double get tokenOffsetX => _tokenOffsetX;
 
   SettingsService() {
-    _loadSettings();
+    initialized = _loadSettings();
   }
 
-  void _loadSettings() async {
+  Future<void> _loadSettings() async {
     final prefs = await _prefs;
     _characterKnobSize =
         prefs.getDouble(_settingsCharacterKnobSizeKey) ?? _characterKnobSize;
@@ -59,106 +60,126 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _saveSettings() async {
+  Future<void> saveSettings() async {
     final prefs = await _prefs;
-    prefs.setDouble(_settingsCharacterKnobSizeKey, _characterKnobSize);
-    prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize);
-    prefs.setDouble(_settingsRadiusXKey, _radiusX);
-    prefs.setDouble(_settingsRadiusYKey, _radiusY);
-    prefs.setDouble(_settingsStartAngleDivKey, _startAngleDiv);
-    prefs.setDouble(_settingsOffsetXKey, _offsetX);
-    prefs.setDouble(_settingsOffsetYKey, _offsetY);
-    prefs.setDouble(_settingsTokenOffsetYKey, _tokenOffsetY);
-    prefs.setDouble(_settingsTokenOffsetXKey, _tokenOffsetX);
+    await Future.wait([
+      prefs.setDouble(_settingsCharacterKnobSizeKey, _characterKnobSize),
+      prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize),
+      prefs.setDouble(_settingsRadiusXKey, _radiusX),
+      prefs.setDouble(_settingsRadiusYKey, _radiusY),
+      prefs.setDouble(_settingsStartAngleDivKey, _startAngleDiv),
+      prefs.setDouble(_settingsOffsetXKey, _offsetX),
+      prefs.setDouble(_settingsOffsetYKey, _offsetY),
+      prefs.setDouble(_settingsTokenOffsetYKey, _tokenOffsetY),
+      prefs.setDouble(_settingsTokenOffsetXKey, _tokenOffsetX),
+    ]);
   }
 
-  Future<void> setCharacterKnobSize(double value) async {
+  Future<void> setCharacterKnobSize(double value, {bool persist = true}) async {
     if (_characterKnobSize == value) {
       return;
     }
     _characterKnobSize = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsCharacterKnobSizeKey, _characterKnobSize);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsCharacterKnobSizeKey, _characterKnobSize);
+    }
     notifyListeners();
   }
 
-  Future<void> setTokenKnobSize(double value) async {
+  Future<void> setTokenKnobSize(double value, {bool persist = true}) async {
     if (_tokenKnobSize == value) {
       return;
     }
     _tokenKnobSize = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize);
+    }
     notifyListeners();
   }
 
-  Future<void> setRadiusX(double value) async {
+  Future<void> setRadiusX(double value, {bool persist = true}) async {
     if (_radiusX == value) {
       return;
     }
     _radiusX = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsRadiusXKey, _radiusX);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsRadiusXKey, _radiusX);
+    }
     notifyListeners();
   }
 
-  Future<void> setRadiusY(double value) async {
+  Future<void> setRadiusY(double value, {bool persist = true}) async {
     if (_radiusY == value) {
       return;
     }
     _radiusY = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsRadiusYKey, _radiusY);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsRadiusYKey, _radiusY);
+    }
     notifyListeners();
   }
 
-  Future<void> setStartAngleDiv(double value) async {
+  Future<void> setStartAngleDiv(double value, {bool persist = true}) async {
     if (_startAngleDiv == value) {
       return;
     }
     _startAngleDiv = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsStartAngleDivKey, _startAngleDiv);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsStartAngleDivKey, _startAngleDiv);
+    }
     notifyListeners();
   }
 
-  Future<void> setOffsetX(double value) async {
+  Future<void> setOffsetX(double value, {bool persist = true}) async {
     if (_offsetX == value) {
       return;
     }
     _offsetX = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsOffsetXKey, _offsetX);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsOffsetXKey, _offsetX);
+    }
     notifyListeners();
   }
 
-  Future<void> setOffsetY(double value) async {
+  Future<void> setOffsetY(double value, {bool persist = true}) async {
     if (_offsetY == value) {
       return;
     }
     _offsetY = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsOffsetYKey, _offsetY);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsOffsetYKey, _offsetY);
+    }
     notifyListeners();
   }
 
-  Future<void> setTokenOffsetY(double value) async {
+  Future<void> setTokenOffsetY(double value, {bool persist = true}) async {
     if (_tokenOffsetY == value) {
       return;
     }
     _tokenOffsetY = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsTokenOffsetYKey, _tokenOffsetY);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsTokenOffsetYKey, _tokenOffsetY);
+    }
     notifyListeners();
   }
 
-  Future<void> setTokenOffsetX(double value) async {
+  Future<void> setTokenOffsetX(double value, {bool persist = true}) async {
     if (_tokenOffsetX == value) {
       return;
     }
     _tokenOffsetX = value;
-    final prefs = await _prefs;
-    prefs.setDouble(_settingsTokenOffsetXKey, _tokenOffsetX);
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(_settingsTokenOffsetXKey, _tokenOffsetX);
+    }
     notifyListeners();
   }
 
@@ -170,7 +191,7 @@ class SettingsService extends ChangeNotifier {
     _startAngleDiv = 4;
     _offsetX = 80;
     _offsetY = 90;
-    _saveSettings();
+    saveSettings();
     notifyListeners();
   }
 }

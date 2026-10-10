@@ -97,6 +97,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reallyContinue => 'Möchtest du wirklich fortfahren?';
 
   @override
+  String demonBluffsMissing(int selected, int required) {
+    return 'Nur $selected von $required erforderlichen Dämonen-Bluffs wurden ausgewählt.';
+  }
+
+  @override
+  String get notEnoughBluffs =>
+      'Dieses Skript enthält nicht genug nicht ausgewählte gute Charaktere für drei Dämonen-Bluffs.';
+
+  @override
+  String get demonBluffs => 'Bluffs';
+
+  @override
+  String get noDemonBluffs =>
+      'Vor dem Start dieser Partie wurden keine Dämonen-Bluffs ausgewählt.';
+
+  @override
+  String get demonBluffsNotUsed =>
+      'Dämonen-Bluffs werden nur bei sieben oder mehr regulären Spielern verwendet.';
+
+  @override
   String get yesContinue => 'Ja, fortfahren';
 
   @override
@@ -330,4 +350,124 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noRolesFound => 'Keine Rollen gefunden';
+
+  @override
+  String get importScript => 'Skript importieren';
+
+  @override
+  String get manageScripts => 'Skripte verwalten';
+
+  @override
+  String get customScripts => 'Eigene Skripte';
+
+  @override
+  String get selectScriptFile => 'JSON-Datei auswählen';
+
+  @override
+  String get scriptPreview => 'Skriptvorschau';
+
+  @override
+  String scriptAuthor(Object author) {
+    return 'Autor: $author';
+  }
+
+  @override
+  String scriptRoleCount(Object count) {
+    return 'Rollen: $count';
+  }
+
+  @override
+  String get storytellerComplexity => 'Komplexität für die Spielleitung';
+
+  @override
+  String get playerComplexity => 'Spielerkomplexität';
+
+  @override
+  String get editComplexities => 'Schwierigkeitsbewertungen bearbeiten';
+
+  @override
+  String get notRated => 'Nicht bewertet';
+
+  @override
+  String get save => 'Speichern';
+
+  @override
+  String get resetComplexities => 'Auf Standardwerte zurücksetzen';
+
+  @override
+  String get unknownImportedRoles => 'Unbekannte Charaktere';
+
+  @override
+  String get mapRole => 'Rolle zuordnen';
+
+  @override
+  String get confirmImport => 'Skript speichern';
+
+  @override
+  String get resolveRolesBeforeSaving =>
+      'Ordne vor dem Speichern alle Charaktere zu.';
+
+  @override
+  String get scriptFileError =>
+      'Die ausgewählte Datei konnte nicht gelesen werden.';
+
+  @override
+  String get scriptImportError => 'Das Skript konnte nicht importiert werden.';
+
+  @override
+  String get scriptInvalidJson =>
+      'Die ausgewählte Datei ist kein gültiges JSON.';
+
+  @override
+  String get scriptInvalidStructure =>
+      'Dies ist keine gültige BOTC-Skriptdatei.';
+
+  @override
+  String get scriptInvalidMetadata =>
+      'Die Metadaten des Skripts sind unvollständig oder ungültig.';
+
+  @override
+  String get scriptInvalidRole =>
+      'Das Skript enthält einen ungültigen Rolleneintrag.';
+
+  @override
+  String scriptUnknownRole(Object roleId) {
+    return 'Keine bekannte Rolle entspricht \"$roleId\".';
+  }
+
+  @override
+  String scriptAmbiguousRole(Object roleId) {
+    return 'Mehrere Rollen entsprechen \"$roleId\".';
+  }
+
+  @override
+  String scriptDuplicateRole(Object roleId) {
+    return 'Die Rolle \"$roleId\" kommt mehrfach vor.';
+  }
+
+  @override
+  String scriptUnsupportedRole(Object roleId) {
+    return '\"$roleId\" ist eine Charakterdefinition und muss manuell zugeordnet werden.';
+  }
+
+  @override
+  String get deleteScript => 'Skript löschen';
+
+  @override
+  String deleteScriptConfirmation(Object scriptName) {
+    return '\"$scriptName\" löschen? Dies kann nicht rückgängig gemacht werden.';
+  }
+
+  @override
+  String get scriptDeleted => 'Skript gelöscht';
+
+  @override
+  String get scriptSaved => 'Skript gespeichert';
+
+  @override
+  String get scriptChangeWhileRunning =>
+      'Skripte können während einer laufenden Partie nicht geändert werden.';
+
+  @override
+  String get noCustomScripts => 'Noch keine eigenen Skripte gespeichert.';
 }

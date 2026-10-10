@@ -3,11 +3,12 @@ import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
-import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -345,7 +346,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
                           : CircleAvatar(
                               radius: settingsService.tokenKnobSize,
                               backgroundImage: AssetImage(
-                                  'assets/images/characters/${tokens[i - 1].image}.png'),
+                                  roleImageAssetPath(tokens[i - 1].image)),
                               backgroundColor: const Color(0xFF493131),
                             ),
                     ),
@@ -434,8 +435,8 @@ class _CharacterWidgetState extends State<CharacterWidget> {
                   leading: CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.transparent,
-                    backgroundImage: AssetImage(
-                        'assets/images/characters/${token.image}.png'),
+                    backgroundImage:
+                        AssetImage(roleImageAssetPath(token.image)),
                   ),
                   title: Text(token.name,
                       style: const TextStyle(color: Colors.white)),
@@ -460,11 +461,9 @@ class _CharacterWidgetState extends State<CharacterWidget> {
         Provider.of<CharacterService>(context, listen: false);
     final gameStateService =
         Provider.of<GameStateService>(context, listen: false);
-
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
 
     Navigator.push(
         context,

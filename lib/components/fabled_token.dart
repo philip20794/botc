@@ -3,6 +3,7 @@ import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -96,8 +97,8 @@ class _FabledTokenState extends State<FabledToken> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     image: DecorationImage(
-                                      image: AssetImage(
-                                          'assets/images/characters/${widget.character.image}.png'),
+                                      image: AssetImage(roleImageAssetPath(
+                                          widget.character.image)),
                                       fit: BoxFit.cover,
                                     ),
                                   ),

@@ -4,9 +4,8 @@ import 'package:blood_on_the_clocktower/components/select_gameset.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
-import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
-import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
@@ -22,11 +21,9 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
   @override
   Widget build(BuildContext context) {
     CharacterService characterService = Provider.of<CharacterService>(context);
-    GameStateService gameStateService = Provider.of<GameStateService>(context);
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
 
     List<Character> townsfolk = allCharactersOfGameset
         .where((element) => element.fraction == Fraction.townsfolk)
@@ -44,29 +41,46 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
         .where((element) => element.fraction == Fraction.traveller)
         .toList();
     var localizedStrings = AppLocalizations.of(context)!;
-    var maxWidth = MediaQuery.of(context).size.width - 140;
 
     return Scaffold(
         appBar: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SizedBox(
-                  width: maxWidth * 0.5,
-                  child: AutoSizeText(localizedStrings.allCharactersOf,
+          title: LayoutBuilder(
+            builder: (context, constraints) {
+              final maxSelectorWidth =
+                  (constraints.maxWidth - 84).clamp(112.0, 240.0).toDouble();
+              final scriptWidth = (constraints.maxWidth * 0.55)
+                  .clamp(112.0, maxSelectorWidth)
+                  .toDouble();
+              return Row(
+                children: [
+                  Expanded(
+                    child: AutoSizeText(
+                      localizedStrings.allCharactersOf,
                       minFontSize: 8,
                       maxLines: 1,
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))),
-              SizedBox(width: 10),
-              Card(
-                color: Color(0xFF4a3b5e).withOpacity(0.9),
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: SelectGameset(disabled: false),
-                ),
-              ),
-            ],
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Card(
+                    margin: EdgeInsets.zero,
+                    color: const Color(0xFF4a3b5e),
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: SelectGameset(
+                        disabled: false,
+                        scriptWidth: scriptWidth,
+                        showManagementAction: false,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           backgroundColor: Colors.black,
           iconTheme: const IconThemeData(color: Colors.white),

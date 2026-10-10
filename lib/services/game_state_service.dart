@@ -5,18 +5,19 @@ import 'dart:math';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GameStateService extends ChangeNotifier {
+  final ScriptService _scriptService;
   bool _isLocked = false;
   bool _forceUpdateLayout = false;
   final String _storageIsLockedKey = 'is_locked';
   Map<String, List<Token>> _characterTokens = {};
   Map<String, bool> _characterAliveState = {};
   List<Token> unsedGameTokens = [];
-  Gameset _gameset = Gameset.trouble_brewing;
   List<String> playerNames = [];
   int _nightCount = -1;
   bool initIsDone = false;
@@ -32,24 +33,31 @@ class GameStateService extends ChangeNotifier {
   final String _storageShowCharactersToPlayersKey =
       'show_characters_to_players';
   final String _chracterSelectionDoneKey = 'character_selection_done';
+  static const String _storageDemonBluffRoleIdsKey = 'demon_bluff_role_ids';
+  List<String> _demonBluffRoleIds = [];
   int? _openMenuId;
   String? openTokenMenuId;
 
-  GameStateService() {
+  GameStateService({ScriptService? scriptService})
+      : _scriptService = scriptService ?? ScriptService() {
+    _scriptService.addListener(_onScriptSelectionChanged);
     init();
   }
 
+  void _onScriptSelectionChanged() => notifyListeners();
+
   Future<void> init() async {
+    await _scriptService.ready;
     final prefs = await SharedPreferences.getInstance();
     _loadIsLocked(prefs);
     _loadCharacterTokens(prefs);
     _loadCharacterAliveState(prefs);
     _loadPlayerNames(prefs);
-    _loadGameset(prefs);
     _loadNightCount(prefs);
     _loadNightStateNumber(prefs);
     _loadShowCharactersToPlayers(prefs);
     _loadChracterSelectionDone(prefs);
+    _loadDemonBluffRoleIds(prefs);
     notifyListeners();
   }
 
@@ -64,8 +72,86 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightStateNumberKey);
     prefs.remove(_storageShowCharactersToPlayersKey);
     prefs.remove(_chracterSelectionDoneKey);
+    prefs.remove(_storageDemonBluffRoleIdsKey);
     init();
   }
+
+  /// Demon bluffs belong to the game setup, but are role identities rather
+  /// than character instances. This deliberately keeps them independent from
+  /// shuffled player cards and their instance ids.
+  List<String> get demonBluffRoleIds => List.unmodifiable(_demonBluffRoleIds);
+
+  bool isDemonBluff(String roleId) => _demonBluffRoleIds.contains(roleId);
+
+  int requiredDemonBluffCount(int regularPlayerCount) =>
+      regularPlayerCount >= 7 ? 3 : 0;
+
+  bool hasRequiredDemonBluffs(int regularPlayerCount) =>
+      _demonBluffRoleIds.length == requiredDemonBluffCount(regularPlayerCount);
+
+  void _loadDemonBluffRoleIds(SharedPreferences prefs) {
+    final raw = prefs.getString(_storageDemonBluffRoleIdsKey);
+    if (raw == null) {
+      _demonBluffRoleIds = [];
+      return;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        _demonBluffRoleIds = decoded
+            .whereType<String>()
+            .where((roleId) => roleId.isNotEmpty)
+            .toSet()
+            .take(3)
+            .toList();
+      }
+    } catch (_) {
+      // A malformed optional setup field must not make an existing game
+      // unloadable. It is treated like the pre-bluff save format.
+      _demonBluffRoleIds = [];
+    }
+  }
+
+  Future<void> _saveDemonBluffRoleIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageDemonBluffRoleIdsKey,
+      jsonEncode(_demonBluffRoleIds),
+    );
+  }
+
+  Future<bool> toggleDemonBluff(
+    String roleId, {
+    required bool isEligible,
+    required bool isGameCharacter,
+  }) async {
+    if (!isEligible || isGameCharacter) {
+      return false;
+    }
+    if (_demonBluffRoleIds.contains(roleId)) {
+      _demonBluffRoleIds.remove(roleId);
+    } else {
+      if (_demonBluffRoleIds.length >= 3) {
+        return false;
+      }
+      _demonBluffRoleIds.add(roleId);
+    }
+    notifyListeners();
+    await _saveDemonBluffRoleIds();
+    return true;
+  }
+
+  Future<void> setDemonBluffRoleIds(Iterable<String> roleIds) async {
+    final normalized = roleIds.where((roleId) => roleId.isNotEmpty).toSet();
+    if (normalized.length > 3) {
+      throw ArgumentError.value(roleIds, 'roleIds', 'At most three bluffs');
+    }
+    _demonBluffRoleIds = normalized.toList();
+    notifyListeners();
+    await _saveDemonBluffRoleIds();
+  }
+
+  Future<void> clearDemonBluffs() => setDemonBluffRoleIds(const []);
 
   int? get openMenuId => _openMenuId;
 
@@ -106,28 +192,51 @@ class GameStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resetCharacterTokens(List<Character> gameCharacters) {
+  Future<void> _saveCharacterTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String data = jsonEncode(_characterTokens.map((key, value) =>
+        MapEntry(key, value.map((item) => item.toJson()).toList())));
+    await prefs.setString(_storageCharacterTokensKey, data);
+  }
+
+  Future<void> _saveCharacterAliveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        _storageCharacterAliveStateKey, jsonEncode(_characterAliveState));
+  }
+
+  Future<void> resetCharacterTokens(List<Character> gameCharacters) async {
     _characterTokens.clear();
     unsedGameTokens.clear();
     initUnusedGameTokens(gameCharacters);
+    await _saveCharacterTokens();
     notifyListeners();
   }
 
-  void giveAllTokensFromCharacterAToCharacterB(
-      List<Character> allCharacters, Character characterA, String eid) {
-    if (_characterTokens.containsKey(characterA.id)) {
-      List<Token> tokensFromA = _characterTokens[characterA.id] ?? [];
-      if (!_characterTokens.containsKey(eid)) {
-        _characterTokens[eid] = [];
-      }
-      _characterTokens[eid]?.addAll(tokensFromA);
-      _characterTokens[characterA.id]?.clear();
+  Future<void> giveAllTokensFromCharacterAToCharacterB(
+      List<Character> allCharacters, Character characterA, String eid) async {
+    if (characterA.id == eid) {
+      return;
     }
+    if (_characterTokens.containsKey(characterA.id)) {
+      final tokensFromA = _characterTokens.remove(characterA.id) ?? [];
+      _characterTokens.putIfAbsent(eid, () => []).addAll(tokensFromA);
+    }
+    if (_characterAliveState.containsKey(characterA.id)) {
+      _characterAliveState[eid] = _characterAliveState.remove(characterA.id)!;
+    }
+    await Future.wait([
+      _saveCharacterTokens(),
+      _saveCharacterAliveState(),
+    ]);
+    notifyListeners();
   }
 
-  void reset(List<Character> gameCharacters) {
-    resetCharacterTokens(gameCharacters);
-    resetCharacterAliveState();
+  Future<void> reset(List<Character> gameCharacters) async {
+    await Future.wait([
+      resetCharacterTokens(gameCharacters),
+      resetCharacterAliveState(),
+    ]);
   }
 
   void _loadIsLocked(SharedPreferences prefs) {
@@ -188,14 +297,6 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  void _loadGameset(SharedPreferences prefs) {
-    final String? gamesetString = prefs.getString(_storageGamesetKey);
-    if (gamesetString != null) {
-      _gameset = Gameset.values
-          .firstWhere((element) => element.toString() == gamesetString);
-    }
-  }
-
   void _loadPlayerNames(SharedPreferences prefs) {
     final String? playerNamesJson = prefs.getString(_storagePlayerNamesKey);
     if (playerNamesJson != null) {
@@ -245,12 +346,49 @@ class GameStateService extends ChangeNotifier {
     return unassignedSetupTokens;
   }
 
-  void setGameset(Gameset gameset, List<Character> gameCharacters) async {
-    reset(gameCharacters);
-    _gameset = gameset;
+  Future<void> setGameset(
+      Gameset gameset, List<Character> gameCharacters) async {
+    final changed = await selectScript(
+      ScriptService.idForGameset(gameset),
+      gameCharacters,
+    );
+    if (!changed) return;
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString(_storageGamesetKey, gameset.toString());
+    await prefs.setString(_storageGamesetKey, gameset.toString());
+  }
+
+  Future<bool> selectScript(
+      String scriptId, List<Character> gameCharacters) async {
+    final changed = await _scriptService.selectScript(
+      scriptId,
+      gameIsRunning: gameIsRunning(),
+    );
+    if (!changed) return false;
+    await clearDemonBluffs();
+    reset(gameCharacters);
     notifyListeners();
+    return true;
+  }
+
+  /// Deletes a custom script only outside an active game. If the deleted
+  /// script was selected, the script service returns to Trouble Brewing and
+  /// the game-only state is reset by the caller's current character list.
+  Future<bool> removeCustomScript(
+    String scriptId,
+    List<Character> gameCharacters,
+  ) async {
+    if (gameIsRunning()) return false;
+    final wasSelected = _scriptService.selectedScriptId == scriptId;
+    final removed = await _scriptService.removeScript(
+      scriptId,
+      gameIsRunning: false,
+    );
+    if (!removed) return false;
+    if (wasSelected) {
+      await reset(gameCharacters);
+    }
+    notifyListeners();
+    return true;
   }
 
   void addPlayerName(String playerName) async {
@@ -301,10 +439,14 @@ class GameStateService extends ChangeNotifier {
   }
 
   Future<void> endGame() async {
-    resetCharacterTokens([]);
-    resetCharacterAliveState();
+    final resetFuture = Future.wait([
+      resetCharacterTokens([]),
+      resetCharacterAliveState(),
+      clearDemonBluffs(),
+    ]);
     _nightCount = -1;
     _nightStateNumber = 0;
+    await resetFuture;
     final prefs = await SharedPreferences.getInstance();
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
@@ -501,7 +643,8 @@ class GameStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addRandomUnusedTokensToRandomCharacters(List<Character> characters) {
+  Future<void> addRandomUnusedTokensToRandomCharacters(
+      List<Character> characters) async {
     _characterTokens.clear();
     final List<Token> unusedTokens = getAllTokensInGame(characters, characters);
     unusedTokens.shuffle();
@@ -514,6 +657,8 @@ class GameStateService extends ChangeNotifier {
         unusedTokens.remove(randomToken);
       }
     }
+    await _saveCharacterTokens();
+    notifyListeners();
   }
 
   bool isTokenUsed(Token token) {
@@ -528,23 +673,19 @@ class GameStateService extends ChangeNotifier {
     return _characterAliveState[character.id] ?? true;
   }
 
-  void resetCharacterAliveState() async {
+  Future<void> resetCharacterAliveState() async {
     _characterAliveState.clear();
-    final prefs = await SharedPreferences.getInstance();
-    final String data = jsonEncode(_characterAliveState);
-    prefs.setString(_storageCharacterAliveStateKey, data);
+    await _saveCharacterAliveState();
     notifyListeners();
   }
 
-  void toggleCharacterAlive(Character character) async {
+  Future<void> toggleCharacterAlive(Character character) async {
     if (_characterAliveState.containsKey(character.id)) {
       _characterAliveState[character.id] = !_characterAliveState[character.id]!;
     } else {
       _characterAliveState[character.id] = false;
     }
-    final prefs = await SharedPreferences.getInstance();
-    final String data = jsonEncode(_characterAliveState);
-    prefs.setString(_storageCharacterAliveStateKey, data);
+    await _saveCharacterAliveState();
     notifyListeners();
   }
 
@@ -591,35 +732,27 @@ class GameStateService extends ChangeNotifier {
     return allTokens;
   }
 
-  void addTokenToCharacter(
+  Future<void> addTokenToCharacter(
       List<Character> allCharacters, Character character, Token token) async {
     if (!_characterTokens.containsKey(character.id)) {
       _characterTokens[character.id] = [];
     }
     if (isTokenUsed(token) && !token.unlimited) {
       final String characterId = getCharacterIdByToken(token);
-      final Character? usedBy = getCharacterById(allCharacters, characterId);
-      if (usedBy != null) {
-        removeTokenFromCharacter(usedBy, token);
-      }
+      _characterTokens[characterId]?.remove(token);
     }
     _characterTokens[character.id]!.add(token);
     unsedGameTokens.remove(token);
-    final prefs = await SharedPreferences.getInstance();
-    final String data = jsonEncode(_characterTokens.map((key, value) =>
-        MapEntry(key, value.map((item) => item.toJson()).toList())));
-    prefs.setString(_storageCharacterTokensKey, data);
+    await _saveCharacterTokens();
     notifyListeners();
   }
 
-  void removeTokenFromCharacter(Character character, Token token) async {
+  Future<void> removeTokenFromCharacter(
+      Character character, Token token) async {
     if (_characterTokens.containsKey(character.id)) {
       _characterTokens[character.id]!.remove(token);
       unsedGameTokens.add(token);
-      final prefs = await SharedPreferences.getInstance();
-      final String data = jsonEncode(_characterTokens.map((key, value) =>
-          MapEntry(key, value.map((item) => item.toJson()).toList())));
-      prefs.setString(_storageCharacterTokensKey, data);
+      await _saveCharacterTokens();
       notifyListeners();
     }
   }
@@ -642,9 +775,16 @@ class GameStateService extends ChangeNotifier {
   }
 
   get isLocked => _isLocked;
-  get gameset => _gameset;
+  Gameset get gameset => _scriptService.selectedGameset ?? Gameset.experimental;
+  String get selectedScriptId => _scriptService.selectedScriptId;
   get nightCount => _nightCount;
   get nightStateNumber => _nightStateNumber;
   get showCharactersToPlayers => charactersWhereShownToPlayers;
   get characterSelectionDone => _chracterSelectionDone;
+
+  @override
+  void dispose() {
+    _scriptService.removeListener(_onScriptSelectionChanged);
+    super.dispose();
+  }
 }

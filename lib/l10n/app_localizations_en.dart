@@ -97,6 +97,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reallyContinue => 'Do you really want to continue?';
 
   @override
+  String demonBluffsMissing(int selected, int required) {
+    return 'Only $selected of $required required Demon Bluffs has been selected.';
+  }
+
+  @override
+  String get notEnoughBluffs =>
+      'This script does not contain enough unselected good characters for three Demon Bluffs.';
+
+  @override
+  String get demonBluffs => 'Bluffs';
+
+  @override
+  String get noDemonBluffs =>
+      'No Demon Bluffs were selected before this game started.';
+
+  @override
+  String get demonBluffsNotUsed =>
+      'Demon Bluffs are only used with seven or more regular players.';
+
+  @override
   String get yesContinue => 'Yes, continue';
 
   @override
@@ -329,4 +349,120 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noRolesFound => 'No roles found';
+
+  @override
+  String get importScript => 'Import script';
+
+  @override
+  String get manageScripts => 'Manage scripts';
+
+  @override
+  String get customScripts => 'Custom scripts';
+
+  @override
+  String get selectScriptFile => 'Select JSON file';
+
+  @override
+  String get scriptPreview => 'Script preview';
+
+  @override
+  String scriptAuthor(Object author) {
+    return 'Author: $author';
+  }
+
+  @override
+  String scriptRoleCount(Object count) {
+    return 'Roles: $count';
+  }
+
+  @override
+  String get storytellerComplexity => 'Storyteller complexity';
+
+  @override
+  String get playerComplexity => 'Player complexity';
+
+  @override
+  String get editComplexities => 'Edit complexity ratings';
+
+  @override
+  String get notRated => 'Not rated';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get resetComplexities => 'Reset to defaults';
+
+  @override
+  String get unknownImportedRoles => 'Unrecognized characters';
+
+  @override
+  String get mapRole => 'Map role';
+
+  @override
+  String get confirmImport => 'Save script';
+
+  @override
+  String get resolveRolesBeforeSaving =>
+      'Resolve all characters before saving.';
+
+  @override
+  String get scriptFileError => 'The selected file could not be read.';
+
+  @override
+  String get scriptImportError => 'The script could not be imported.';
+
+  @override
+  String get scriptInvalidJson => 'The selected file is not valid JSON.';
+
+  @override
+  String get scriptInvalidStructure => 'This is not a valid BOTC script file.';
+
+  @override
+  String get scriptInvalidMetadata =>
+      'The script metadata is incomplete or invalid.';
+
+  @override
+  String get scriptInvalidRole => 'The script contains an invalid role entry.';
+
+  @override
+  String scriptUnknownRole(Object roleId) {
+    return 'No known role matches \"$roleId\".';
+  }
+
+  @override
+  String scriptAmbiguousRole(Object roleId) {
+    return 'More than one role matches \"$roleId\".';
+  }
+
+  @override
+  String scriptDuplicateRole(Object roleId) {
+    return 'The role \"$roleId\" occurs more than once.';
+  }
+
+  @override
+  String scriptUnsupportedRole(Object roleId) {
+    return '\"$roleId\" is a character definition and must be mapped manually.';
+  }
+
+  @override
+  String get deleteScript => 'Delete script';
+
+  @override
+  String deleteScriptConfirmation(Object scriptName) {
+    return 'Delete \"$scriptName\"? This cannot be undone.';
+  }
+
+  @override
+  String get scriptDeleted => 'Script deleted';
+
+  @override
+  String get scriptSaved => 'Script saved';
+
+  @override
+  String get scriptChangeWhileRunning =>
+      'Scripts cannot be changed while a game is running.';
+
+  @override
+  String get noCustomScripts => 'No custom scripts saved yet.';
 }

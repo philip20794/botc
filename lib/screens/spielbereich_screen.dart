@@ -1,9 +1,11 @@
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
+import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/add_character_while_playing.dart';
 import 'package:blood_on_the_clocktower/screens/home_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
@@ -11,6 +13,7 @@ import 'package:blood_on_the_clocktower/screens/this-character-slected-you/this_
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +31,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
   bool _isMenuVisible = false;
   late AnimationController _controller;
   late Animation<double> _animation;
+  String? _characterLayoutSignature;
 
   @override
   void initState() {
@@ -38,10 +42,35 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       final gameStateService =
           Provider.of<GameStateService>(context, listen: false);
       gameStateService.closeMenu();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final characterService =
+        Provider.of<CharacterService>(context, listen: false);
+    final characterSignature = characterService.gameCharacters
+        .map((character) => character.id)
+        .join('|');
+    if (_characterLayoutSignature == characterSignature) {
+      return;
+    }
+    _characterLayoutSignature = characterSignature;
+    Provider.of<GameStateService>(context, listen: false)
+        .initUnusedGameTokens(characterService.gameCharacters);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _toggleMenu() {
@@ -62,6 +91,9 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
       gameStateService.toggleForceUpdateLayout();
     });
     Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         gameStateService.toggleForceUpdateLayout();
       });
@@ -72,8 +104,16 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
   Widget build(BuildContext context) {
     final characterService = Provider.of<CharacterService>(context);
     final gameStateService = Provider.of<GameStateService>(context);
-    gameStateService.initUnusedGameTokens(characterService.gameCharacters);
     var localizedStrings = AppLocalizations.of(context)!;
+    final bluffCharacters = <Character>[];
+    for (final roleId in gameStateService.demonBluffRoleIds) {
+      for (final character in characterService.allCharacters) {
+        if (character.roleId == roleId) {
+          bluffCharacters.add(character);
+          break;
+        }
+      }
+    }
 
     return WillPopScope(
       onWillPop: () async {
@@ -145,6 +185,43 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                           },
                           icon: const Icon(Icons.arrow_forward,
                               color: Colors.white, size: 50),
+                        ),
+                      ],
+                      if (bluffCharacters.isNotEmpty) ...[
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const ThisCharacterSelectedYouScreen(
+                                showDemonBluffsOnly: true,
+                              ),
+                            ),
+                          ),
+                          child: Semantics(
+                            button: true,
+                            label: localizedStrings.demonBluffs,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(localizedStrings.demonBluffs,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 12)),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (final character in bluffCharacters)
+                                      CharacterAvatar(
+                                        character: character,
+                                        showIsSelected: false,
+                                        size: 34,
+                                        showName: false,
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                       Stack(
@@ -300,8 +377,8 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                               alignment: Alignment.center,
                               child: CircleAvatar(
                                 radius: settingsService.tokenKnobSize,
-                                backgroundImage: AssetImage(
-                                    'assets/images/characters/${token.image}.png'),
+                                backgroundImage:
+                                    AssetImage(roleImageAssetPath(token.image)),
                                 backgroundColor: const Color(0xFF493131),
                               ),
                             ),

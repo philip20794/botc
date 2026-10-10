@@ -33,9 +33,15 @@ class CharacterService extends ChangeNotifier {
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _loadGameCharacters(prefs);
+    final gameCharactersMigrated = _loadGameCharacters(prefs);
     _loadCharacterPositions(prefs);
-    _loadGameCharactersBackup(prefs);
+    final backupMigrated = _loadGameCharactersBackup(prefs);
+    if (gameCharactersMigrated) {
+      await _saveGameCharacters();
+    }
+    if (backupMigrated) {
+      await _saveGameCharactersBackup();
+    }
     notifyListeners();
   }
 
@@ -68,14 +74,20 @@ class CharacterService extends ChangeNotifier {
     addCharacterToGameWithFractionFabled = false;
   }
 
-  void _loadGameCharacters(SharedPreferences prefs) {
+  bool _loadGameCharacters(SharedPreferences prefs) {
     final String? cardListJson = prefs.getString(_storageKey);
     if (cardListJson != null) {
       final List<dynamic> cardList = jsonDecode(cardListJson);
+      final identityFieldsMissing = cardList.any((item) =>
+          item is Map &&
+          (!item.containsKey('id') || _needsRoleIdMigration(item)));
       _gameCharacters.clear();
       _gameCharacters
           .addAll(cardList.map((item) => Character.fromJson(item)).toList());
+      final instanceIdsNormalized = _ensureUniqueInstanceIds(_gameCharacters);
+      return identityFieldsMissing || instanceIdsNormalized;
     }
+    return false;
   }
 
   void printALlChar() {
@@ -87,14 +99,64 @@ class CharacterService extends ChangeNotifier {
     }
   }
 
-  void _loadGameCharactersBackup(SharedPreferences prefs) {
+  bool _loadGameCharactersBackup(SharedPreferences prefs) {
     final String? cardListJson = prefs.getString(_storageKeyBackup);
     if (cardListJson != null) {
       final List<dynamic> cardList = jsonDecode(cardListJson);
+      final identityFieldsMissing = cardList.any((item) =>
+          item is Map &&
+          (!item.containsKey('id') || _needsRoleIdMigration(item)));
       _gameCharactersBackup.clear();
       _gameCharactersBackup
           .addAll(cardList.map((item) => Character.fromJson(item)).toList());
+      final instanceIdsNormalized =
+          _ensureUniqueInstanceIds(_gameCharactersBackup);
+      return identityFieldsMissing || instanceIdsNormalized;
     }
+    return false;
+  }
+
+  bool _needsRoleIdMigration(Map item) {
+    final image = item['image'];
+    final roleId = item['roleId'];
+    return image is String &&
+        (roleId is! String || Character.hasLegacyRoleId(roleId, image));
+  }
+
+  bool _ensureUniqueInstanceIds(List<Character> characters) {
+    final usedIds = <String>{};
+    var changed = false;
+
+    for (final character in characters) {
+      final baseId = character.id.isNotEmpty ? character.id : character.roleId;
+      var instanceId = baseId;
+      var suffix = 1;
+      while (usedIds.contains(instanceId)) {
+        instanceId = '$baseId-$suffix';
+        suffix++;
+      }
+      if (character.id != instanceId) {
+        character.id = instanceId;
+        changed = true;
+      }
+      usedIds.add(instanceId);
+    }
+
+    return changed;
+  }
+
+  String _uniqueInstanceId(String preferredId) {
+    final usedIds = {
+      ..._gameCharacters.map((character) => character.id),
+      ..._gameCharactersBackup.map((character) => character.id),
+    };
+    var instanceId = preferredId;
+    var suffix = 1;
+    while (usedIds.contains(instanceId)) {
+      instanceId = '$preferredId-$suffix';
+      suffix++;
+    }
+    return instanceId;
   }
 
   void _loadCharacterPositions(SharedPreferences prefs) {
@@ -171,14 +233,136 @@ class CharacterService extends ChangeNotifier {
   }
 
   Future<void> _loadAllCharactersFromJson(String localeCode) async {
-    final String allCardsJson =
-        await rootBundle.loadString('assets/characters/$localeCode.json');
-    final List<dynamic> allCardsList = jsonDecode(allCardsJson);
+    final englishCatalog = await _loadCatalog('en');
+    final localizedCatalog =
+        localeCode == 'en' ? englishCatalog : await _loadCatalog(localeCode);
+    final List<Character> allCharacters = localeCode == 'en'
+        ? englishCatalog
+            .map((entry) => Character.fromJson(entry as Map<String, dynamic>))
+            .toList()
+        : mergeLocalizedCatalog(englishCatalog, localizedCatalog);
+
     _allCharacters.clear();
-    _allCharacters
-        .addAll(allCardsList.map((item) => Character.fromJson(item)).toList());
+    _allCharacters.addAll(allCharacters);
     _allCharactersLocaleCode = localeCode;
     notifyListeners();
+  }
+
+  /// Returns the complete English catalog without changing the active locale
+  /// or any persisted game state.
+  Future<List<Character>> loadCanonicalCharacterCatalog() async {
+    final englishCatalog = await _loadCatalog('en');
+    return englishCatalog
+        .map((entry) => Character.fromJson(entry as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  static Future<List<dynamic>> _loadCatalog(String localeCode) async {
+    final catalogJson =
+        await rootBundle.loadString('assets/characters/$localeCode.json');
+    return jsonDecode(catalogJson) as List<dynamic>;
+  }
+
+  /// Builds a complete localized catalog without allowing localization data to
+  /// change role identity or game-relevant metadata.
+  static List<Character> mergeLocalizedCatalog(
+    List<dynamic> englishCatalog,
+    List<dynamic> localizedCatalog,
+  ) {
+    final localizedByRoleId = <String, Map<String, dynamic>>{
+      for (final entry in localizedCatalog)
+        _roleIdFromCatalogJson(entry as Map<String, dynamic>): entry,
+    };
+
+    return englishCatalog.map((entry) {
+      final english = entry as Map<String, dynamic>;
+      final localized = localizedByRoleId[_roleIdFromCatalogJson(english)];
+      return Character.fromJson(
+        localized == null
+            ? english
+            : _mergeLocalizedCharacter(english, localized),
+      );
+    }).toList();
+  }
+
+  static const _requiredLocalizedTextFields = <String>{
+    'name',
+    'descriptionShort',
+    'descriptionLong',
+    'howToRun',
+  };
+
+  static const _optionalLocalizedTextFields = <String>{
+    'help',
+    'help2',
+  };
+
+  static const _optionalLocalizedListFields = <String>{
+    'tipsAndTricks',
+    'bluffs',
+  };
+
+  static Map<String, dynamic> _mergeLocalizedCharacter(
+    Map<String, dynamic> english,
+    Map<String, dynamic> localized,
+  ) {
+    final merged = Map<String, dynamic>.from(english);
+
+    for (final field in _requiredLocalizedTextFields) {
+      final value = localized[field];
+      if (value is String && value.trim().isNotEmpty) {
+        merged[field] = value;
+      }
+    }
+    for (final field in _optionalLocalizedTextFields) {
+      final value = localized[field];
+      if (value is String) {
+        merged[field] = value;
+      }
+    }
+    for (final field in _optionalLocalizedListFields) {
+      final value = localized[field];
+      if (value is List<dynamic>) {
+        merged[field] = value;
+      }
+    }
+
+    merged['tokens'] = _mergeLocalizedTokens(
+      english['tokens'] as List<dynamic>,
+      localized['tokens'],
+    );
+    return merged;
+  }
+
+  static List<Map<String, dynamic>> _mergeLocalizedTokens(
+    List<dynamic> englishTokens,
+    dynamic localizedTokens,
+  ) {
+    if (localizedTokens is! List<dynamic>) {
+      return englishTokens
+          .map((token) => Map<String, dynamic>.from(token as Map))
+          .toList();
+    }
+
+    return List.generate(englishTokens.length, (index) {
+      final mergedToken =
+          Map<String, dynamic>.from(englishTokens[index] as Map);
+      if (index >= localizedTokens.length || localizedTokens[index] is! Map) {
+        return mergedToken;
+      }
+      final localizedName = (localizedTokens[index] as Map)['name'];
+      if (localizedName is String && localizedName.trim().isNotEmpty) {
+        mergedToken['name'] = localizedName;
+      }
+      return mergedToken;
+    });
+  }
+
+  static String _roleIdFromCatalogJson(Map<String, dynamic> character) {
+    return Character.normalizedRoleId(
+      character['image'] as String,
+      character['roleId'] as String?,
+    );
   }
 
   int getCharacterIndex(Character character) {
@@ -219,9 +403,9 @@ class CharacterService extends ChangeNotifier {
   String changeCharacter(Character oldCharacter, Character newCharacter) {
     final index = _gameCharacters.indexOf(oldCharacter);
     if (index != -1) {
-      _gameCharacters[index] =
-          Character.fromJson(jsonDecode(jsonEncode(newCharacter)));
-      _gameCharacters[index].id += DateTime.timestamp().toString();
+      final replacementId = _uniqueInstanceId(
+          '${newCharacter.roleId}-${DateTime.timestamp().microsecondsSinceEpoch}');
+      _gameCharacters[index] = newCharacter.copyWith(id: replacementId);
       _gameCharacters[index].playerName = oldCharacter.playerName;
       _saveGameCharacters();
       notifyListeners();
@@ -241,6 +425,7 @@ class CharacterService extends ChangeNotifier {
 
   void shuffelCharacters() {
     _clearPlayerNamesOnGameCards();
+    _saveGameCharactersBackup();
     resetGameCharactersWithBackup(notify: false);
     _gameCharacters.shuffle();
     putAllFabledCharactersAtTheEnd(notify: false);
@@ -265,6 +450,7 @@ class CharacterService extends ChangeNotifier {
 
   void endGame() {
     _clearPlayerNamesOnGameCards();
+    _saveGameCharactersBackup();
     resetGameCharactersWithBackup();
   }
 
@@ -281,7 +467,8 @@ class CharacterService extends ChangeNotifier {
 
   void resetGameCharactersWithBackup({bool notify = true}) {
     _gameCharacters.clear();
-    _gameCharacters.addAll(_gameCharactersBackup);
+    _gameCharacters
+        .addAll(_gameCharactersBackup.map((character) => character.copyWith()));
     _saveGameCharacters();
     if (notify) {
       notifyListeners();
@@ -305,14 +492,15 @@ class CharacterService extends ChangeNotifier {
   }
 
   void addCharacter(Character character) {
-    if (!_gameCharacters.contains(character)) {
-      character.id = character.image;
+    if (!containsCharacter(_gameCharacters, character)) {
       for (var i = 0; i < character.numberOfExemplars; i++) {
-        if (character.variableNumberOfExemplars) {
-          character.id = '${character.image}-$i';
-        }
-        _gameCharacters.add(character);
-        _gameCharactersBackup.add(character);
+        final hasMultipleInstances = character.numberOfExemplars > 1;
+        final preferredId =
+            hasMultipleInstances ? '${character.roleId}-$i' : character.roleId;
+        final gameCharacter =
+            character.copyWith(id: _uniqueInstanceId(preferredId));
+        _gameCharacters.add(gameCharacter);
+        _gameCharactersBackup.add(gameCharacter.copyWith());
       }
       _saveGameCharacters();
       _saveGameCharactersBackup();
@@ -321,18 +509,17 @@ class CharacterService extends ChangeNotifier {
   }
 
   void removeCharacter(Character character) {
-    for (var i = 0; i < character.numberOfExemplars; i++) {
-      character = _gameCharacters.firstWhere(
-          (element) => element.image == character.image,
-          orElse: () => character);
-      if (_gameCharacters.contains(character)) {
-        character.id = '';
-        _gameCharacters.remove(character);
-        _gameCharactersBackup.remove(character);
-        _saveGameCharacters();
-        _saveGameCharactersBackup();
-        notifyListeners();
-      }
+    final gameLength = _gameCharacters.length;
+    final backupLength = _gameCharactersBackup.length;
+    _gameCharacters.removeWhere(
+        (gameCharacter) => gameCharacter.roleId == character.roleId);
+    _gameCharactersBackup.removeWhere(
+        (gameCharacter) => gameCharacter.roleId == character.roleId);
+    if (_gameCharacters.length != gameLength ||
+        _gameCharactersBackup.length != backupLength) {
+      _saveGameCharacters();
+      _saveGameCharactersBackup();
+      notifyListeners();
     }
   }
 
@@ -369,7 +556,7 @@ class CharacterService extends ChangeNotifier {
   }
 
   bool containsCharacter(List<Character> characters, Character character) {
-    return characters.any((element) => element.image == character.image);
+    return characters.any((element) => element.roleId == character.roleId);
   }
 
   Character getCharacterByImage(String image) {

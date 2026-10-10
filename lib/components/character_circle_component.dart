@@ -27,21 +27,7 @@ class CharacterCircleComponent extends StatefulWidget {
       CharacterCircleComponentState();
 }
 
-class CharacterCircleComponentState extends State<CharacterCircleComponent>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
-  }
-
+class CharacterCircleComponentState extends State<CharacterCircleComponent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();

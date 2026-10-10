@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/select_gameset.dart';
+import 'package:blood_on_the_clocktower/components/script_complexity_summary.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/screens/all_characters_screen.dart';
 import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
@@ -87,14 +88,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          _buildIconButton(Icons.settings, AppSettingsScreen(), 20, 10),
           Center(
             child: SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: 40),
+                  // Keep the first card clear of the persistent settings
+                  // control in the top-right safe area.
+                  const SizedBox(height: 88),
                   _buildCard(localizedStrings.allCharacters, Icons.list_alt,
                       AllCharactersScreen(), false, null),
                   SizedBox(height: 50),
@@ -105,8 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ListTile(
                       leading: Icon(CustomIcons.script,
                           color: gameIsRunning ? Colors.grey : Colors.white),
-                      title:
-                          Center(child: SelectGameset(disabled: gameIsRunning)),
+                      title: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SelectGameset(disabled: gameIsRunning),
+                          const SizedBox(height: 4),
+                          const ScriptComplexitySummary(),
+                        ],
+                      ),
                     ),
                   ),
                   _buildArrowDown(gameIsRunning),
@@ -154,17 +162,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          // This must be painted last so neither the scrollable cards nor
+          // their gesture detectors can cover the settings control.
+          _buildIconButton(Icons.settings, AppSettingsScreen()),
         ],
       ),
     );
   }
 
-  Widget _buildIconButton(
-      IconData icon, Widget onTap, double top, double right) {
+  Widget _buildIconButton(IconData icon, Widget onTap) {
     return Positioned(
-        top: top,
-        right: right,
+      top: 0,
+      right: 0,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(top: 8, right: 8),
         child: IconButton(
+          key: const ValueKey('homeSettingsButton'),
           icon: Icon(icon),
           onPressed: () {
             Navigator.push(
@@ -173,7 +186,9 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
           color: Colors.white,
-        ));
+        ),
+      ),
+    );
   }
 
   Widget _buildArrowDown(bool disabled) {

@@ -12,6 +12,8 @@ class NextScreenFooter extends StatefulWidget {
   final bool disabled;
   final Function? onTap;
   final bool? hideHomeButton;
+  final List<String> validationMessages;
+  final bool blockNavigationWhenDisabled;
 
   const NextScreenFooter({
     this.nextScreen,
@@ -21,6 +23,8 @@ class NextScreenFooter extends StatefulWidget {
     required this.disabled,
     this.onTap,
     this.hideHomeButton,
+    this.validationMessages = const [],
+    this.blockNavigationWhenDisabled = false,
   });
 
   @override
@@ -128,8 +132,21 @@ class _NextScreenFooterState extends State<NextScreenFooter> {
           backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
           title: Text(localizedStrings.wantToContinue,
               style: TextStyle(color: Colors.white)),
-          content: Text(localizedStrings.reallyContinue,
-              style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(localizedStrings.reallyContinue,
+                  style: const TextStyle(color: Colors.white)),
+              ...widget.validationMessages.map(
+                (message) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('• $message',
+                      style: const TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -138,22 +155,24 @@ class _NextScreenFooterState extends State<NextScreenFooter> {
               child: Text(localizedStrings.cancel,
                   style: TextStyle(color: Colors.white)),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (widget.onTap != null) {
-                  widget.onTap!();
-                }
-                if (widget.nextScreen != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => widget.nextScreen!),
-                  );
-                }
-              },
-              child: Text(localizedStrings.yesContinue,
-                  style: TextStyle(color: Colors.white)),
-            ),
+            if (!widget.blockNavigationWhenDisabled)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (widget.onTap != null) {
+                    widget.onTap!();
+                  }
+                  if (widget.nextScreen != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => widget.nextScreen!),
+                    );
+                  }
+                },
+                child: Text(localizedStrings.yesContinue,
+                    style: TextStyle(color: Colors.white)),
+              ),
           ],
         );
       },

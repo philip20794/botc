@@ -1317,11 +1317,11 @@
    "tokens": [
       {
        "name":"Ist der Philosopher",
-       "image":"Icon_Philosopherer"
+       "image":"Icon_philosopher"
       },
       {
        "name":"Drunk",
-       "image":"Icon_Philosopherer"
+       "image":"Icon_philosopher"
       }
     ],
    "wakeUpEveryNight": true,
@@ -1617,7 +1617,7 @@
    "wakeUpEveryNight": false,
    "wakeUpAtFirstNight": true,
    "nightStateNumbersFirstNight": [
-      2.2,
+     2.0,
       6.2
     ],
    "nightStateNumbersOtherNights": []
@@ -3437,5 +3437,198 @@
    "wakeUpAtFirstNight": false,
    "nightStateNumbersFirstNight": [],
    "nightStateNumbersOtherNights": []
+  },
+  {
+    "name": "Akrobat",
+    "help": "Er zeigt auf einen Spieler und stirbt, falls dieser betrunken oder vergiftet ist.",
+    "descriptionShort": "Wähle jede Nacht* einen Spieler: Falls er heute Nacht betrunken oder vergiftet ist oder wird, stirbst du.",
+    "descriptionLong": "Der Akrobat stirbt, wenn die von ihm gewählte Person betrunken oder vergiftet ist.",
+    "howToRun": "Wecke den Akrobaten jede Nacht außer der ersten. Der Akrobat zeigt auf einen Spieler. Lass ihn wieder einschlafen. Markiere den gewählten Spieler mit der ERWÄHLT-Erinnerung.\n\nIst der gewählte Spieler irgendwann während der Nachtphase betrunken oder vergiftet, stirbt der Akrobat – lege die TOT-Erinnerung neben seinen Charaktermarker im Grimoire und bedecke ihn mit einem Leichentuch.",
+    "image": "Icon_acrobat",
+    "tipsAndTricks": [],
+    "bluffs": [],
+    "fraction": "townsfolk",
+    "gameset": ["experimental"],
+    "tokens": [
+      {"name": "Ausgewählt", "image": "Icon_acrobat"},
+      {"name": "Tot", "image": "Icon_acrobat"}
+    ],
+    "wakeUpEveryNight": true,
+    "wakeUpAtFirstNight": false,
+    "nightStateNumbersFirstNight": [],
+    "nightStateNumbersOtherNights": [90.5]
+  },
+  {
+    "name": "Alchemist",
+    "descriptionShort": "Du hast eine Schergenfähigkeit. Wenn du sie einsetzt, darf der Geschichtenerzähler dich auffordern, anders zu wählen.",
+    "descriptionLong": "Der Alchemist besitzt eine Schergenfähigkeit.\n\nIn der ersten Nacht erfährt der Alchemist, welche Fähigkeit dies ist. Er bleibt ein guter Stadtbewohner: Er gewinnt und verliert mit dem guten Team und wird als gut sowie als Alchemist behandelt.\nDer Alchemist erwacht nicht wie Schergen, um die anderen Schergen oder den Dämon zu erfahren.\nFügt seine Schergenfähigkeit beim Aufbau Charaktere hinzu oder entfernt sie, geschieht das weiterhin beim Aufbau.",
+    "howToRun": "Wecke in der ersten Nacht den Alchemisten. Zeige den Informationstoken DU BIST und anschließend den Charaktertoken eines Schergen. Lass den Alchemisten wieder einschlafen. Markiere ihn mit der IST DER ALCHEMIST-Erinnerung. Tausche den Alchemisten- gegen diesen Schergentoken aus und drehe den Schergentoken um. Dadurch bleibt er als gut erkennbar.\n\nDer Alchemist besitzt diese Schergenfähigkeit, benutzt sie wie ein Scherge und erwacht zu dem Zeitpunkt, zu dem dieser Scherge normalerweise seine Fähigkeit benutzt.",
+    "image": "Icon_alchemist",
+    "tipsAndTricks": [
+      "Schergenfähigkeiten sind meist stärker als Stadtbewohnerfähigkeiten. Opfere dich daher nicht unnötig für das gute Team.",
+      "Deine Strategie hängt fast vollständig von deiner Schergenfähigkeit ab. Bleib im Zweifel zunächst still und entscheide erst nach ein oder zwei Tagen, ob und wann du dich als Alchemist zu erkennen gibst.",
+      "Mit Fähigkeiten wie Giftmischer, Assassine, Pit-Hag, Psychopath oder Hexe kannst du einzelne böse Spieler treffen. Achte auf widersprüchliche Geschichten und nutze die Fähigkeit vor deinem Tod; selbst ein riskanter Treffer auf Gute kann sich lohnen, wenn er Böses trifft.",
+      "Mit Fähigkeiten, die einem guten Spieler helfen, etwa Teufelsanwalt oder Pit-Hag, sprich mit vertrauenswürdigen Guten und unterstütze sie, möglichst bevor du deine Identität verrätst.",
+      "Kann deine Fähigkeit das gute Team unmittelbar gewinnen lassen, etwa Fearmonger oder Goblin, ist ein öffentliches Geständnis oft sinnvoll. Überzeuge die Gruppe aber zunächst, dass du gut und kein Scherge mit diesem Bluff bist.",
+      "Verändert deine Fähigkeit die Zahl der Außenseiter, etwa Baron oder Godfather, bleibt sie meist nützlich: Das Wissen über die tatsächliche Außenseiterzahl kann dem guten Team stark helfen.",
+      "Auch scheinbar böse-orientierte Fähigkeiten wie Boomdandy, Evil Twin, Mezepheles oder Marionette können nützlich sein. Suche nach der ungewöhnlichen guten Anwendung und beachte insbesondere, dass eine Alchemist-Marionette neben dem Dämon sitzt.",
+      "Manche Fähigkeiten, etwa Mastermind oder Scarlet Woman, schaden dem guten Team. Dann können ein besonders starker Aufbau oder ungewöhnliche Charakterkombinationen den Ausgleich bilden; prüfe diese Möglichkeiten, bleib aber vorsichtig."
+    ],
+    "bluffs": [
+      "Ein Scherge kann leicht Alchemist bluffen: Die echte Schergenfähigkeit ist sichtbar, nur die behauptete gute Gesinnung ist falsch. Öffentliche Effekte können diesen Bluff besonders glaubhaft machen.",
+      "Bluffst du die tatsächlich vorhandene Schergenrolle, sei geduldig: Das gute Team wird einen behaupteten Goblin oder Fearmonger meist erst nach Vertrauen und Beratung einsetzen.",
+      "Bluffe keine nicht im Spiel befindliche Schergenrolle mit einem zu offensichtlichen öffentlichen Merkmal. Baron und Fearmonger lassen sich beispielsweise leicht durch Außenseiterzahl beziehungsweise Ankündigung überprüfen."
+    ],
+    "fraction": "townsfolk",
+    "gameset": ["experimental"],
+    "tokens": [{"name": "Ist Alchemist", "image": "Icon_alchemist", "needsSetup": true}],
+    "wakeUpEveryNight": false,
+    "wakeUpAtFirstNight": true,
+    "nightStateNumbersFirstNight": [31.5],
+    "nightStateNumbersOtherNights": []
+  },
+  {
+    "name": "Al-Hadikhia",
+    "help": "Er darf bis zu drei Spieler wählen.",
+    "descriptionShort": "Jede Nacht*, darfst du 3 Spieler wählen (alle erfahren, wer): Jeder entscheidet still, ob er lebt oder stirbt; leben alle, sterben alle.",
+    "descriptionLong": "Der Al-Hadikhia stellt drei Spieler vor ein Dilemma: Wer wählt den Tod, damit die anderen leben können?\n\nDer Al-Hadikhia wählt pro Nacht drei Spieler. Alle erfahren, welche drei gewählt wurden; jeder entscheidet, bevor der nächste offenbart wird.\nWährend der Al-Hadikhia nachts handelt, müssen alle Spieler still sein. Die Stille beginnt mit der ersten Bekanntgabe einer Wahl und endet erst, wenn der Geschichtenerzähler sie beendet.\nDer Geschichtenerzähler fragt die Spieler laut, ob sie leben wollen. Nicken bedeutet leben, Kopfschütteln bedeutet sterben; auf diese Weise können Spieler auch zurückkehren.\nWählen alle drei das Leben, sterben sie stattdessen. Ein lebender Spieler, der sterben wollte, aber nicht starb, zählt hierfür als lebend.",
+    "howToRun": "Wecke jede Nacht außer der ersten den Al-Hadikhia. Er zeigt auf drei Spieler. Markiere sie in seiner gewählten Reihenfolge mit den Erinnerungen 1, 2 und 3 und lass ihn wieder einschlafen. Wecke Spieler 1 und sage: „Der Al-Hadikhia hat gewählt“, dann den Namen des gewählten Spielers und: „Willst du leben?“ Der Spieler nickt oder schüttelt den Kopf. Lass ihn wieder einschlafen; bei Leben entfernst du gegebenenfalls sein Leichentuch, bei Tod legst du eines auf. Wiederhole dies für 2 und 3. Leben anschließend alle drei, lege allen drei ein Leichentuch auf: Sie sterben. Erkläre die Stille für beendet.\n\nVerkünde jeden Morgen, welche mit 1, 2 und 3 markierten Spieler leben und welche tot sind, auch wenn sich ihr Zustand nicht geändert hat.",
+    "image": "Icon_alhadikhia",
+    "tipsAndTricks": [
+      "Ab der zweiten Nacht weiß die Gruppe, dass ein Al-Hadikhia im Spiel ist; Diskussionen über mögliche Dämonen helfen dann wenig.",
+      "Wähle drei gute Spieler, um möglichst viele Todesfälle zu erzeugen. Oft wählen alle das Leben und sterben dadurch gemeinsam.",
+      "Wähle gelegentlich einen bösen Spieler, um ihn gut erscheinen zu lassen oder mindestens einen Tod zu sichern. Er sollte wissen, was die anderen vermutlich wählen.",
+      "Wähle dich irgendwann selbst, damit du nicht als einziger nie Gewählter verdächtig wirkst. Sorge dann mit zwei wahrscheinlichen Todesentscheidungen dafür, dass du leben kannst.",
+      "Information über Rollen ist besonders wertvoll: Ravenkeeper, Sage oder Farmer möchten oft nachts sterben, während Flowergirl, Balloonist oder Poppy Grower leben wollen.",
+      "Wähle gelegentlich tote Schergen, um sie zurückzubringen und vielleicht ihre Fähigkeit erneut nutzen zu lassen. Vermeide dabei allzu offensichtliche Signale an das gute Team.",
+      "Auch tote Gute können nützlich zurückkehren: Sie wirken dann verdächtig und ihre erwartbare Lebensentscheidung hilft bei der Planung.",
+      "Suche Spieler, die aus Unsicherheit oder Angst immer leben wählen, und wähle sie gemeinsam. Sprich außerdem mit deinen Schergen über sinnvolle Kombinationen und ihre Geschichten für den nächsten Tag.",
+      "Plane bei einer Wahl eines bösen Spielers oder deiner selbst dessen öffentliche Begründung vorab, besonders wenn Rollen wie Scarlet Woman dein Sterben erlauben."
+    ],
+    "bluffs": [
+      "Hab keine Angst, nachts den Tod zu wählen, wenn deine Rolle es erlaubt. So können wichtigere Rollen eher leben.",
+      "Überlebende sind oft gut oder zumindest nicht der Dämon, besonders bei neuen Spielern. Ungewöhnliche Todesmuster und unplausible Begründungen können böse Spieler verraten.",
+      "Einen zurückgebrachten Spieler solltest du nicht hinrichten: Er kann nicht der Dämon sein.",
+      "Besprecht eure geplanten Entscheidungen. Der Dämon hört zu; ein später Sinneswechsel kann seine Planung stören.",
+      "Bei nur vier oder fünf Lebenden ist diese Nacht entscheidend: Der Al-Hadikhia kann drei Spieler töten. Nimm dir Zeit für die richtige Entscheidung.",
+      "Unterlaufe die Stille-Regel nicht durch technische Signale. Sie verhindert Kommunikation und macht die Rolle erst spannend."
+    ],
+    "fraction": "demon",
+    "gameset": ["experimental"],
+    "tokens": [{"name": "Tot", "image": "Icon_alhadikhia"}, {"name": "1", "image": "Icon_alhadikhia"}, {"name": "2", "image": "Icon_alhadikhia"}, {"name": "3", "image": "Icon_alhadikhia"}],
+    "wakeUpEveryNight": true,
+    "wakeUpAtFirstNight": true,
+    "nightStateNumbersFirstNight": [3.5],
+    "nightStateNumbersOtherNights": [19.5]
+  },
+  {
+    "name": "Alsaahir",
+    "descriptionShort": "Wenn du tagsüber öffentlich errätst, welche Spieler Scherge(n) und welche Dämon(en) sind, gewinnt das gute Team.",
+    "descriptionLong": "Der Alsaahir errät das gesamte böse Team.\n\nDie Vermutungen müssen öffentlich und am Tag erfolgen; sie sind nicht jeden Tag nötig. Andere dürfen Alsaahir vortäuschen und ebenfalls raten; wie bei Juggler oder Gossip tut der Geschichtenerzähler kurz so, als wären sie der Alsaahir.\nNennt der Alsaahir alle Dämonen als Dämonen und alle Schergen als Schergen, endet das Spiel sofort. Bestimmte Schergen- oder Dämonenrollen muss er nicht nennen. Sind mehrere Dämonen im Spiel, müssen alle genannt werden. Ein Spieler, der beides ist, etwa Legion, muss als Dämon genannt werden.\nNach einer Vermutung darf der Alsaahir an diesem Tag nicht erneut raten. Er muss auch gute Schergen und Dämonen nennen, aber keine bösen Reisenden. Hat sich das böse Team verändert, zählt das aktuelle und nicht das anfängliche Team.",
+    "howToRun": "Einmal pro Tag darf der Alsaahir seine Fähigkeit ankündigen. Fordere ihn dann auf, den Dämon und die Schergen zu nennen. Ist die Vermutung falsch, geschieht nichts. Ist sie richtig, verkünde den Sieg des guten Teams.",
+    "image": "Icon_alsaahir",
+    "tipsAndTricks": [
+      "Rate jeden Tag: Jede Vermutung grenzt Dämon und Schergen weiter ein.",
+      "Warte mit der ersten Vermutung einige Tage, damit das böse Team dich nicht vergiftet oder tötet.",
+      "Nutze Vermutungen gezielt, um verdächtige Paare oder Gruppen auszuschließen.",
+      "Wenn Alsaahir auf dem Skript steht, können andere Gute ihn vortäuschen; zu viele falsche Alsaahirs können aber auch gute Information verdecken.",
+      "Stirbst du nachts, beachte deine letzte Vermutung: Vielleicht war sie dem bösen Team zu nah an der Wahrheit.",
+      "Ermuntere andere Gute, Informationen offenzulegen, damit sie statt dir Ziel des Dämons werden; deine Fähigkeit wird mit der Zeit stärker.",
+      "Beachte auch die Alsaahir-Vermutungen anderer Spieler: Sie können auf Information oder sozialen Beobachtungen beruhen.",
+      "Suche Rollen, die Böses erkennen, etwa Investigator, Empath, Fortune Teller oder Bounty Hunter.",
+      "Wähle einen sicher bösen Spieler als Anker und probiere verschiedene Kombinationen, die ihn immer enthalten.",
+      "Nenne auch Tote: Bei Imp-Selbstmord oder Fang-Gu-Sprung können ein toter und ein lebender Dämon existieren.",
+      "Wenn du Vergiftung vermutest, wiederhole dieselbe Vermutung am nächsten Tag.",
+      "Finde zuerst das böse Team; variiere dann bei denselben Spielern, wer Scherge und wer Dämon ist.",
+      "Achte auf die Rollenverteilung für die Spielerzahl, etwa einen dritten Schergen ab 13 Spielern.",
+      "Lies die rote Sektion des Skripts: Lil’ Monsta, Legion, Riot und ähnliche Rollen können ungewöhnlich viele Schergen oder Dämonen erzeugen.",
+      "Bei Imp, Fang Gu oder Scarlet Woman kann sich der Dämon ändern; passe Vermutungen an neue Information an."
+    ],
+    "bluffs": [
+      "Früh ist Alsaahir leicht zu bluffen, weil oft auch Gute raten. Halte für später einen zweiten Bluff bereit.",
+      "Plane Vermutungen über mehrere Tage: Schließt du zu viele böse Teams aus, wirst du am Ende widersprüchlich.",
+      "Bitte Gute um Rat, um gut zu wirken, und Böse um Rat, damit sie gut wirken.",
+      "Rate nicht gegen bestätigte Gute; ein erfolgloser Angriff auf sie lässt dich böse wirken.",
+      "Gewinne das Vertrauen von Rollen, die Böses erkennen, und verwende scheinbar ihre Information – ohne dass sie dich entdecken.",
+      "Mache deine Vermutungen auffällig und dramatisch, damit sich die Gruppe auf dich als vermeintlichen Alsaahir konzentriert."
+    ],
+    "fraction": "townsfolk",
+    "gameset": ["experimental"],
+    "tokens": [],
+    "wakeUpEveryNight": false,
+    "wakeUpAtFirstNight": false,
+    "nightStateNumbersFirstNight": [],
+    "nightStateNumbersOtherNights": []
+  },
+  {
+    "name": "Amnesiac",
+    "help": "Du bestimmst seine Fähigkeit. Ändere sie nicht.",
+    "descriptionShort": "Du weißt nicht, was deine Fähigkeit ist. Rate jeden Tag privat, was sie ist: Du erfährst, wie genau deine Vermutung war.",
+    "descriptionLong": "Der Amnesiac kennt seine eigene Fähigkeit nicht.\n\nDer Geschichtenerzähler legt sie fest. Sie kann einer bestehenden Blood-on-the-Clocktower-Fähigkeit entsprechen, ähnlich sein oder neu sein. Der Amnesiac kann nachts für Information oder eine Wahl erwachen; seine Fähigkeit kann aber auch passiv sein.\nJeden Tag rät er privat beim Geschichtenerzähler. Dieser antwortet mit „kalt“ bei einer sehr falschen, „warm“ bei einer passenden, „heiß“ bei einer sehr nahen und „Bingo“ bei einer exakten Vermutung. Die Frage darf konkret oder allgemein sein.",
+    "howToRun": "Lege beim Aufbau die Fähigkeit des Amnesiac fest. Behandle ihn während des Spiels so, als hätte er diese Fähigkeit: Wecke ihn, fordere Wahlen an oder führe sonst die passende Wirkung aus. Nutze bei Bedarf seine ?-Erinnerungen.\n\nJeden Tag rät der Amnesiac privat nach seiner Fähigkeit. Antworte mit „Kalt“, „Warm“, „Heiß“ oder „Bingo“.",
+    "image": "Icon_amnesiac",
+    "tipsAndTricks": [
+      "Die meisten Amnesiac-Fähigkeiten geben Information und sind oft stärker als gewöhnliche Stadtbewohnerfähigkeiten; das Erraten macht sie riskant.",
+      "Frage zunächst allgemein, etwa nach Außenseitern, und werde später konkreter.",
+      "Wenn du nachts Spieler wählst, variiere deine Wahl, um unterschiedliche Daten zu erhalten.",
+      "Denke beim Raten an Rollen, Fähigkeiten, Sitzordnung und soziales Verhalten: Rollenarten, Buchstaben, Betrunkenheit, Wechsel, Todesfälle, Nachbarn, Nominierungen, Stimmen, Lügen und Siegchancen.",
+      "Bitte bei Bedarf die Stadt um Hilfe; andere können seltsame Ergebnisse mit dir deuten.",
+      "Der Geschichtenerzähler soll eine erratbare Fähigkeit gewählt haben. Verwirf Theorien, die zu abwegig wirken."
+    ],
+    "bluffs": [
+      "Als Amnesiac-Bluff brauchst du anfangs keine fertige Fähigkeit, solltest aber bis zum Ende eine plausible haben. Täusche nächtliche Information wie Zahlen, Zeigen, Ja/Nein, Token oder Daumen nach.\nBesuche den Geschichtenerzähler täglich und nutze die Begriffe Kalt, Warm, Heiß und Bingo korrekt. Erfinde eine Fähigkeit samt Lösung, um beliebige Schlüsse zu stützen. Ein frühes oder spätes „Verstehen“ hat jeweils Vor- und Nachteile. Du kannst auch behaupten, es nie herausgefunden zu haben, und die Stadt einladen, dein unlösbares Rätsel zu bearbeiten."
+    ],
+    "fraction": "townsfolk",
+    "gameset": ["experimental"],
+    "tokens": [{"name": "?", "image": "Icon_amnesiac"}],
+    "wakeUpEveryNight": true,
+    "wakeUpAtFirstNight": true,
+    "nightStateNumbersFirstNight": [32.5],
+    "nightStateNumbersOtherNights": [32.5]
+  },
+  {
+    "name": "Atheist",
+    "descriptionShort": "Der Geschichtenerzähler darf Regeln brechen. Wirst du hingerichtet, gewinnt gut, selbst wenn du tot bist. [Keine bösen Charaktere]",
+    "descriptionLong": "Der Atheist weiß, dass alle Spieler gut sind und es keine Dämonen gibt.\n\nIst der Atheist im Spiel, gibt es keine bösen Spieler, Schergen oder Dämonen. Gut gewinnt, wenn der Geschichtenerzähler hingerichtet wird: Jeder lebende Spieler darf ihn nominieren, und ab 50 % der Stimmen der Lebenden wird er hingerichtet. Ist der Atheist nicht im Spiel und der Geschichtenerzähler wird hingerichtet, gewinnt böse. Bei nur zwei lebenden Spielern verliert gut.\nDer Geschichtenerzähler darf jede Spielregel brechen: etwa einen Nominierenden wie durch die Hexe töten, nachts Dämonentode vortäuschen, falsche Information geben, Charaktere wie die Pit-Hag ändern oder die Außenseiterzahl verändern.",
+    "howToRun": "Entferne beim Aufbau vor dem Austeilen des Beutels alle bösen Charaktertoken und füge Stadtbewohner- oder Außenseitertoken passend zur Spielerzahl hinzu.\n\nBrich Regeln nach eigenem Ermessen und nutze bei Bedarf böse Erinnerungstoken.",
+    "image": "Icon_atheist",
+    "tipsAndTricks": [
+      "Als Atheist kennst du den Dämon – niemanden – und gewinnst durch die Hinrichtung des Geschichtenerzählers. Überzeuge die anderen davon.",
+      "Es ist vernünftig, nicht sofort am ersten Tag den Geschichtenerzähler zu töten. Wiederhole deine Behauptung geduldig und sammle erst Information.",
+      "Offenbare deine Rolle früh: Es gibt keine bösen Spieler zu täuschen und keine Dämonenangriffe zu vermeiden.",
+      "Fordere frühe Rollen- und Informationsoffenlegungen, denn der zu besiegende Geschichtenerzähler kennt ohnehin alles.",
+      "Prüfe Rollen, die dich betrunken machen können. Bist du der Trunkene, gibt es keinen Atheisten und die Hinrichtung des Geschichtenerzählers lässt böse gewinnen.",
+      "Fürchte den Tod nicht: Gute können dadurch dennoch gewinnen, auch wenn der Geschichtenerzähler nachts zusätzliche Spieler tötet.",
+      "Passt alle gute Information zusammen, töte die dadurch als böse erscheinenden Spieler und nutze das als Beweis für Regelbrüche.",
+      "Hebe Widersprüche in Information hervor, etwa unvereinbare Schergenbehauptungen, als Beweis dafür, dass der Geschichtenerzähler Regeln bricht.",
+      "Frage bei möglichen Spielendefähigkeiten wie Mayor oder Saint vorher nach, ob eine riskante Handlung das Spiel beendet."
+    ],
+    "bluffs": [
+      "Ein Scherge oder Dämon kann immer Atheist bluffen: Seine bloße böse Gesinnung beweist, dass kein echter Atheist im Spiel ist. Rechne damit, irgendwann hingerichtet zu werden; der Bluff eignet sich besonders für bereits genutzte Rollen.\nÜberzeuge die Gruppe entweder sozial, dass du Atheist bist, oder davon, dass ihre Information zu widersprüchlich beziehungsweise zu stimmig ist und der Geschichtenerzähler verantwortlich sein muss. Lasse Teammitglieder hierfür besonders konsistente oder besonders falsche Information geben – je nachdem, ob du den Geschichtenerzähler oder gute Spieler hinrichten lassen willst."
+    ],
+    "fraction": "townsfolk",
+    "gameset": ["experimental"],
+    "tokens": [],
+    "wakeUpEveryNight": false,
+    "wakeUpAtFirstNight": false,
+    "nightStateNumbersFirstNight": [],
+    "nightStateNumbersOtherNights": []
+  },
+  {
+    "name": "Balloonist",
+    "help": "Zeige ihm einen Charaktertoken.",
+    "descriptionShort": "Jede Nacht erfährst du einen Spieler mit einem anderen Charaktertyp als in der letzten Nacht. [+0 oder +1 Außenseiter]",
+    "descriptionLong": "Der Balloonist erfährt Spieler mit unterschiedlichen Charaktertypen.",
+    "howToRun": "Beim Aufbau darfst du einen Außenseiter hinzufügen. Markiere vor der ersten Nacht einen beliebigen Spieler mit der KENNT-Erinnerung. Verschiebe sie vor jeder späteren Nacht auf einen Spieler, dessen Charaktertyp sich von dem zuletzt gezeigten unterscheidet. Wecke jede Nacht den Balloonist, zeige auf den mit KENNT markierten Spieler und lass den Balloonist wieder einschlafen.",
+    "image": "Icon_balloonist",
+    "tipsAndTricks": [],
+    "bluffs": [],
+    "fraction": "townsfolk",
+    "gameset": ["experimental"],
+    "tokens": [],
+    "wakeUpEveryNight": true,
+    "wakeUpAtFirstNight": true,
+    "nightStateNumbersFirstNight": [33.5],
+    "nightStateNumbersOtherNights": [33.5]
   }
 ]

@@ -23,6 +23,9 @@ class SelectCharacterComponent extends StatefulWidget {
   Function() onConfirm;
   Function(List<Character> characters)? onResult;
   IconData confirmButtonIcon = Icons.remove_red_eye;
+  List<String> validationMessages;
+  bool blockConfirmWhenDisabled;
+  bool demonBluffsEnabled;
 
   SelectCharacterComponent({
     required this.charactersToChooseFrom,
@@ -37,6 +40,9 @@ class SelectCharacterComponent extends StatefulWidget {
     this.forSetupIsDone = false,
     this.confirmButtonIcon = Icons.remove_red_eye,
     this.needToConfirm = true,
+    this.validationMessages = const [],
+    this.blockConfirmWhenDisabled = false,
+    this.demonBluffsEnabled = true,
   });
 
   _SelectCharacterComponentState createState() =>
@@ -61,6 +67,9 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       final gameStateService =
           Provider.of<GameStateService>(context, listen: false);
       gameStateService.closeMenu();
@@ -70,6 +79,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
   @override
   Widget build(BuildContext context) {
     CharacterService characterService = Provider.of<CharacterService>(context);
+    // Rebuild token borders when a persistent bluff selection changes.
+    Provider.of<GameStateService>(context);
 
     List<Character> townsfolk = widget.charactersToChooseFrom
         .where((element) => element.fraction == Fraction.townsfolk)
@@ -136,6 +147,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
             currentScreenName: widget.title,
             hideHomeButton: !widget.isForSetupGame,
             disabled: !isDone(),
+            validationMessages: widget.validationMessages,
+            blockNavigationWhenDisabled: widget.blockConfirmWhenDisabled,
             onTap: () {
               widget.onConfirm();
               if (widget.onResult != null) {
@@ -150,7 +163,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
 
   Widget _buildCharacterSection(BuildContext context, String title,
       List<Character> characters, bool showHideButton) {
-    final gamesetService = Provider.of<GameStateService>(context);
+    final gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
     final settingsService = Provider.of<SettingsService>(context);
     final characterService = Provider.of<CharacterService>(context);
     bool hidden = false;
@@ -210,9 +224,11 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                         !characterService.showInfoButtonOnCharacterSelection
                       ],
                       onPressed: (int index) {
-                        gamesetService.closeMenu();
-                        characterService.showInfoButtonOnCharacterSelection =
-                            index == 0;
+                        gameStateService.closeMenu();
+                        setState(() {
+                          characterService.showInfoButtonOnCharacterSelection =
+                              index == 0;
+                        });
                       },
                       children: const [
                         Icon(Icons.help, color: Colors.white),
@@ -240,11 +256,25 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                   ? characterService.containsCharacter(
                       characterService.gameCharacters, character)
                   : result.contains(character);
+              final isBluff = widget.isForSetupGame &&
+                  gameStateService.isDemonBluff(character.roleId);
+              final isEligibleBluff = widget.demonBluffsEnabled &&
+                  (character.fraction == Fraction.townsfolk ||
+                      character.fraction == Fraction.outsider);
 
               return GestureDetector(
                   onLongPress: () {
-                    if (widget.isForSetupGame &&
-                        character.variableNumberOfExemplars) {
+                    if (characterService.showInfoButtonOnCharacterSelection) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ShowCharacter(character: character),
+                        ),
+                      );
+                    } else if (widget.isForSetupGame &&
+                        character.variableNumberOfExemplars &&
+                        isSelected) {
                       showCharacterExemplarDialog(
                         context,
                         character.numberOfExemplars,
@@ -261,6 +291,12 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                           });
                         },
                       );
+                    } else if (widget.isForSetupGame) {
+                      gameStateService.toggleDemonBluff(
+                        character.roleId,
+                        isEligible: isEligibleBluff || isBluff,
+                        isGameCharacter: isSelected,
+                      );
                     }
                   },
                   onTap: () {
@@ -271,6 +307,9 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                               builder: (context) =>
                                   ShowCharacter(character: character)));
                     } else if (widget.isForSetupGame) {
+                      if (isBluff) {
+                        return;
+                      }
                       if (isSelected) {
                         characterService.removeCharacter(character);
                       } else {
@@ -294,6 +333,7 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                       showIsSelected: true,
                       forSelectCharacter: true,
                       isSelected: isSelected,
+                      isBluff: isBluff,
                       showExemplare: widget.isForSetupGame &&
                           character.variableNumberOfExemplars,
                       size: maxWidth / 4,
@@ -325,6 +365,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
         return 100000;
       case Fraction.fabled:
         return 1000000;
+      case Fraction.loric:
+        return 10000000;
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/models/token.dart';
 
 class Character {
   String id = '';
+  final String roleId;
   String name;
   String descriptionShort;
   String descriptionLong;
@@ -26,6 +27,25 @@ class Character {
   int numberOfExemplars = 1;
   List<int> possibleNrOfExemplars;
   bool variableNumberOfExemplars = false;
+
+  static String roleIdFromImage(String image) {
+    final roleId = image
+        .replaceFirst(RegExp(r'^Icon_'), '')
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .toLowerCase();
+    return roleId.isEmpty ? image : roleId;
+  }
+
+  static bool hasLegacyRoleId(String? roleId, String image) {
+    return roleId == null ||
+        roleId.trim().isEmpty ||
+        roleId == image ||
+        roleId.startsWith('Icon_');
+  }
+
+  static String normalizedRoleId(String image, String? roleId) {
+    return hasLegacyRoleId(roleId, image) ? roleIdFromImage(image) : roleId!;
+  }
 
   Character({
     required this.name,
@@ -50,7 +70,8 @@ class Character {
     this.variableNumberOfExemplars = false,
     this.possibleNrOfExemplars = const [],
     required this.id,
-  });
+    String? roleId,
+  }) : roleId = normalizedRoleId(image, roleId);
 
   // Methode zum Erstellen einer Card-Instanz aus JSON
   factory Character.fromJson(Map<String, dynamic> json) {
@@ -81,7 +102,8 @@ class Character {
               .toList(),
       help: json['help'] != null ? json['help'] as String : '',
       help2: json['help2'] != null ? json['help2'] as String : '',
-      id: json['image'] as String,
+      id: json['id'] as String? ?? json['image'] as String,
+      roleId: json['roleId'] as String? ?? json['image'] as String,
       upsideDown:
           json['upsideDown'] != null ? json['upsideDown'] as bool : false,
       tipsAndTricks: (json['tipsAndTricks'] as List<dynamic>)
@@ -92,8 +114,8 @@ class Character {
       numberOfExemplars: json['numberOfExemplars'] != null
           ? json['numberOfExemplars'] as int
           : 1,
-      variableNumberOfExemplars:
-          json['numberOfExemplars'] != null ? true : false,
+      variableNumberOfExemplars: json['variableNumberOfExemplars'] as bool? ??
+          json['numberOfExemplars'] != null,
       possibleNrOfExemplars: json['possibleNrOfExemplars'] != null
           ? (json['possibleNrOfExemplars'] as List<dynamic>)
               .map((e) => e as int)
@@ -106,6 +128,7 @@ class Character {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'roleId': roleId,
       'name': name,
       'descriptionShort': descriptionShort,
       'descriptionLong': descriptionLong,
@@ -130,6 +153,13 @@ class Character {
     };
   }
 
+  Character copyWith({String? id}) {
+    return Character.fromJson({
+      ...toJson(),
+      'id': id ?? this.id,
+    });
+  }
+
   get getName => name;
   get getDescriptionShort => descriptionShort;
   get getDescriptionLong => descriptionLong;
@@ -146,6 +176,7 @@ class Character {
   get getHelp => help;
   get getHelp2 => help2;
   get getId => id;
+  get getRoleId => roleId;
   get getUpsideDown => upsideDown;
   get getTipsAndTricks => tipsAndTricks;
   get getBluffs => bluffs;

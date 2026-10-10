@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/services/auth_service.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -28,12 +29,18 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]).then((_) {
+    final scriptService = ScriptService();
     runApp(
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => LanguageService()),
           ChangeNotifierProvider(create: (context) => CharacterService()),
-          ChangeNotifierProvider(create: (context) => GameStateService()),
+          ChangeNotifierProvider.value(value: scriptService),
+          ChangeNotifierProvider(
+            create: (context) => GameStateService(
+              scriptService: scriptService,
+            ),
+          ),
           ChangeNotifierProvider(create: (context) => RoleNotesService()),
           ChangeNotifierProvider(create: (context) => SettingsService()),
           ChangeNotifierProvider(create: (context) => AuthService())

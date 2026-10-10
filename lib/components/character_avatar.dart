@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/components/half_circle_clipper.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +13,7 @@ class CharacterAvatar extends StatefulWidget {
   final bool showName;
   bool forSelectCharacter = false;
   bool isSelected = false;
+  final bool isBluff;
   bool showExemplare = false;
 
   CharacterAvatar({
@@ -20,6 +22,7 @@ class CharacterAvatar extends StatefulWidget {
     required this.size,
     required this.showName,
     this.isSelected = false,
+    this.isBluff = false,
     this.forSelectCharacter = false,
     this.showExemplare = false,
   });
@@ -64,9 +67,11 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: widget.showIsSelected && isSelected
-                                ? Colors.white
-                                : Colors.transparent,
+                            color: widget.showIsSelected && widget.isBluff
+                                ? Colors.redAccent
+                                : widget.showIsSelected && isSelected
+                                    ? Colors.white
+                                    : Colors.transparent,
                             width: 4,
                           ),
                           image: const DecorationImage(
@@ -87,7 +92,7 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                             shape: BoxShape.circle,
                             image: DecorationImage(
                               image: AssetImage(
-                                  'assets/images/characters/${widget.character.image}.png'),
+                                  roleImageAssetPath(widget.character.image)),
                               fit: BoxFit.cover,
                             ),
                           ),

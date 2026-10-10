@@ -1,11 +1,11 @@
 import 'dart:math';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
-import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/script_service.dart';
 
 class SavantGenerator extends StatefulWidget {
   const SavantGenerator({Key? key}) : super(key: key);
@@ -100,12 +100,11 @@ class _SavantGeneratorState extends State<SavantGenerator> {
   void getRandomText() {
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
-    GameStateService gameStateService =
+    final gameStateService =
         Provider.of<GameStateService>(context, listen: false);
-    Gameset selectedGameset = gameStateService.gameset;
-    List<Character> allCharactersOfGameset = characterService.allCharacters
-        .where((element) => element.gameset.contains(selectedGameset))
-        .toList();
+    final scriptService = Provider.of<ScriptService>(context, listen: false);
+    final allCharactersOfGameset =
+        scriptService.resolveCharacters(characterService.allCharacters);
 
     List<Character> allButTrevelors = allCharactersOfGameset
         .where((character) => [
