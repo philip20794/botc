@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 /assets/apk/*.apk
+*.apk
+/android/key.properties
+/android/app/release.keystore
 
 # IntelliJ related
 *.iml

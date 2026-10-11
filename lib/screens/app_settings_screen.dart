@@ -24,7 +24,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     try {
       if (kIsWeb) {
         const String apkUrl =
-            'https://drive.google.com/uc?export=download&id=1Hy4T-RO2ysOhKlZZS2KMVEGG0goFBuK3';
+            'https://github.com/philip20794/botc/releases/download/android-latest/b-o-t-c.apk';
         final html.AnchorElement anchor = html.AnchorElement(href: apkUrl)
           ..setAttribute("download", "b-o-t-c.apk")
           ..click();
