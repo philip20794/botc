@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/select_gameset.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
 import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/screens/pdf_viewer_page.dart';
@@ -16,46 +17,26 @@ class _RulesSelectionScreenState extends State<RulesSelectionScreen> {
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title:
-            Text(localizedStrings.rules, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              alignment: Alignment.bottomCenter,
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_top.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(localizedStrings.rules,
+              style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_full.jpg'), // Path to your background image
-                fit: BoxFit
-                    .cover, // Ensures the image covers the entire background
-              ),
-            ),
-          ),
-          GridView.count(
-            crossAxisCount: 2,
-            children: [
-              _buildCard("Main Rules", "main"),
-              _buildCard("Trouble Brewing", "trouble_brewing"),
-              _buildCard("Sects & Violets", "sects_and_violets"),
-              _buildCard("Bad Moon Rising", "bad_moon_rising"),
-              _buildCard("Traveller & Fabled", "traveller_and_fabled"),
-            ],
-          ),
-        ],
+        body: GridView.count(
+          crossAxisCount: 2,
+          children: [
+            _buildCard("Main Rules", "main"),
+            _buildCard("Trouble Brewing", "trouble_brewing"),
+            _buildCard("Sects & Violets", "sects_and_violets"),
+            _buildCard("Bad Moon Rising", "bad_moon_rising"),
+            _buildCard("Traveller & Fabled", "traveller_and_fabled"),
+          ],
+        ),
       ),
     );
   }

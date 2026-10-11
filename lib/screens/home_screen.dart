@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/components/select_gameset.dart';
 import 'package:blood_on_the_clocktower/components/script_complexity_summary.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/screens/all_characters_screen.dart';
 import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
@@ -74,110 +75,103 @@ class _HomeScreenState extends State<HomeScreen> {
         gameStateService.charactersWhereShownToPlayers;
     var allDone = characterDone && showCharactersToPlayersDone;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_full.jpg'), // Path to your background image
-                fit: BoxFit
-                    .cover, // Ensures the image covers the entire background
-              ),
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Keep the first card clear of the persistent settings
-                  // control in the top-right safe area.
-                  const SizedBox(height: 88),
-                  _buildCard(localizedStrings.allCharacters, Icons.list_alt,
-                      AllCharactersScreen(), false, null),
-                  SizedBox(height: 50),
-                  Card(
-                    color: const Color(0xFF6f678a).withOpacity(0.9),
-                    margin: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 20),
-                    child: ListTile(
-                      leading: SizedBox(
-                        width: 40,
-                        child: Center(
-                          child: Icon(CustomIcons.script,
-                              color:
-                                  gameIsRunning ? Colors.grey : Colors.white),
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Keep the first card clear of the persistent settings
+                    // control in the top-right safe area.
+                    const SizedBox(height: 88),
+                    _buildCard(localizedStrings.allCharacters, Icons.list_alt,
+                        AllCharactersScreen(), false, null),
+                    SizedBox(height: 50),
+                    Card(
+                      color: const Color(0xFF6f678a).withOpacity(0.9),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 20),
+                      child: ListTile(
+                        leading: SizedBox(
+                          width: 40,
+                          child: Center(
+                            child: Icon(CustomIcons.script,
+                                color:
+                                    gameIsRunning ? Colors.grey : Colors.white),
+                          ),
                         ),
-                      ),
-                      trailing: SizedBox(
-                        width: 48,
-                        child: Center(
-                          child: SelectGameset(
-                            disabled: gameIsRunning,
-                            showSelector: false,
+                        trailing: SizedBox(
+                          width: 48,
+                          child: Center(
+                            child: SelectGameset(
+                              disabled: gameIsRunning,
+                              showSelector: false,
+                            ),
+                          ),
+                        ),
+                        title: LayoutBuilder(
+                          builder: (context, constraints) => Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SelectGameset(
+                                disabled: gameIsRunning,
+                                scriptWidth: constraints.maxWidth,
+                                showManagementAction: false,
+                              ),
+                              const SizedBox(height: 4),
+                              const ScriptComplexitySummary(),
+                            ],
                           ),
                         ),
                       ),
-                      title: LayoutBuilder(
-                        builder: (context, constraints) => Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SelectGameset(
-                              disabled: gameIsRunning,
-                              scriptWidth: constraints.maxWidth,
-                              showManagementAction: false,
-                            ),
-                            const SizedBox(height: 4),
-                            const ScriptComplexitySummary(),
-                          ],
-                        ),
-                      ),
                     ),
-                  ),
-                  _buildArrowDown(gameIsRunning),
-                  _buildCard(localizedStrings.players, Icons.groups,
-                      PlayernameScreen(), gameIsRunning, null),
-                  _buildArrowDown(!playerDone || gameIsRunning),
-                  _buildCard(
-                      localizedStrings.characterSelection,
-                      Icons.dashboard,
-                      CharacterAuswahlScreen(),
-                      gameIsRunning,
-                      null),
-                  _buildArrowDown(false),
-                  _buildCard(
-                      localizedStrings.showCharactersToPlayers,
-                      Icons.remove_red_eye,
-                      ShowCharactersToPlayers(),
-                      false,
-                      () => {
-                            if (!gameIsRunning) {_shuffleCharacters()}
-                          }),
-                  _buildArrowDown(!allDone),
-                  _buildCard(
-                      localizedStrings.playground,
-                      Icons.play_arrow,
-                      SpielbereichScreen(),
-                      false,
-                      () => {
-                            if (!gameIsRunning)
-                              {
-                                gameStateService.startNewGame(
-                                    characterService.gameCharactersWithoutDrunk)
-                              }
-                          }),
-                  SizedBox(height: 40),
-                ],
+                    _buildArrowDown(gameIsRunning),
+                    _buildCard(localizedStrings.players, Icons.groups,
+                        PlayernameScreen(), gameIsRunning, null),
+                    _buildArrowDown(!playerDone || gameIsRunning),
+                    _buildCard(
+                        localizedStrings.characterSelection,
+                        Icons.dashboard,
+                        CharacterAuswahlScreen(),
+                        gameIsRunning,
+                        null),
+                    _buildArrowDown(false),
+                    _buildCard(
+                        localizedStrings.showCharactersToPlayers,
+                        Icons.remove_red_eye,
+                        ShowCharactersToPlayers(),
+                        false,
+                        () => {
+                              if (!gameIsRunning) {_shuffleCharacters()}
+                            }),
+                    _buildArrowDown(!allDone),
+                    _buildCard(
+                        localizedStrings.playground,
+                        Icons.play_arrow,
+                        SpielbereichScreen(),
+                        false,
+                        () => {
+                              if (!gameIsRunning)
+                                {
+                                  gameStateService.startNewGame(characterService
+                                      .gameCharactersWithoutDrunk)
+                                }
+                            }),
+                    SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-          ),
-          // This must be painted last so neither the scrollable cards nor
-          // their gesture detectors can cover the settings control.
-          _buildIconButton(Icons.settings, AppSettingsScreen()),
-        ],
+            // This must be painted last so neither the scrollable cards nor
+            // their gesture detectors can cover the settings control.
+            _buildIconButton(Icons.settings, AppSettingsScreen()),
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/select_language.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
 import 'package:blood_on_the_clocktower/screens/settings_character_circle.dart';
@@ -35,60 +36,38 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
-    return Scaffold(
-      backgroundColor: const Color(0xFFc9f2f8),
-      appBar: AppBar(
-        title: Text(localizedStrings.settings,
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              alignment: Alignment.bottomCenter,
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_top.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(localizedStrings.settings,
+              style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_middel.jpg'), // Path to your background image
-                fit: BoxFit
-                    .cover, // Ensures the image covers the entire background
+        body: ListView(
+          children: [
+            Card(
+              color: const Color(0xFF6f678a).withOpacity(0.9),
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              child: ListTile(
+                leading: const Icon(Icons.language, color: Colors.white),
+                title: Text(localizedStrings.language,
+                    style: TextStyle(color: Colors.white)),
+                trailing: const SelectLanguage(),
               ),
             ),
-          ),
-          ListView(
-            children: [
-              Card(
-                color: const Color(0xFF6f678a).withOpacity(0.9),
-                margin:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                child: ListTile(
-                  leading: const Icon(Icons.language, color: Colors.white),
-                  title: Text(localizedStrings.language,
-                      style: TextStyle(color: Colors.white)),
-                  trailing: const SelectLanguage(),
-                ),
-              ),
-              _buildCard(localizedStrings.layoutSettings, Icons.video_settings,
-                  SettingsCharacterCircle(), null, false),
-              _buildCard(localizedStrings.roleNotes, Icons.manage_search,
-                  const RoleNotesScreen(), null, false),
-              _buildCard(localizedStrings.rules, CustomIcons.law,
-                  RulesSelectionScreen(), null, false),
-              _buildCard(localizedStrings.downloadAndroidApp, Icons.download,
-                  null, () => downloadApkForWeb(), !kIsWeb)
-            ],
-          ),
-        ],
+            _buildCard(localizedStrings.layoutSettings, Icons.video_settings,
+                SettingsCharacterCircle(), null, false),
+            _buildCard(localizedStrings.roleNotes, Icons.manage_search,
+                const RoleNotesScreen(), null, false),
+            _buildCard(localizedStrings.rules, CustomIcons.law,
+                RulesSelectionScreen(), null, false),
+            _buildCard(localizedStrings.downloadAndroidApp, Icons.download,
+                null, () => downloadApkForWeb(), !kIsWeb)
+          ],
+        ),
       ),
     );
   }

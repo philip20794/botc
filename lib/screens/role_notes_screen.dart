@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -51,137 +52,121 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
     final characterService = Provider.of<CharacterService>(context);
     final playerNames = List<String>.from(gameStateService.playerNames);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          localizedStrings.roleNotes,
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              alignment: Alignment.bottomCenter,
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_top.jpg'),
-              fit: BoxFit.cover,
-            ),
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            localizedStrings.roleNotes,
+            style: const TextStyle(color: Colors.white),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => _resetLayout(playerNames),
-          ),
-          if (roleNotesService.hasAnyRoleNotes())
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          actions: [
             IconButton(
-              icon: const Icon(Icons.delete_sweep, color: Colors.white),
-              onPressed: () => _confirmClearAllRoleNotes(context),
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: () => _resetLayout(playerNames),
             ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage(
-                      'assets/images/backgrounds/background_grim_middel.jpg'),
-                  fit: BoxFit.cover,
+            if (roleNotesService.hasAnyRoleNotes())
+              IconButton(
+                icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                onPressed: () => _confirmClearAllRoleNotes(context),
+              ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            if (playerNames.isEmpty)
+              Center(
+                child: Text(
+                  localizedStrings.noPlayerYet,
+                  style: const TextStyle(color: Colors.white),
                 ),
-              ),
-            ),
-          ),
-          if (playerNames.isEmpty)
-            Center(
-              child: Text(
-                localizedStrings.noPlayerYet,
-                style: const TextStyle(color: Colors.white),
-              ),
-            )
-          else
-            Positioned.fill(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final boardSize = constraints.biggest;
-                  final playerTokenSize = settingsService.characterKnobSize
-                      .clamp(76.0, 106.0)
-                      .toDouble();
-                  final maxRoleTokenSize = _roleBadgeSizeFor(1);
-                  final nodeSize = playerTokenSize + maxRoleTokenSize * 1.95;
-                  final nodePadding = (nodeSize - playerTokenSize) / 2;
-                  _lastBoardSize = boardSize;
-                  _lastPlayerTokenSize = playerTokenSize;
+              )
+            else
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final boardSize = constraints.biggest;
+                    final playerTokenSize = settingsService.characterKnobSize
+                        .clamp(76.0, 106.0)
+                        .toDouble();
+                    final maxRoleTokenSize = _roleBadgeSizeFor(1);
+                    final nodeSize = playerTokenSize + maxRoleTokenSize * 1.95;
+                    final nodePadding = (nodeSize - playerTokenSize) / 2;
+                    _lastBoardSize = boardSize;
+                    _lastPlayerTokenSize = playerTokenSize;
 
-                  if (roleNotesService.needsPositionSync(
-                      playerNames, boardSize, playerTokenSize)) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      roleNotesService.ensureDefaultPositions(
-                          playerNames, boardSize, playerTokenSize);
-                    });
-                  }
-
-                  final duplicateRoles = roleNotesService.duplicateRoleImages();
-                  final duplicateRoleImages = duplicateRoles.keys.toSet();
-                  final roleNamesByImage = {
-                    for (final character in characterService.allCharacters)
-                      character.image: character.name
-                  };
-                  final positions = <String, Offset>{};
-                  final playerRoles = <String, List<String>>{};
-                  for (final playerName in playerNames) {
-                    final position = roleNotesService.positionOf(playerName);
-                    if (position != null) {
-                      positions[playerName] =
-                          _dragPositions[playerName] ?? position;
+                    if (roleNotesService.needsPositionSync(
+                        playerNames, boardSize, playerTokenSize)) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        roleNotesService.ensureDefaultPositions(
+                            playerNames, boardSize, playerTokenSize);
+                      });
                     }
-                    playerRoles[playerName] =
-                        roleNotesService.roleImagesFor(playerName);
-                  }
 
-                  return SizedBox.expand(
-                    child: Stack(
-                      key: _boardKey,
-                      fit: StackFit.expand,
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: RepaintBoundary(
-                              child: CustomPaint(
-                                painter: _RoleConnectionPainter(
-                                  positions: positions,
-                                  duplicateRoles: duplicateRoles,
-                                  playerTokenSize: playerTokenSize,
+                    final duplicateRoles =
+                        roleNotesService.duplicateRoleImages();
+                    final duplicateRoleImages = duplicateRoles.keys.toSet();
+                    final roleNamesByImage = {
+                      for (final character in characterService.allCharacters)
+                        character.image: character.name
+                    };
+                    final positions = <String, Offset>{};
+                    final playerRoles = <String, List<String>>{};
+                    for (final playerName in playerNames) {
+                      final position = roleNotesService.positionOf(playerName);
+                      if (position != null) {
+                        positions[playerName] =
+                            _dragPositions[playerName] ?? position;
+                      }
+                      playerRoles[playerName] =
+                          roleNotesService.roleImagesFor(playerName);
+                    }
+
+                    return SizedBox.expand(
+                      child: Stack(
+                        key: _boardKey,
+                        fit: StackFit.expand,
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: RepaintBoundary(
+                                child: CustomPaint(
+                                  painter: _RoleConnectionPainter(
+                                    positions: positions,
+                                    duplicateRoles: duplicateRoles,
+                                    playerTokenSize: playerTokenSize,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        for (final playerName in playerNames)
-                          if (positions[playerName] != null)
-                            _buildDraggablePlayer(
-                              context,
-                              playerName,
-                              positions[playerName]!,
-                              playerRoles[playerName] ?? const [],
-                              duplicateRoleImages,
-                              roleNamesByImage,
-                              boardSize,
-                              nodeSize,
-                              nodePadding,
-                              playerTokenSize,
-                              maxRoleTokenSize,
-                            ),
-                      ],
-                    ),
-                  );
-                },
+                          for (final playerName in playerNames)
+                            if (positions[playerName] != null)
+                              _buildDraggablePlayer(
+                                context,
+                                playerName,
+                                positions[playerName]!,
+                                playerRoles[playerName] ?? const [],
+                                duplicateRoleImages,
+                                roleNamesByImage,
+                                boardSize,
+                                nodeSize,
+                                nodePadding,
+                                playerTokenSize,
+                                maxRoleTokenSize,
+                              ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

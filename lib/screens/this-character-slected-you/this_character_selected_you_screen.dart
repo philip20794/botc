@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
@@ -52,164 +53,150 @@ class _ThisCharacterSelectedYouScreenState
       Basictoken.did_you_vote_today,
       Basictoken.did_you_nominate_today,
     ];
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              alignment: Alignment.bottomCenter,
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_top.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
+    return AppBackground(
+      type: AppBackgroundType.playground,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_middel.jpg'), // Path to your background image
-                fit: BoxFit
-                    .cover, // Ensures the image covers the entire background
-              ),
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // This character selected you token
+        body: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // This character selected you token
 
-                  Container(
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
-                      color: Color(0xFFb5987d),
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: DropdownButton<Basictoken>(
-                      dropdownColor: const Color(0xFF6f678a),
-                      itemHeight: 100,
-                      menuMaxHeight: MediaQuery.of(context).size.height * 0.8,
-                      value: selectedToken,
-                      underline:
-                          Container(), // Entfernt die standardmäßige Unterstreichung
-                      onChanged: (Basictoken? newValue) {
-                        if (newValue == null) return;
-                        setState(() {
-                          selectedToken = newValue;
-                        });
-                      },
-                      items: _getDropdownItems(context, true),
-                      selectedItemBuilder: (BuildContext context) {
-                        return _getDropdownItems(context, false);
-                      },
-                    ),
-                  ),
-
-                  SizedBox(height: 16.0), // Abstand zwischen den Elementen
-                  // Character Image
-
-                  if (!tokensWithNoAction.contains(selectedToken) &&
-                      selectedToken !=
-                          Basictoken.these_chracters_are_not_in_play) ...[
-                    _buildCharacterSelection(context, character,
-                        (Character newCharacter) {
-                      setState(() {
-                        character = newCharacter;
-                      });
-                    }, true, 1),
-                  ],
-
-                  if (selectedToken ==
-                      Basictoken.these_chracters_are_not_in_play) ...[
-                    _buildStoredDemonBluffTokens(context, localizedStrings),
-                  ],
-
-                  if (selectedToken == Basictoken.these_are_all_outsiders) ...[
-                    _buildCharacterSelection(context, character2,
-                        (Character newCharacter) {
-                      setState(() {
-                        character2 = newCharacter;
-                      });
-                    }, true, 2),
-                    _buildCharacterSelection(context, character3,
-                        (Character newCharacter) {
-                      setState(() {
-                        character3 = newCharacter;
-                      });
-                    }, true, 3),
-                    _buildCharacterSelection(context, character4,
-                        (Character newCharacter) {
-                      setState(() {
-                        character4 = newCharacter;
-                      });
-                    }, true, 4),
-                  ],
-
-                  if (character?.image == 'Icon_cerenovus' &&
-                      selectedToken ==
-                          Basictoken.this_chracter_selected_you) ...[
-                    SizedBox(height: 16.0),
                     Container(
                       decoration: const BoxDecoration(
                         borderRadius: BorderRadius.all(Radius.circular(16)),
                         color: Color(0xFFb5987d),
                       ),
                       padding: const EdgeInsets.all(16),
-                      child: Text(
-                        localizedStrings.toBeMadAbout,
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 26,
-                        ),
+                      child: DropdownButton<Basictoken>(
+                        dropdownColor: const Color(0xFF6f678a),
+                        itemHeight: 100,
+                        menuMaxHeight: MediaQuery.of(context).size.height * 0.8,
+                        value: selectedToken,
+                        underline:
+                            Container(), // Entfernt die standardmäßige Unterstreichung
+                        onChanged: (Basictoken? newValue) {
+                          if (newValue == null) return;
+                          setState(() {
+                            selectedToken = newValue;
+                          });
+                        },
+                        items: _getDropdownItems(context, true),
+                        selectedItemBuilder: (BuildContext context) {
+                          return _getDropdownItems(context, false);
+                        },
                       ),
                     ),
-                    SizedBox(height: 16.0),
-                    Container(
-                      width: 250.0, // Breite des Kreises
-                      height: 250.0,
-                      alignment: Alignment.center,
-                      child: characterToBeMadAbout != null
-                          ? CircleAvatar(
-                              radius: 150, // Halbe Breite als Radius
-                              backgroundImage: AssetImage(
-                                roleImageAssetPath(
-                                    characterToBeMadAbout?.image ?? ''),
+
+                    SizedBox(height: 16.0), // Abstand zwischen den Elementen
+                    // Character Image
+
+                    if (!tokensWithNoAction.contains(selectedToken) &&
+                        selectedToken !=
+                            Basictoken.these_chracters_are_not_in_play) ...[
+                      _buildCharacterSelection(context, character,
+                          (Character newCharacter) {
+                        setState(() {
+                          character = newCharacter;
+                        });
+                      }, true, 1),
+                    ],
+
+                    if (selectedToken ==
+                        Basictoken.these_chracters_are_not_in_play) ...[
+                      _buildStoredDemonBluffTokens(context, localizedStrings),
+                    ],
+
+                    if (selectedToken ==
+                        Basictoken.these_are_all_outsiders) ...[
+                      _buildCharacterSelection(context, character2,
+                          (Character newCharacter) {
+                        setState(() {
+                          character2 = newCharacter;
+                        });
+                      }, true, 2),
+                      _buildCharacterSelection(context, character3,
+                          (Character newCharacter) {
+                        setState(() {
+                          character3 = newCharacter;
+                        });
+                      }, true, 3),
+                      _buildCharacterSelection(context, character4,
+                          (Character newCharacter) {
+                        setState(() {
+                          character4 = newCharacter;
+                        });
+                      }, true, 4),
+                    ],
+
+                    if (character?.image == 'Icon_cerenovus' &&
+                        selectedToken ==
+                            Basictoken.this_chracter_selected_you) ...[
+                      SizedBox(height: 16.0),
+                      Container(
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(16)),
+                          color: Color(0xFFb5987d),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          localizedStrings.toBeMadAbout,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 26,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16.0),
+                      Container(
+                        width: 250.0, // Breite des Kreises
+                        height: 250.0,
+                        alignment: Alignment.center,
+                        child: characterToBeMadAbout != null
+                            ? CircleAvatar(
+                                radius: 150, // Halbe Breite als Radius
+                                backgroundImage: AssetImage(
+                                  roleImageAssetPath(
+                                      characterToBeMadAbout?.image ?? ''),
+                                ),
+                                backgroundColor: Color(0xFFb5987d),
+                              )
+                            : GestureDetector(
+                                onTap: () {
+                                  _showChangeCharacterDialog(context,
+                                      (Character newCharacter) {
+                                    setState(() {
+                                      characterToBeMadAbout = newCharacter;
+                                    });
+                                  }, true);
+                                },
+                                child: const CircleAvatar(
+                                    radius: 100,
+                                    backgroundColor: Color(0xFFb5987d),
+                                    child: Icon(
+                                      Icons.change_circle,
+                                      size: 80,
+                                      color: Colors.white,
+                                    )),
                               ),
-                              backgroundColor: Color(0xFFb5987d),
-                            )
-                          : GestureDetector(
-                              onTap: () {
-                                _showChangeCharacterDialog(context,
-                                    (Character newCharacter) {
-                                  setState(() {
-                                    characterToBeMadAbout = newCharacter;
-                                  });
-                                }, true);
-                              },
-                              child: const CircleAvatar(
-                                  radius: 100,
-                                  backgroundColor: Color(0xFFb5987d),
-                                  child: Icon(
-                                    Icons.change_circle,
-                                    size: 80,
-                                    color: Colors.white,
-                                  )),
-                            ),
-                    ),
-                  ]
-                ],
+                      ),
+                    ]
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -236,22 +223,16 @@ class _ThisCharacterSelectedYouScreenState
       'characterSelectedYouMadAboutPlayer',
     }.contains(info.kind);
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(
-                'assets/images/backgrounds/background_grim_middel.jpg'),
-            fit: BoxFit.cover,
-          ),
+    return AppBackground(
+      type: AppBackgroundType.playground,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-        child: SafeArea(
+        body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -368,23 +349,18 @@ class _ThisCharacterSelectedYouScreenState
         }
       }
     }
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(localizedStrings.demonBluffs,
-            style: const TextStyle(color: Colors.white)),
-      ),
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(
-                'assets/images/backgrounds/background_grim_middel.jpg'),
-            fit: BoxFit.cover,
-          ),
+    return AppBackground(
+      type: AppBackgroundType.playground,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: Text(localizedStrings.demonBluffs,
+              style: const TextStyle(color: Colors.white)),
         ),
-        child: bluffs.isEmpty
+        body: bluffs.isEmpty
             ? Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),

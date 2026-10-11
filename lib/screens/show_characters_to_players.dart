@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -70,49 +71,34 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
           ),
         );
       },
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          iconTheme: const IconThemeData(color: Colors.transparent),
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                alignment: Alignment.bottomCenter,
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_top.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
+      child: AppBackground(
+        type: AppBackgroundType.playground,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.transparent),
           ),
-        ),
-        body: Stack(
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage(
-                      'assets/images/backgrounds/background_grim_middel.jpg'), // Path to your background image
-                  fit: BoxFit
-                      .cover, // Ensures the image covers the entire background
-                ),
-              ),
-            ),
-            if (isDialogVisible)
-              Center(
-                child:
-                    buildPlayerDialog(context, currentCharacter, isGameMaster),
-              )
-            else
-              Stack(
-                children: [
-                  Center(
-                    child: buildCharacterView(
-                        context, currentCharacter, isGameMaster),
-                  ),
-                  if (!isGameMaster) _buildHoldToShowButton(context)
-                ],
-              )
-          ],
+          body: Stack(
+            children: [
+              if (isDialogVisible)
+                Center(
+                  child: buildPlayerDialog(
+                      context, currentCharacter, isGameMaster),
+                )
+              else
+                Stack(
+                  children: [
+                    Center(
+                      child: buildCharacterView(
+                          context, currentCharacter, isGameMaster),
+                    ),
+                    if (!isGameMaster) _buildHoldToShowButton(context)
+                  ],
+                )
+            ],
+          ),
         ),
       ),
     );
@@ -303,15 +289,20 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
               ),
               const SizedBox(height: 40),
               ElevatedButton.icon(
-                icon: Icon(Icons.check,
+                icon: Icon(
+                  Icons.check,
+                  color: iCanHaveSeenMyCharacter
+                      ? const Color(0xFFFFFFFF)
+                      : const Color(0xFF999999),
+                ),
+                label: Text(
+                  localizedStrings.iHaveSeenMyCharacter,
+                  style: TextStyle(
                     color: iCanHaveSeenMyCharacter
-                        ? Color(0xFF4a3b5e)
-                        : Color(0xFF6f678a).withOpacity(0.4)),
-                label: Text(localizedStrings.iHaveSeenMyCharacter,
-                    style: TextStyle(
-                        color: iCanHaveSeenMyCharacter
-                            ? Color(0xFF4a3b5e)
-                            : Color(0xFF6f678a).withOpacity(0.4))),
+                        ? const Color(0xFFFFFFFF)
+                        : const Color(0xFF999999),
+                  ),
+                ),
                 onPressed: () {
                   if (!iCanHaveSeenMyCharacter) {
                     return;

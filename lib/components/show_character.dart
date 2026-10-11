@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
@@ -30,114 +31,90 @@ class ShowCharacter extends StatefulWidget {
 class _ShowCharacterState extends State<ShowCharacter> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.character.name,
-            style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              alignment: Alignment.bottomCenter,
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_top.jpg'),
-              fit: BoxFit.cover,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(widget.character.name,
+              style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Character Name
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    widget.character.name,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold, color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                // Character Image
+                if (widget.imageLarge) ...[
+                  CharacterAvatar(
+                      character: widget.character,
+                      showIsSelected: false,
+                      showName: true,
+                      size: MediaQuery.of(context).size.width / 2),
+                ] else ...[
+                  CharacterAvatar(
+                      character: widget.character,
+                      showIsSelected: false,
+                      size: 200,
+                      showName: true)
+                ],
+
+                // Short Description
+                if (widget.showDescriptionShort) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 8.0, horizontal: 32.0),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start, // Überschrift linksbündig
+                      children: [
+                        const SizedBox(
+                            height: 8.0), // Platz zwischen Überschrift und Text
+                        Text(
+                          widget.character.descriptionShort,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Colors.white,
+                                  ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Long Description
+                if (widget.showDescriptionLong) ...[
+                  _buildExpandableText(0),
+                ],
+
+                // How to Run
+                if (widget.showHowToRun) ...[
+                  _buildExpandableText(1),
+                ],
+
+                if (widget.showMoreDetails) ...[
+                  _buildExpandableText(2),
+                  _buildExpandableText(3),
+                ],
+              ],
             ),
           ),
         ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_middel.jpg'), // Path to your background image
-                fit: BoxFit
-                    .cover, // Ensures the image covers the entire background
-              ),
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Character Name
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      widget.character.name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(
-                              fontWeight: FontWeight.bold, color: Colors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                  // Character Image
-                  if (widget.imageLarge) ...[
-                    CharacterAvatar(
-                        character: widget.character,
-                        showIsSelected: false,
-                        showName: true,
-                        size: MediaQuery.of(context).size.width / 2),
-                  ] else ...[
-                    CharacterAvatar(
-                        character: widget.character,
-                        showIsSelected: false,
-                        size: 200,
-                        showName: true)
-                  ],
-
-                  // Short Description
-                  if (widget.showDescriptionShort) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 32.0),
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start, // Überschrift linksbündig
-                        children: [
-                          const SizedBox(
-                              height:
-                                  8.0), // Platz zwischen Überschrift und Text
-                          Text(
-                            widget.character.descriptionShort,
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: Colors.white,
-                                    ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // Long Description
-                  if (widget.showDescriptionLong) ...[
-                    _buildExpandableText(0),
-                  ],
-
-                  // How to Run
-                  if (widget.showHowToRun) ...[
-                    _buildExpandableText(1),
-                  ],
-
-                  if (widget.showMoreDetails) ...[
-                    _buildExpandableText(2),
-                    _buildExpandableText(3),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

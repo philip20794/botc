@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:blood_on_the_clocktower/screens/home_screen.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
@@ -119,7 +121,49 @@ class MyApp extends StatelessWidget {
           Locale('en', ''),
           Locale('de', ''),
         ],
-        home: SafeArea(
-            child: gameIsRunning ? SpielbereichScreen() : HomeScreen()));
+        home: _LaunchSplash(
+          child: SafeArea(
+            child: gameIsRunning ? SpielbereichScreen() : HomeScreen(),
+          ),
+        ));
+  }
+}
+
+/// Keeps the full artwork visible after Android has handed control to Flutter.
+/// Android 12+ only permits a centered system splash icon, so the native splash
+/// cannot display a full-screen portrait image on its own.
+class _LaunchSplash extends StatefulWidget {
+  const _LaunchSplash({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_LaunchSplash> createState() => _LaunchSplashState();
+}
+
+class _LaunchSplashState extends State<_LaunchSplash> {
+  var _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _showSplash = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_showSplash) return widget.child;
+    return const ColoredBox(
+      color: Colors.black,
+      child: SizedBox.expand(
+        child: Image(
+          image: AssetImage('assets/images/app/splash_screen.png'),
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
+    );
   }
 }

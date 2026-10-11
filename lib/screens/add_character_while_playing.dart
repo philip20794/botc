@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
@@ -45,58 +46,38 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(localizedStrings.addCharacter,
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              alignment: Alignment.bottomCenter,
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_top.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(localizedStrings.addCharacter,
+              style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_middel.jpg'), // Path to your background image
-                fit: BoxFit
-                    .cover, // Ensures the image covers the entire background
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildTextInputFiled(context),
-                  SizedBox(height: 20),
-                  _buildToggleButtons(context),
-                  SizedBox(height: 20),
-                  _buildCharacterSelection(context, character,
-                      (Character newCharacter) {
-                    setState(() {
-                      character = newCharacter;
-                    });
-                  }),
-                  SizedBox(height: 20),
-                  _buildConfirmButton(context),
-                ],
-              )
-            ],
-          ),
-        ],
+        body: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTextInputFiled(context),
+                SizedBox(height: 20),
+                _buildToggleButtons(context),
+                SizedBox(height: 20),
+                _buildCharacterSelection(context, character,
+                    (Character newCharacter) {
+                  setState(() {
+                    character = newCharacter;
+                  });
+                }),
+                SizedBox(height: 20),
+                _buildConfirmButton(context),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }

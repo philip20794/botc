@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/next_screen_footer.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
@@ -26,6 +27,7 @@ class SelectCharacterComponent extends StatefulWidget {
   List<String> validationMessages;
   bool blockConfirmWhenDisabled;
   bool demonBluffsEnabled;
+  final bool showBackground;
 
   SelectCharacterComponent({
     required this.charactersToChooseFrom,
@@ -43,6 +45,7 @@ class SelectCharacterComponent extends StatefulWidget {
     this.validationMessages = const [],
     this.blockConfirmWhenDisabled = false,
     this.demonBluffsEnabled = true,
+    this.showBackground = true,
   });
 
   _SelectCharacterComponentState createState() =>
@@ -101,18 +104,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
         .where((element) => element.fraction == Fraction.fabled)
         .toList();
 
-    return Stack(
+    final content = Stack(
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(
-                  'assets/images/backgrounds/background_grim_middel.jpg'), // Path to your background image
-              fit: BoxFit
-                  .cover, // Ensures the image covers the entire background
-            ),
-          ),
-        ),
         Padding(
           padding: EdgeInsets.only(
               top: 8, left: 8, right: 8, bottom: widget.needToConfirm ? 64 : 0),
@@ -159,6 +152,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
         ],
       ],
     );
+
+    return widget.showBackground ? AppBackground(child: content) : content;
   }
 
   Widget _buildCharacterSection(BuildContext context, String title,

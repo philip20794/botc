@@ -31,19 +31,19 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: assets/images/grim_logo.png
-  adaptive_icon_background: assets/images/grim_logo.png
-  adaptive_icon_foreground: assets/images/grim_logo.png
+  image_path: assets/images/app/app_icon.png
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: assets/images/app/app_icon.png
 
 flutter_native_splash:
-  color: "#c9f2f8"
-  image: assets/images/grim_logo.png
+  color: "#040004"
+  image: assets/images/app/android_splash_screen.png
   android: true
   ios: true
   web: false
   android_12:
-    image: assets/images/grim_logo.png
-    icon_background_color: "#c9f2f8"
+    image: assets/images/app/android_splash_screen_android12.png
+    icon_background_color: "#040004"
 
 flutter:
   generate: true
@@ -59,8 +59,11 @@ flutter:
     - assets/ui/script_meta/storyteller_complexity.png
     - assets/ui/script_meta/player_complexity.png
     - assets/images/grim_logo.png
+    - assets/images/app/
     - assets/images/dead_character_overlay.png
     - assets/images/backgrounds/background_grim_bottom.jpg
+    - assets/images/backgrounds/background_grim_ui.png
+    - assets/images/backgrounds/background_grim_playground.png
     - assets/images/backgrounds/background_grim_full.jpg
     - assets/images/backgrounds/background_grim_middel.jpg
     - assets/images/backgrounds/background_grim_top.jpg

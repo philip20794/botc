@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
 import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
@@ -151,193 +152,188 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
           ),
         );
       },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage(
-                      'assets/images/backgrounds/background_grim_middel.jpg'),
-                  // Path to your background image
-                  fit: BoxFit
-                      .cover, // Ensures the image covers the entire background
+      child: AppBackground(
+        type: AppBackgroundType.playground,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              // The bar stays below character tokens in the Stack. A token can
+              // therefore still start a drag when it overlaps a reminder chip.
+              if (!_isMenuVisible &&
+                  gameStateService
+                      .quickFlowEntries(characterService.gameCharacters)
+                      .isNotEmpty)
+                _buildAnchoredMenuControl(
+                  const Offset(0, -78),
+                  QuickFlowBar(
+                    gameCharacters: characterService.gameCharacters,
+                    allCharacters: characterService.allCharacters,
+                    gameState: gameStateService,
+                  ),
                 ),
-              ),
-            ),
-            // The bar stays below character tokens in the Stack. A token can
-            // therefore still start a drag when it overlaps a reminder chip.
-            if (!_isMenuVisible &&
-                gameStateService
-                    .quickFlowEntries(characterService.gameCharacters)
-                    .isNotEmpty)
-              _buildAnchoredMenuControl(
-                const Offset(0, -78),
-                QuickFlowBar(
-                  gameCharacters: characterService.gameCharacters,
-                  allCharacters: characterService.allCharacters,
-                  gameState: gameStateService,
-                ),
-              ),
-            // Die Charakter-Widgets
-            CharacterCircleComponent(
-                key: _characterCircleKey2,
-                characters: characterService.gameCharactersWithoutDrunk,
-                charactersForToken: characterService.gameCharacters),
-            // Das Menü in der Bildschirmmitte
+              // Die Charakter-Widgets
+              CharacterCircleComponent(
+                  key: _characterCircleKey2,
+                  characters: characterService.gameCharactersWithoutDrunk,
+                  charactersForToken: characterService.gameCharacters),
+              // Das Menü in der Bildschirmmitte
 
-            if (gameStateService.gameIsRunning())
-              _buildAnchoredMenuControl(
-                const Offset(0, -230),
-                IconButton(
-                  onPressed: () => gameStateService
-                      .nextNightState(characterService.gameCharacters),
-                  icon: const Icon(Icons.arrow_forward,
-                      color: Colors.white, size: 50),
+              if (gameStateService.gameIsRunning())
+                _buildAnchoredMenuControl(
+                  const Offset(0, -230),
+                  IconButton(
+                    onPressed: () => gameStateService
+                        .nextNightState(characterService.gameCharacters),
+                    icon: const Icon(Icons.arrow_forward,
+                        color: Colors.white, size: 50),
+                  ),
                 ),
-              ),
-            if (bluffCharacters.isNotEmpty)
-              _buildAnchoredMenuControl(
-                const Offset(0, -154),
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ThisCharacterSelectedYouScreen(
-                        showDemonBluffsOnly: true,
+              if (bluffCharacters.isNotEmpty)
+                _buildAnchoredMenuControl(
+                  const Offset(0, -154),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ThisCharacterSelectedYouScreen(
+                          showDemonBluffsOnly: true,
+                        ),
+                      ),
+                    ),
+                    child: Semantics(
+                      button: true,
+                      label: localizedStrings.demonBluffs,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(localizedStrings.demonBluffs,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 12)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (final character in bluffCharacters)
+                                CharacterAvatar(
+                                  character: character,
+                                  showIsSelected: false,
+                                  size: 34,
+                                  showName: false,
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  child: Semantics(
-                    button: true,
-                    label: localizedStrings.demonBluffs,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(localizedStrings.demonBluffs,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12)),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (final character in bluffCharacters)
-                              CharacterAvatar(
-                                character: character,
-                                showIsSelected: false,
-                                size: 34,
-                                showName: false,
-                              ),
-                          ],
-                        ),
-                      ],
+                ),
+              _buildAnchoredMenuControl(
+                Offset.zero,
+                GestureDetector(
+                  key: const ValueKey('playground-menu-anchor'),
+                  onTap: _toggleMenu,
+                  child: AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) => Transform.rotate(
+                      angle: _animation.value * pi / 4,
+                      child: child,
+                    ),
+                    child:
+                        const Icon(Icons.apps, size: 60, color: Colors.white),
+                  ),
+                ),
+              ),
+              if (gameStateService.showNightStateHelpButton())
+                _buildAnchoredMenuControl(
+                  const Offset(0, 96),
+                  GestureDetector(
+                    key: const ValueKey('night-phase-info-button'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showHelpDialogBox(context),
+                    onLongPress: () =>
+                        _showCurrentNightCharacterDetails(context),
+                    child: const SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: Icon(Icons.help_outline,
+                          color: Colors.white, size: 50),
                     ),
                   ),
                 ),
-              ),
-            _buildAnchoredMenuControl(
-              Offset.zero,
-              GestureDetector(
-                key: const ValueKey('playground-menu-anchor'),
-                onTap: _toggleMenu,
-                child: AnimatedBuilder(
-                  animation: _animation,
-                  builder: (context, child) => Transform.rotate(
-                    angle: _animation.value * pi / 4,
-                    child: child,
-                  ),
-                  child: const Icon(Icons.apps, size: 60, color: Colors.white),
-                ),
-              ),
-            ),
-            if (gameStateService.showNightStateHelpButton())
-              _buildAnchoredMenuControl(
-                const Offset(0, 96),
-                GestureDetector(
-                  key: const ValueKey('night-phase-info-button'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _showHelpDialogBox(context),
-                  onLongPress: () => _showCurrentNightCharacterDetails(context),
-                  child: const SizedBox(
-                    width: 56,
-                    height: 56,
-                    child:
-                        Icon(Icons.help_outline, color: Colors.white, size: 50),
+              if (gameStateService.isDawn())
+                _buildAnchoredMenuControl(
+                  const Offset(0, 96),
+                  IconButton(
+                    onPressed: () => _showHelpDialogBox(context),
+                    icon:
+                        const Icon(Icons.sunny, color: Colors.white, size: 50),
                   ),
                 ),
-              ),
-            if (gameStateService.isDawn())
-              _buildAnchoredMenuControl(
-                const Offset(0, 96),
-                IconButton(
-                  onPressed: () => _showHelpDialogBox(context),
-                  icon: const Icon(Icons.sunny, color: Colors.white, size: 50),
+              if (gameStateService.isDay())
+                _buildAnchoredMenuControl(
+                  const Offset(0, 96),
+                  const Icon(Icons.sunny, color: Colors.white, size: 50),
                 ),
-              ),
-            if (gameStateService.isDay())
-              _buildAnchoredMenuControl(
-                const Offset(0, 96),
-                const Icon(Icons.sunny, color: Colors.white, size: 50),
-              ),
-            if (gameStateService.isDust())
-              _buildAnchoredMenuControl(
-                const Offset(0, 96),
-                IconButton(
-                  onPressed: () => _showHelpDialogBox(context),
-                  icon: const Icon(Icons.mode_night,
-                      color: Colors.white, size: 50),
+              if (gameStateService.isDust())
+                _buildAnchoredMenuControl(
+                  const Offset(0, 96),
+                  IconButton(
+                    onPressed: () => _showHelpDialogBox(context),
+                    icon: const Icon(Icons.mode_night,
+                        color: Colors.white, size: 50),
+                  ),
                 ),
-              ),
 
-            if (_isMenuVisible) ...[
-              _buildMenuButton(CustomIcons.collection, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ThisCharacterSelectedYouScreen()),
-                );
-                _toggleMenu();
-              }, const Offset(0, -84), false, false, context),
-              _buildMenuButton(Icons.person_add, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => AddCharacterWhilePlaying()),
-                );
-                _toggleMenu();
-              }, const Offset(84, -42), false, false, context),
-              _buildMenuButton(Icons.arrow_back, () {
-                setState(() {
-                  gameStateService
-                      .previousNightState(characterService.gameCharacters);
-                });
-                // _toggleMenu();
-              }, const Offset(-84, -42), false, false, context),
-              _buildMenuButton(Icons.restore, () {
-                _resetOrderOfLayout();
-                _toggleMenu();
-              }, const Offset(84, 42), false, true, context),
-              _buildMenuButton(Icons.close, () {
-                gameStateService.endGame();
-                characterService.endGame();
-                _toggleMenu();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => HomeScreen()),
-                  (Route<dynamic> route) => false,
-                );
-              }, const Offset(0, 84), false, true, context),
-              _buildMenuButton(CustomIcons.law, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => RulesSelectionScreen()),
-                );
-                _toggleMenu();
-              }, const Offset(-84, 42), false, false, context),
+              if (_isMenuVisible) ...[
+                _buildMenuButton(CustomIcons.collection, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => ThisCharacterSelectedYouScreen()),
+                  );
+                  _toggleMenu();
+                }, const Offset(0, -84), false, false, context),
+                _buildMenuButton(Icons.person_add, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => AddCharacterWhilePlaying()),
+                  );
+                  _toggleMenu();
+                }, const Offset(84, -42), false, false, context),
+                _buildMenuButton(Icons.arrow_back, () {
+                  setState(() {
+                    gameStateService
+                        .previousNightState(characterService.gameCharacters);
+                  });
+                  // _toggleMenu();
+                }, const Offset(-84, -42), false, false, context),
+                _buildMenuButton(Icons.restore, () {
+                  _resetOrderOfLayout();
+                  _toggleMenu();
+                }, const Offset(84, 42), false, true, context),
+                _buildMenuButton(Icons.close, () {
+                  gameStateService.endGame();
+                  characterService.endGame();
+                  _toggleMenu();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                    (Route<dynamic> route) => false,
+                  );
+                }, const Offset(0, 84), false, true, context),
+                _buildMenuButton(CustomIcons.law, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => RulesSelectionScreen()),
+                  );
+                  _toggleMenu();
+                }, const Offset(-84, 42), false, false, context),
+              ],
+              _buildUnassingedTokens(context),
+              _buildSavantGeneratorButton(context, characterService)
             ],
-            _buildUnassingedTokens(context),
-            _buildSavantGeneratorButton(context, characterService)
-          ],
+          ),
         ),
       ),
     );

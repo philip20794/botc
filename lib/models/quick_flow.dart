@@ -100,7 +100,8 @@ class QuickFlowStep {
     };
     if (type == null) return null;
 
-    final tokenId = json['tokenId'] is String ? json['tokenId'] as String : null;
+    final tokenId =
+        json['tokenId'] is String ? json['tokenId'] as String : null;
     final operation = switch (json['operation']) {
       'move' => QuickFlowReminderOperation.move,
       'setOnce' => QuickFlowReminderOperation.setOnce,
@@ -138,8 +139,7 @@ class QuickFlowStep {
         'id': id,
         'type': switch (type) {
           QuickFlowStepType.reminder => 'reminder',
-          QuickFlowStepType.reminderCharacterToken =>
-            'reminderCharacterToken',
+          QuickFlowStepType.reminderCharacterToken => 'reminderCharacterToken',
           QuickFlowStepType.showInfo => 'showInfo',
         },
         if (tokenId != null) 'tokenId': tokenId,
@@ -151,18 +151,15 @@ class QuickFlowStep {
           },
         if (group != null) 'group': group,
         if (distinctFrom.isNotEmpty) 'distinctFrom': distinctFrom,
-        if (!allowedTargets.isEmpty)
-          'allowedTargets': allowedTargets.toJson(),
+        if (!allowedTargets.isEmpty) 'allowedTargets': allowedTargets.toJson(),
         if (nightConstraint != null) 'nightConstraint': nightConstraint,
         if (selection != null) 'selection': selection!.toJson(),
-        if (allowedFractions.isNotEmpty)
-          'allowedFractions': allowedFractions,
+        if (allowedFractions.isNotEmpty) 'allowedFractions': allowedFractions,
         if (allowManualOverride) 'allowManualOverride': true,
         if (recipient != null) 'recipient': recipient!.toJson(),
         if (presentation != null) 'presentation': presentation!.toJson(),
         if (requires.isNotEmpty) 'requires': requires,
-        if (showOnlyWhen != null)
-          'showOnlyWhen': showOnlyWhen!.toJson(),
+        if (showOnlyWhen != null) 'showOnlyWhen': showOnlyWhen!.toJson(),
         if (note != null) 'note': note,
       };
 }
@@ -210,8 +207,7 @@ class QuickFlowTargetRules {
 
   Map<String, dynamic> toJson() => {
         if (fractions.isNotEmpty) 'fractions': fractions,
-        if (excludeFractions.isNotEmpty)
-          'excludeFractions': excludeFractions,
+        if (excludeFractions.isNotEmpty) 'excludeFractions': excludeFractions,
         if (alignment.isNotEmpty) 'alignment': alignment,
         if (roles.isNotEmpty) 'roles': roles,
         if (excludeAbilityOwner) 'excludeAbilityOwner': true,
@@ -231,8 +227,7 @@ class QuickFlowCharacterSelection {
     final type = json['type'];
     if (type != 'manual' && type != 'fromReminderTarget') return null;
     final stepId = json['stepId'] is String ? json['stepId'] as String : null;
-    if (type == 'fromReminderTarget' &&
-        (stepId == null || stepId.isEmpty)) {
+    if (type == 'fromReminderTarget' && (stepId == null || stepId.isEmpty)) {
       return null;
     }
     return QuickFlowCharacterSelection(type: type as String, stepId: stepId);
@@ -306,8 +301,7 @@ class QuickFlowPresentation {
         if (playerStep != null) 'playerStep': playerStep,
         if (characterStep != null) 'characterStep': characterStep,
         if (sourceRoleId != null) 'sourceRoleId': sourceRoleId,
-        if (pointToRolePlayer != null)
-          'pointToRolePlayer': pointToRolePlayer,
+        if (pointToRolePlayer != null) 'pointToRolePlayer': pointToRolePlayer,
       };
 }
 

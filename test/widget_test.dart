@@ -38,6 +38,8 @@ void main() {
       ),
     );
 
+    expect(find.byType(Image), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
 
     expect(find.byType(HomeScreen), findsOneWidget);

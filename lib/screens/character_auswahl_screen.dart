@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:blood_on_the_clocktower/components/select_character_component.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/screens/show_characters_to_players.dart';
@@ -145,22 +146,15 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
       });
     }
 
-    return Scaffold(
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(localizedStrings.characterSelection,
               style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.black,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                alignment: Alignment.bottomCenter,
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_top.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
           actions: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -225,7 +219,10 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
           validationMessages: validationMessages,
           blockConfirmWhenDisabled: !bluffsComplete,
           demonBluffsEnabled: requiredBluffCount > 0,
-        ));
+          showBackground: false,
+        ),
+      ),
+    );
   }
 
   // Widget zum Erstellen des Fraktions-Textes

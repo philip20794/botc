@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/select_gameset.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
@@ -42,7 +43,9 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
         .toList();
     var localizedStrings = AppLocalizations.of(context)!;
 
-    return Scaffold(
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: LayoutBuilder(
             builder: (context, constraints) {
@@ -82,57 +85,39 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
               );
             },
           ),
-          backgroundColor: Colors.black,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                alignment: Alignment.bottomCenter,
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_top.jpg'),
-                fit: BoxFit.cover,
-              ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSection(townsfolk, "Townsfolk"),
+                const Divider(color: Colors.white, thickness: 1),
+                _buildSection(outsider, "Outsider"),
+                const Divider(color: Colors.white, thickness: 1),
+                _buildSection(minion, "Minion"),
+                const Divider(color: Colors.white, thickness: 1),
+                _buildSection(demon, "Demon"),
+                const Divider(color: Colors.white, thickness: 3),
+                _buildSection(travellers, "Travellers"),
+                Center(
+                    child: Text(
+                  localizedStrings.notInTheFirstNight,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                )),
+              ],
             ),
           ),
         ),
-        body: Stack(children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                    'assets/images/backgrounds/background_grim_full.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSection(townsfolk, "Townsfolk"),
-                  const Divider(color: Colors.white, thickness: 1),
-                  _buildSection(outsider, "Outsider"),
-                  const Divider(color: Colors.white, thickness: 1),
-                  _buildSection(minion, "Minion"),
-                  const Divider(color: Colors.white, thickness: 1),
-                  _buildSection(demon, "Demon"),
-                  const Divider(color: Colors.white, thickness: 3),
-                  _buildSection(travellers, "Travellers"),
-                  Center(
-                      child: Text(
-                    localizedStrings.notInTheFirstNight,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  )),
-                ],
-              ),
-            ),
-          ),
-        ]));
+      ),
+    );
   }
 
   Widget _buildSection(List<Character> characters, String title) {
