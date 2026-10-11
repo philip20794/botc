@@ -77,6 +77,10 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
           key: const ValueKey('quick-flow-scroll-view'),
           controller: _scrollController,
           scrollDirection: Axis.horizontal,
+          // The bar is placed above the playground. Let empty viewport space
+          // fall through to character drags; only its actual chip children
+          // participate in the gesture arena.
+          hitTestBehavior: HitTestBehavior.deferToChild,
           child: ConstrainedBox(
             constraints: BoxConstraints(minWidth: constraints.maxWidth),
             child: Align(

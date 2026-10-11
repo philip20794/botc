@@ -166,6 +166,20 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                 ),
               ),
             ),
+            // The bar stays below character tokens in the Stack. A token can
+            // therefore still start a drag when it overlaps a reminder chip.
+            if (!_isMenuVisible &&
+                gameStateService
+                    .quickFlowEntries(characterService.gameCharacters)
+                    .isNotEmpty)
+              _buildAnchoredMenuControl(
+                const Offset(0, -78),
+                QuickFlowBar(
+                  gameCharacters: characterService.gameCharacters,
+                  allCharacters: characterService.allCharacters,
+                  gameState: gameStateService,
+                ),
+              ),
             // Die Charakter-Widgets
             CharacterCircleComponent(
                 key: _characterCircleKey2,
@@ -219,18 +233,6 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                       ],
                     ),
                   ),
-                ),
-              ),
-            if (!_isMenuVisible &&
-                gameStateService
-                    .quickFlowEntries(characterService.gameCharacters)
-                    .isNotEmpty)
-              _buildAnchoredMenuControl(
-                const Offset(0, -78),
-                QuickFlowBar(
-                  gameCharacters: characterService.gameCharacters,
-                  allCharacters: characterService.allCharacters,
-                  gameState: gameStateService,
                 ),
               ),
             _buildAnchoredMenuControl(
