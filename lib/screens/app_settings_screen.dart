@@ -1,9 +1,7 @@
 import 'package:blood_on_the_clocktower/components/select_language.dart';
-import 'package:blood_on_the_clocktower/screens/auth_screen.dart';
 import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
 import 'package:blood_on_the_clocktower/screens/settings_character_circle.dart';
-import 'package:blood_on_the_clocktower/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -37,9 +35,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
-    final authService = Provider.of<AuthService>(context);
-    final user = authService.user;
-
     return Scaffold(
       backgroundColor: const Color(0xFFc9f2f8),
       appBar: AppBar(
@@ -89,13 +84,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                   const RoleNotesScreen(), null, false),
               _buildCard(localizedStrings.rules, CustomIcons.law,
                   RulesSelectionScreen(), null, false),
-              if (user != null) ...[
-                _buildCard(localizedStrings.logout, Icons.logout, null,
-                    () => authService.signOut(), false),
-              ] else ...[
-                _buildCard(localizedStrings.login, Icons.login,
-                    const AuthScreen(), null, false),
-              ],
               _buildCard(localizedStrings.downloadAndroidApp, Icons.download,
                   null, () => downloadApkForWeb(), !kIsWeb)
             ],

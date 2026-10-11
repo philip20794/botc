@@ -770,6 +770,54 @@ abstract class AppLocalizations {
   /// **'JSON-Datei auswählen'**
   String get selectScriptFile;
 
+  /// No description provided for @or.
+  ///
+  /// In de, this message translates to:
+  /// **'ODER'**
+  String get or;
+
+  /// No description provided for @pasteJson.
+  ///
+  /// In de, this message translates to:
+  /// **'JSON einfügen'**
+  String get pasteJson;
+
+  /// No description provided for @pasteJsonHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Füge hier ein exportiertes Blood-on-the-Clocktower-Skript ein.'**
+  String get pasteJsonHint;
+
+  /// No description provided for @analyzeScript.
+  ///
+  /// In de, this message translates to:
+  /// **'Analysieren'**
+  String get analyzeScript;
+
+  /// No description provided for @scriptsCreateDiscover.
+  ///
+  /// In de, this message translates to:
+  /// **'Skripte erstellen & entdecken'**
+  String get scriptsCreateDiscover;
+
+  /// No description provided for @scriptsCreateDiscoverDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Erstelle eigene Blood-on-the-Clocktower-Skripte oder entdecke Skripte anderer Spieler. Exportiere sie als JSON und importiere sie hier per Datei oder Copy & Paste.'**
+  String get scriptsCreateDiscoverDescription;
+
+  /// No description provided for @openScriptTool.
+  ///
+  /// In de, this message translates to:
+  /// **'Script Tool öffnen'**
+  String get openScriptTool;
+
+  /// No description provided for @scriptToolError.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Script Tool konnte nicht geöffnet werden.'**
+  String get scriptToolError;
+
   /// No description provided for @scriptPreview.
   ///
   /// In de, this message translates to:

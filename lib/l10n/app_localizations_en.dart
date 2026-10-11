@@ -363,6 +363,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectScriptFile => 'Select JSON file';
 
   @override
+  String get or => 'OR';
+
+  @override
+  String get pasteJson => 'Paste JSON';
+
+  @override
+  String get pasteJsonHint =>
+      'Paste an exported Blood on the Clocktower script here.';
+
+  @override
+  String get analyzeScript => 'Analyze';
+
+  @override
+  String get scriptsCreateDiscover => 'Create & discover scripts';
+
+  @override
+  String get scriptsCreateDiscoverDescription =>
+      'Create your own Blood on the Clocktower scripts or discover scripts from other players. Export them as JSON and import them here by file or copy and paste.';
+
+  @override
+  String get openScriptTool => 'Open Script Tool';
+
+  @override
+  String get scriptToolError => 'The Script Tool could not be opened.';
+
+  @override
   String get scriptPreview => 'Script preview';
 
   @override

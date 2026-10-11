@@ -364,6 +364,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get selectScriptFile => 'JSON-Datei auswählen';
 
   @override
+  String get or => 'ODER';
+
+  @override
+  String get pasteJson => 'JSON einfügen';
+
+  @override
+  String get pasteJsonHint =>
+      'Füge hier ein exportiertes Blood-on-the-Clocktower-Skript ein.';
+
+  @override
+  String get analyzeScript => 'Analysieren';
+
+  @override
+  String get scriptsCreateDiscover => 'Skripte erstellen & entdecken';
+
+  @override
+  String get scriptsCreateDiscoverDescription =>
+      'Erstelle eigene Blood-on-the-Clocktower-Skripte oder entdecke Skripte anderer Spieler. Exportiere sie als JSON und importiere sie hier per Datei oder Copy & Paste.';
+
+  @override
+  String get openScriptTool => 'Script Tool öffnen';
+
+  @override
+  String get scriptToolError => 'Das Script Tool konnte nicht geöffnet werden.';
+
+  @override
   String get scriptPreview => 'Skriptvorschau';
 
   @override

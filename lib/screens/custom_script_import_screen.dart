@@ -8,6 +8,7 @@ import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _importBackground = Color(0xFF4a3b5e);
 const _importSurface = Color(0xFF6f678a);
@@ -73,10 +74,13 @@ ThemeData _customScriptImportTheme(ThemeData base) {
 }
 
 class CustomScriptImportScreen extends StatefulWidget {
-  const CustomScriptImportScreen({super.key, this.pickJson});
+  const CustomScriptImportScreen({super.key, this.pickJson, this.openUri});
 
   /// Allows a widget test to supply file contents without a platform picker.
   final Future<String?> Function()? pickJson;
+
+  /// Allows a widget test to verify external navigation without a browser.
+  final Future<bool> Function(Uri uri)? openUri;
 
   @override
   State<CustomScriptImportScreen> createState() =>
@@ -84,11 +88,17 @@ class CustomScriptImportScreen extends StatefulWidget {
 }
 
 class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
-  ScriptImportResult? _draft;
+  static final _scriptToolUri =
+      Uri.parse('https://script.bloodontheclocktower.com/');
+
   String? _fileError;
-  bool _isSaving = false;
-  double? _storytellerComplexity;
-  double? _playerComplexity;
+  final _jsonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _jsonController.dispose();
+    super.dispose();
+  }
 
   Future<String?> _pickJsonFile() async {
     final selection = await FilePicker.platform.pickFiles(
@@ -108,23 +118,185 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
     try {
       final source = await (widget.pickJson ?? _pickJsonFile)();
       if (source == null) return;
+      await _analyzeSource(source);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _fileError = AppLocalizations.of(context)!.scriptFileError;
+      });
+    }
+  }
+
+  Future<void> _analyzePastedJson() async {
+    final source = _jsonController.text;
+    if (source.trim().isEmpty) return;
+    await _analyzeSource(source);
+  }
+
+  Future<void> _analyzeSource(String source) async {
+    try {
       final draft = await context
           .read<ScriptService>()
           .inspectImportJson(source, context.read<CharacterService>());
       if (!mounted) return;
-      setState(() {
-        _draft = draft;
-        _fileError = null;
-        _storytellerComplexity = null;
-        _playerComplexity = null;
-      });
+      if (draft.validationIssues
+          .any((issue) => issue.type == ScriptImportIssueType.invalidJson)) {
+        setState(() {
+          _fileError = AppLocalizations.of(context)!.scriptInvalidJson;
+        });
+        return;
+      }
+      setState(() => _fileError = null);
+      final saved = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => ScriptImportPreviewScreen(initialDraft: draft),
+        ),
+      );
+      if (saved == true && mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _draft = null;
-        _fileError = AppLocalizations.of(context)!.scriptFileError;
+        _fileError = AppLocalizations.of(context)!.scriptImportError;
       });
     }
+  }
+
+  Future<void> _openScriptTool() async {
+    final opened = await (widget.openUri?.call(_scriptToolUri) ??
+        launchUrl(_scriptToolUri, mode: LaunchMode.externalApplication));
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.scriptToolError)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context)!;
+    return Theme(
+      data: _customScriptImportTheme(Theme.of(context)),
+      child: Builder(
+          builder: (context) => Scaffold(
+                appBar: AppBar(title: Text(strings.importScript)),
+                body: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ElevatedButton.icon(
+                              key: const ValueKey('scriptImportPickFile'),
+                              onPressed: _selectFile,
+                              icon: const Icon(Icons.upload_file),
+                              label: Text(strings.selectScriptFile),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  child: Text(
+                                    strings.or,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ),
+                                const Expanded(child: Divider()),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              key: const ValueKey('scriptImportPasteJson'),
+                              controller: _jsonController,
+                              minLines: 5,
+                              maxLines: 8,
+                              keyboardType: TextInputType.multiline,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: strings.pasteJson,
+                                hintText: strings.pasteJsonHint,
+                                alignLabelWithHint: true,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              key: const ValueKey('scriptImportAnalyzeText'),
+                              onPressed: _jsonController.text.trim().isEmpty
+                                  ? null
+                                  : _analyzePastedJson,
+                              icon: const Icon(Icons.manage_search),
+                              label: Text(strings.analyzeScript),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.scriptsCreateDiscover,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(strings.scriptsCreateDiscoverDescription),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                key: const ValueKey('scriptImportOpenTool'),
+                                onPressed: _openScriptTool,
+                                icon: const Icon(Icons.open_in_new),
+                                label: Text(strings.openScriptTool),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_fileError != null) ...[
+                      const SizedBox(height: 12),
+                      _ErrorCard(message: _fileError!),
+                    ],
+                  ],
+                ),
+              )),
+    );
+  }
+}
+
+class ScriptImportPreviewScreen extends StatefulWidget {
+  const ScriptImportPreviewScreen({super.key, required this.initialDraft});
+
+  final ScriptImportResult initialDraft;
+
+  @override
+  State<ScriptImportPreviewScreen> createState() =>
+      _ScriptImportPreviewScreenState();
+}
+
+class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
+  late ScriptImportResult _draft;
+  bool _isSaving = false;
+  double? _storytellerComplexity;
+  double? _playerComplexity;
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = widget.initialDraft;
   }
 
   Future<void> _mapRole(ImportedScriptRole role) async {
@@ -133,7 +305,7 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
       builder: (context) => Theme(
         data: _customScriptImportTheme(Theme.of(this.context)),
         child: _RoleMappingDialog(
-          excludedRoleIds: _draft!.roles
+          excludedRoleIds: _draft.roles
               .where((candidate) => candidate.index != role.index)
               .map((candidate) => candidate.resolvedRoleId)
               .whereType<String>()
@@ -143,22 +315,20 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
     );
     if (roleId == null || !mounted) return;
     final mapped = await context.read<ScriptService>().mapImportedRole(
-          _draft!,
+          _draft,
           roleIndex: role.index,
           canonicalRoleId: roleId,
           characterService: context.read<CharacterService>(),
         );
-    if (!mounted) return;
-    setState(() => _draft = mapped);
+    if (mounted) setState(() => _draft = mapped);
   }
 
   Future<void> _confirmImport() async {
-    final draft = _draft;
-    if (draft == null || !draft.canBeConfirmed) return;
+    if (!_draft.canBeConfirmed) return;
     setState(() => _isSaving = true);
     try {
       await context.read<ScriptService>().confirmImport(
-            draft,
+            _draft,
             storytellerComplexity: _storytellerComplexity,
             playerComplexity: _playerComplexity,
           );
@@ -168,11 +338,12 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
       );
       Navigator.of(context).pop(true);
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(AppLocalizations.of(context)!.scriptImportError)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.scriptImportError)),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -201,117 +372,92 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
     final draft = _draft;
     return Theme(
       data: _customScriptImportTheme(Theme.of(context)),
-      child: Builder(
-          builder: (context) => Scaffold(
-                appBar: AppBar(title: Text(strings.importScript)),
-                body: ListView(
-                  padding: const EdgeInsets.all(16),
+      child: Scaffold(
+        appBar: AppBar(title: Text(strings.scriptPreview)),
+        body: ListView(
+          key: const ValueKey('scriptImportPreview'),
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ElevatedButton.icon(
-                      key: const ValueKey('scriptImportPickFile'),
-                      onPressed: _isSaving ? null : _selectFile,
-                      icon: const Icon(Icons.upload_file),
-                      label: Text(strings.selectScriptFile),
-                    ),
-                    if (_fileError != null) ...[
-                      const SizedBox(height: 12),
-                      _ErrorCard(message: _fileError!),
-                    ],
-                    if (draft != null) ...[
-                      const SizedBox(height: 16),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(strings.scriptPreview,
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
-                              const SizedBox(height: 8),
-                              Text(draft.name ?? strings.scriptImportError),
-                              if (draft.author != null)
-                                Text(strings.scriptAuthor(draft.author!)),
-                              Text(strings.scriptRoleCount(draft.roles.length)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      ...draft.issues
-                          .where((issue) => issue.roleIndex == null)
-                          .map((issue) => Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: _ErrorCard(
-                                    message: _issueText(strings, issue)),
-                              )),
-                      if (draft.unresolvedRoles.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Text(strings.unknownImportedRoles,
-                            style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 8),
-                        ...draft.unresolvedRoles.map((role) => Card(
-                              child: ListTile(
-                                title: Text(
-                                    role.sourceId ?? strings.scriptInvalidRole),
-                                subtitle:
-                                    Text(_issueText(strings, role.issue!)),
-                                trailing: OutlinedButton(
-                                  key:
-                                      ValueKey('scriptImportMap-${role.index}'),
-                                  onPressed:
-                                      _isSaving ? null : () => _mapRole(role),
-                                  child: Text(strings.mapRole),
-                                ),
-                              ),
-                            )),
-                      ],
-                      if (draft.issues.any((issue) =>
-                          issue.type == ScriptImportIssueType.duplicateRoleId))
-                        ...draft.issues
-                            .where((issue) =>
-                                issue.type ==
-                                ScriptImportIssueType.duplicateRoleId)
-                            .map((issue) => Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: _ErrorCard(
-                                      message: _issueText(strings, issue)),
-                                )),
-                      const SizedBox(height: 16),
-                      ScriptComplexityEditorField(
-                        key:
-                            const ValueKey('scriptImportStorytellerComplexity'),
-                        asset:
-                            'assets/ui/script_meta/storyteller_complexity.png',
-                        label: strings.storytellerComplexity,
-                        value: _storytellerComplexity,
-                        onChanged: (value) =>
-                            setState(() => _storytellerComplexity = value),
-                      ),
-                      ScriptComplexityEditorField(
-                        key: const ValueKey('scriptImportPlayerComplexity'),
-                        asset: 'assets/ui/script_meta/player_complexity.png',
-                        label: strings.playerComplexity,
-                        value: _playerComplexity,
-                        onChanged: (value) =>
-                            setState(() => _playerComplexity = value),
-                      ),
-                      const SizedBox(height: 16),
-                      if (!draft.canBeConfirmed)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(strings.resolveRolesBeforeSaving),
-                        ),
-                      ElevatedButton(
-                        key: const ValueKey('scriptImportConfirm'),
-                        onPressed: draft.canBeConfirmed && !_isSaving
-                            ? _confirmImport
-                            : null,
-                        child: Text(strings.confirmImport),
-                      ),
-                    ],
+                    Text(strings.scriptPreview,
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(draft.name ?? strings.scriptImportError),
+                    if (draft.author != null)
+                      Text(strings.scriptAuthor(draft.author!)),
+                    Text(strings.scriptRoleCount(draft.roles.length)),
                   ],
                 ),
-              )),
+              ),
+            ),
+            ...draft.issues
+                .where((issue) => issue.roleIndex == null)
+                .map((issue) => Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: _ErrorCard(message: _issueText(strings, issue)),
+                    )),
+            if (draft.unresolvedRoles.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(strings.unknownImportedRoles,
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              ...draft.unresolvedRoles.map((role) => Card(
+                    child: ListTile(
+                      title: Text(role.sourceId ?? strings.scriptInvalidRole),
+                      subtitle: Text(_issueText(strings, role.issue!)),
+                      trailing: OutlinedButton(
+                        key: ValueKey('scriptImportMap-${role.index}'),
+                        onPressed: _isSaving ? null : () => _mapRole(role),
+                        child: Text(strings.mapRole),
+                      ),
+                    ),
+                  )),
+            ],
+            if (draft.issues.any(
+                (issue) => issue.type == ScriptImportIssueType.duplicateRoleId))
+              ...draft.issues
+                  .where((issue) =>
+                      issue.type == ScriptImportIssueType.duplicateRoleId)
+                  .map((issue) => Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _ErrorCard(message: _issueText(strings, issue)),
+                      )),
+            const SizedBox(height: 16),
+            ScriptComplexityEditorField(
+              key: const ValueKey('scriptImportStorytellerComplexity'),
+              asset: 'assets/ui/script_meta/storyteller_complexity.png',
+              label: strings.storytellerComplexity,
+              value: _storytellerComplexity,
+              onChanged: (value) =>
+                  setState(() => _storytellerComplexity = value),
+            ),
+            ScriptComplexityEditorField(
+              key: const ValueKey('scriptImportPlayerComplexity'),
+              asset: 'assets/ui/script_meta/player_complexity.png',
+              label: strings.playerComplexity,
+              value: _playerComplexity,
+              onChanged: (value) => setState(() => _playerComplexity = value),
+            ),
+            const SizedBox(height: 16),
+            if (!draft.canBeConfirmed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(strings.resolveRolesBeforeSaving),
+              ),
+            ElevatedButton(
+              key: const ValueKey('scriptImportConfirm'),
+              onPressed:
+                  draft.canBeConfirmed && !_isSaving ? _confirmImport : null,
+              child: Text(strings.confirmImport),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
