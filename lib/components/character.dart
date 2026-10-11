@@ -134,7 +134,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
     CharacterService characterService = Provider.of<CharacterService>(context);
     SettingsService settingsService = Provider.of<SettingsService>(context);
     isSelected = gameStateService.nightCount > 0
-        ? gameStateService.isCharacterAwake(widget.character)
+        ? gameStateService.isCharacterHighlighted(widget.character)
         : characterService.containsCharacter(
             characterService.gameCharacters, widget.character);
 
@@ -402,8 +402,8 @@ class _CharacterWidgetState extends State<CharacterWidget> {
         Provider.of<GameStateService>(context, listen: false);
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
-    final allTokens = gameStateService.getAllTokensInGame(
-        characterService.gameCharacters, characterService.gameCharactersBackup);
+    final allTokens =
+        gameStateService.getAllTokensInGame(characterService.gameCharacters);
     showDialog(
       context: context,
       builder: (context) {

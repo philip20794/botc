@@ -56,4 +56,52 @@ void main() {
     expect(managerTheme.textTheme.titleMedium?.color, Colors.white);
     expect(managerTheme.listTileTheme.subtitleTextStyle?.color, Colors.white70);
   });
+
+  testWidgets('keeps selector and management action usable in separate columns',
+      (tester) async {
+    final scripts = ScriptService();
+    await scripts.ready;
+    final gameState = GameStateService(scriptService: scripts);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: scripts),
+          ChangeNotifierProvider.value(value: gameState),
+          ChangeNotifierProvider(create: (_) => CharacterService()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Row(
+              children: [
+                const SizedBox(width: 40),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => SelectGameset(
+                      disabled: false,
+                      scriptWidth: constraints.maxWidth,
+                      showManagementAction: false,
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  width: 48,
+                  child: SelectGameset(
+                    disabled: false,
+                    showSelector: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(DropdownButton<String>), findsOneWidget);
+    expect(find.byTooltip('Manage scripts'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

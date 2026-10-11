@@ -34,30 +34,6 @@ class _ThisCharacterSelectedYouScreenState
   Character? character4;
   Character? characterToBeMadAbout;
 
-  void selectRandomCharacters() {
-    final characterService =
-        Provider.of<CharacterService>(context, listen: false);
-    final scriptService = Provider.of<ScriptService>(context, listen: false);
-    final allCharactersOfGameset =
-        scriptService.resolveCharacters(characterService.allCharacters);
-    final gameCharacters = characterService.gameCharactersBackup;
-    var chraractersNotInGame = allCharactersOfGameset
-        .where((element) =>
-            !gameCharacters.contains(element) &&
-            (element.fraction == Fraction.townsfolk ||
-                element.fraction == Fraction.outsider))
-        .toList();
-    List<int> numbers =
-        List.generate(chraractersNotInGame.length, (index) => index);
-    numbers.shuffle();
-    var randomIndexes = numbers.take(3).toList();
-    setState(() {
-      character = chraractersNotInGame[randomIndexes[0]];
-      character2 = chraractersNotInGame[randomIndexes[1]];
-      character3 = chraractersNotInGame[randomIndexes[2]];
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     var localizedStrings = AppLocalizations.of(context)!;
@@ -150,8 +126,7 @@ class _ThisCharacterSelectedYouScreenState
                     _buildStoredDemonBluffTokens(context, localizedStrings),
                   ],
 
-                  if (selectedToken ==
-                      Basictoken.these_are_all_outsiders) ...[
+                  if (selectedToken == Basictoken.these_are_all_outsiders) ...[
                     _buildCharacterSelection(context, character2,
                         (Character newCharacter) {
                       setState(() {
@@ -296,6 +271,47 @@ class _ThisCharacterSelectedYouScreenState
     );
   }
 
+  Widget _buildStoredDemonBluffTokens(
+      BuildContext context, AppLocalizations localizedStrings) {
+    final roleIds = context.select<GameStateService, List<String>>(
+      (service) => service.demonBluffRoleIds,
+    );
+    final allCharacters = context.select<CharacterService, List<Character>>(
+      (service) => service.allCharacters,
+    );
+    final bluffs = <Character>[];
+    for (final roleId in roleIds) {
+      for (final character in allCharacters) {
+        if (character.roleId == roleId) {
+          bluffs.add(character);
+          break;
+        }
+      }
+    }
+    if (bluffs.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(localizedStrings.noDemonBluffs,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 18)),
+      );
+    }
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (final character in bluffs)
+          CharacterAvatar(
+            character: character,
+            showIsSelected: false,
+            showName: true,
+            size: 120,
+          ),
+      ],
+    );
+  }
+
   Container _buildCharacterSelection(
       BuildContext context,
       Character? character,
@@ -370,23 +386,6 @@ class _ThisCharacterSelectedYouScreenState
               ),
       ),
     );
-  }
-
-  Widget _randomButton(BuildContext context) {
-    return Positioned(
-        right: 10,
-        bottom: 50,
-        child: Container(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF4a3b5e),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.shuffle, color: Colors.white),
-              onPressed: () {
-                selectRandomCharacters();
-              },
-            )));
   }
 
   List<DropdownMenuItem<Basictoken>> _getDropdownItems(

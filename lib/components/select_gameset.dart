@@ -14,12 +14,14 @@ class SelectGameset extends StatelessWidget {
     required this.disabled,
     this.scriptWidth = 180,
     this.showManagementAction = true,
+    this.showSelector = true,
   });
 
   static const _importAction = '__import_custom_script__';
   final bool disabled;
   final double scriptWidth;
   final bool showManagementAction;
+  final bool showSelector;
 
   Future<void> _selectScript(BuildContext context, String id) async {
     if (disabled) return;
@@ -222,58 +224,59 @@ class SelectGameset extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: scriptWidth,
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              dropdownColor: const Color(0xFF6f678a),
-              iconEnabledColor: Colors.white,
-              value: scripts.selectedScriptId,
-              onChanged: disabled
-                  ? null
-                  : (id) async {
-                      if (id == null) return;
-                      if (id == _importAction) {
-                        await _openImporter(context);
-                        return;
-                      }
-                      await _selectScript(context, id);
-                    },
-              items: [
-                ...ScriptService.standardScripts.map(
-                  (script) => _scriptItem(script, disabled, scriptWidth),
-                ),
-                ...scripts.customScripts.map(
-                  (script) => _scriptItem(script, disabled, scriptWidth),
-                ),
-                DropdownMenuItem<String>(
-                  value: _importAction,
-                  child: SizedBox(
-                    width: scriptWidth,
-                    child: Row(
-                      children: [
-                        Icon(Icons.upload_file,
-                            color: disabled ? Colors.grey : Colors.white),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context)!.importScript,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: disabled ? Colors.grey : Colors.white,
+        if (showSelector)
+          SizedBox(
+            width: scriptWidth,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                dropdownColor: const Color(0xFF6f678a),
+                iconEnabledColor: Colors.white,
+                value: scripts.selectedScriptId,
+                onChanged: disabled
+                    ? null
+                    : (id) async {
+                        if (id == null) return;
+                        if (id == _importAction) {
+                          await _openImporter(context);
+                          return;
+                        }
+                        await _selectScript(context, id);
+                      },
+                items: [
+                  ...ScriptService.standardScripts.map(
+                    (script) => _scriptItem(script, disabled, scriptWidth),
+                  ),
+                  ...scripts.customScripts.map(
+                    (script) => _scriptItem(script, disabled, scriptWidth),
+                  ),
+                  DropdownMenuItem<String>(
+                    value: _importAction,
+                    child: SizedBox(
+                      width: scriptWidth,
+                      child: Row(
+                        children: [
+                          Icon(Icons.upload_file,
+                              color: disabled ? Colors.grey : Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context)!.importScript,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: disabled ? Colors.grey : Colors.white,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
         if (showManagementAction)
           IconButton(
             tooltip: AppLocalizations.of(context)!.manageScripts,

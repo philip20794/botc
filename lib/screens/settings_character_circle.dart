@@ -16,8 +16,6 @@ class SettingsCharacterCircle extends StatefulWidget {
 class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   var numberOfCharacters = 12.0;
   List<Character> randomCharacters = [];
-  final GlobalKey<CharacterCircleComponentState> _characterCircleKey =
-      GlobalKey<CharacterCircleComponentState>();
 
   @override
   void initState() {
@@ -40,13 +38,6 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   void updateNumberOfCharacters(double newValue) {
     numberOfCharacters = newValue;
     generateRandomCharacter(context);
-  }
-
-  void refreshCharacterCircle() {
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
-    gameStateService.setIsLocked(false);
-    _characterCircleKey.currentState?.initializeCharacterPositions();
   }
 
   @override
@@ -86,7 +77,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
           // Character Circle Component
           if (randomCharacters.isNotEmpty) ...[
             CharacterCircleComponent(
-              key: _characterCircleKey,
+              key: const ValueKey('layout-settings-character-circle'),
               settingsView: true,
               characters: randomCharacters,
               charactersForToken: randomCharacters,
@@ -268,8 +259,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
               min: min,
               max: max,
               onChanged: (newValue) {
-                onChanged(newValue); // Bestehende Funktion aufrufen
-                refreshCharacterCircle(); // Zusätzliche Funktion aufrufen
+                onChanged(newValue);
               },
               onChangeEnd: (_) {
                 Provider.of<SettingsService>(context, listen: false)

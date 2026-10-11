@@ -481,6 +481,7 @@ class CharacterService extends ChangeNotifier {
     }
     _characterPositions[pos] = position;
     _saveCharacterPositions();
+    notifyListeners();
   }
 
   void setCharacterPositions(Map<int, Offset> positions) {
@@ -489,6 +490,7 @@ class CharacterService extends ChangeNotifier {
     }
     _characterPositions = Map<int, Offset>.from(positions);
     _saveCharacterPositions();
+    notifyListeners();
   }
 
   void addCharacter(Character character) {

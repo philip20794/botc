@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
+import 'package:blood_on_the_clocktower/services/night_order_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class GameStateService extends ChangeNotifier {
   final ScriptService _scriptService;
+  final NightOrderService _nightOrderService;
+  late final Future<void> ready;
   bool _isLocked = false;
   bool _forceUpdateLayout = false;
   final String _storageIsLockedKey = 'is_locked';
@@ -23,6 +27,8 @@ class GameStateService extends ChangeNotifier {
   bool initIsDone = false;
   bool _chracterSelectionDone = false;
   double _nightStateNumber = 0;
+  String? _currentNightStepId;
+  double? _legacyNightStateNumber;
   bool charactersWhereShownToPlayers = false;
   final String _storageCharacterTokensKey = 'character_tokens';
   final String _storageCharacterAliveStateKey = 'character_alive_state';
@@ -30,6 +36,7 @@ class GameStateService extends ChangeNotifier {
   final String _storageGamesetKey = 'gameset';
   final String _storageNightCountKey = 'night_count';
   final String _storageNightStateNumberKey = 'night_state_number';
+  static const String _storageNightStepIdKey = 'night_step_id';
   final String _storageShowCharactersToPlayersKey =
       'show_characters_to_players';
   final String _chracterSelectionDoneKey = 'character_selection_done';
@@ -38,10 +45,13 @@ class GameStateService extends ChangeNotifier {
   int? _openMenuId;
   String? openTokenMenuId;
 
-  GameStateService({ScriptService? scriptService})
-      : _scriptService = scriptService ?? ScriptService() {
+  GameStateService({
+    ScriptService? scriptService,
+    NightOrderService? nightOrderService,
+  })  : _scriptService = scriptService ?? ScriptService(),
+        _nightOrderService = nightOrderService ?? NightOrderService() {
     _scriptService.addListener(_onScriptSelectionChanged);
-    init();
+    ready = init();
   }
 
   void _onScriptSelectionChanged() => notifyListeners();
@@ -54,6 +64,7 @@ class GameStateService extends ChangeNotifier {
     _loadCharacterAliveState(prefs);
     _loadPlayerNames(prefs);
     _loadNightCount(prefs);
+    _currentNightStepId = prefs.getString(_storageNightStepIdKey);
     _loadNightStateNumber(prefs);
     _loadShowCharactersToPlayers(prefs);
     _loadChracterSelectionDone(prefs);
@@ -70,6 +81,7 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageGamesetKey);
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
+    prefs.remove(_storageNightStepIdKey);
     prefs.remove(_storageShowCharactersToPlayersKey);
     prefs.remove(_chracterSelectionDoneKey);
     prefs.remove(_storageDemonBluffRoleIdsKey);
@@ -276,6 +288,9 @@ class GameStateService extends ChangeNotifier {
         prefs.getDouble(_storageNightStateNumberKey);
     if (nightStateNumber != null) {
       _nightStateNumber = nightStateNumber;
+      if (_currentNightStepId == null) {
+        _legacyNightStateNumber = nightStateNumber;
+      }
     }
   }
 
@@ -427,16 +442,54 @@ class GameStateService extends ChangeNotifier {
   }
 
   void initUnusedGameTokens(List<Character> gameCharacters) {
-    // _characterTokens.clear();
+    // The active character list is the token inventory.  Backups contain
+    // independent copies of those characters and must never contribute extra
+    // reminder tokens.
     unsedGameTokens.clear();
+
+    // Token assignments are persisted as JSON and therefore are recreated as
+    // different Dart objects after an app restart.  Reconnect each persisted
+    // assignment to one concrete token from the active inventory.  This keeps
+    // identity based movement working while treating the inventory as a
+    // multiset: two equal-looking reminders from two role instances remain two
+    // separate available tokens.
+    final availableByDefinition = <String, List<Token>>{};
     for (var character in gameCharacters) {
-      character.tokens.forEach((token) {
-        if (!isTokenUsed(token)) {
-          unsedGameTokens.add(token);
+      for (final token in character.tokens) {
+        availableByDefinition
+            .putIfAbsent(_tokenDefinitionKey(token), () => <Token>[])
+            .add(token);
+      }
+    }
+
+    for (final assignedTokens in _characterTokens.values) {
+      for (var index = 0; index < assignedTokens.length; index++) {
+        final assignedToken = assignedTokens[index];
+        final matchingTokens =
+            availableByDefinition[_tokenDefinitionKey(assignedToken)];
+
+        // Unlimited tokens deliberately may be attached more than once. They
+        // keep their existing behavior and do not consume the single catalog
+        // definition from the inventory.
+        if (assignedToken.unlimited) {
+          if (matchingTokens != null && matchingTokens.isNotEmpty) {
+            assignedTokens[index] = matchingTokens.first;
+          }
+          continue;
         }
-      });
+
+        if (matchingTokens != null && matchingTokens.isNotEmpty) {
+          assignedTokens[index] = matchingTokens.removeAt(0);
+        }
+      }
+    }
+
+    for (final tokens in availableByDefinition.values) {
+      unsedGameTokens.addAll(tokens);
     }
   }
+
+  String _tokenDefinitionKey(Token token) => jsonEncode(token.toJson());
 
   Future<void> endGame() async {
     final resetFuture = Future.wait([
@@ -446,214 +499,283 @@ class GameStateService extends ChangeNotifier {
     ]);
     _nightCount = -1;
     _nightStateNumber = 0;
+    _currentNightStepId = null;
+    _legacyNightStateNumber = null;
     await resetFuture;
     final prefs = await SharedPreferences.getInstance();
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
+    prefs.remove(_storageNightStepIdKey);
     notifyListeners();
   }
 
   Future<void> startNewGame(List<Character> gameCharacters) async {
+    await _nightOrderService.ready;
     _nightCount = 1;
-    _nightStateNumber = 1;
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setInt(_storageNightCountKey, _nightCount);
-    prefs.setDouble(_storageNightStateNumberKey, _nightStateNumber);
-    notifyListeners();
+    final steps = _stepsFor(gameCharacters);
+    await _setNightStep(steps.isEmpty ? 'day' : steps.first.id);
   }
 
   bool isCharacterAwake(Character character) {
-    if (!isCharacterAlive(character)) {
-      return false;
-    }
-    if (_nightCount == 0) {
-      return false;
-    } else if (_nightCount == 1) {
-      return character.nightStateNumbersFirstNight.contains(_nightStateNumber);
-    } else {
-      return character.nightStateNumbersOtherNights.contains(_nightStateNumber);
-    }
+    final stepId = _currentNightStepId;
+    return stepId == 'role:${character.roleId}:${character.id}';
+  }
+
+  /// Resolves the visible night-order highlight from the active step and the
+  /// current character instances. Info phases deliberately use the current
+  /// fraction, so custom scripts and changed roles work without relying on a
+  /// catalog-wide role list.
+  bool isCharacterHighlighted(Character character) {
+    if (isCharacterAwake(character)) return true;
+    return switch (_currentNightStepId) {
+      'phase:minioninfo' => character.fraction == Fraction.minion,
+      'phase:demoninfo' => character.fraction == Fraction.demon,
+      _ => false,
+    };
+  }
+
+  List<Character> highlightedNightCharacters(List<Character> gameCharacters) {
+    return gameCharacters.where(isCharacterHighlighted).toList();
   }
 
   Character? getAwakeCharacter(List<Character> gameCharacters) {
-    return gameCharacters
-        .firstWhereOrNull((element) => isCharacterAwake(element));
+    _ensureCurrentNightStep(gameCharacters);
+    return gameCharacters.firstWhereOrNull(isCharacterAwake);
   }
 
-  bool isMinionInfo() {
-    var firstNight = _nightCount == 1;
-    return firstNight && _nightStateNumber >= 2 && _nightStateNumber <= 2.7;
+  bool isMinionInfo() => _currentNightStepId == 'phase:minioninfo';
+
+  bool isDemonInfo() => _currentNightStepId == 'phase:demoninfo';
+
+  String getNightStateHelpText(
+    Character? character, {
+    List<Character>? gameCharacters,
+    String languageCode = 'en',
+  }) {
+    final characters = gameCharacters ??
+        (character == null ? const <Character>[] : <Character>[character]);
+    final step = currentNightStep(characters);
+    if (step == null) return '';
+    return _nightOrderService.instructionFor(step, _nightCount, languageCode);
   }
 
-  bool isDemonInfo() {
-    var firstNight = _nightCount == 1;
-    return firstNight && _nightStateNumber >= 3 && _nightStateNumber <= 3.7;
-  }
-
-  String getNightStateHelpText(Character? chracter) {
-    if (isMinionInfo()) {
-      return "If there are 7 or more players, wake all Minions:\nShow the 'THIS IS THE DEMON' token.\nPoint to the Demon.";
-    } else if (isDemonInfo()) {
-      return "If there are 7 or more players, wake the Demon:\nShow the 'THESE ARE YOUR MINIONS' token.\nPoint to all Minions.\nShow the 'THESE CHARACTERS ARE NOT IN PLAY' token.\nShow 3 not-in-play good character tokens.";
-    }
-    if (chracter == null) {
-      if (isDust()) {
-        return "Check that all eyes are closed.\nSome Travellers & Fabled act.";
-      }
-      if (isDawn()) {
-        return "Wait a few seconds. Call for eyes open & immediately say who died.";
-      }
-      return "";
-    }
-    return (chracter.help2.isNotEmpty && nightCount > 1)
-        ? chracter.help2
-        : chracter.help.isEmpty
-            ? chracter.descriptionShort
-            : chracter.help;
-  }
-
-  String getNightStanteHelpTitle(Character? chracter) {
-    if (isMinionInfo()) {
-      return "Minion Info";
-    } else if (isDemonInfo()) {
-      return "Demon Info";
-    }
-    if (chracter == null) {
-      if (isDust()) {
-        return "Dusk";
-      }
-      if (isDawn()) {
-        return "Dawn";
-      }
-      return "";
-    }
-    return chracter.name;
+  String getNightStanteHelpTitle(
+    Character? character, {
+    List<Character>? gameCharacters,
+    String languageCode = 'en',
+  }) {
+    final characters = gameCharacters ??
+        (character == null ? const <Character>[] : <Character>[character]);
+    final step = currentNightStep(characters);
+    if (step == null) return '';
+    return _nightOrderService.titleFor(step, languageCode);
   }
 
   bool showNightStateHelpButton() {
-    return _nightCount > 0 && _nightStateNumber > 1;
+    final stepId = _currentNightStepId;
+    return _nightCount > 0 &&
+        stepId != null &&
+        stepId != 'day' &&
+        stepId != 'phase:dusk' &&
+        stepId != 'phase:dawn';
   }
 
   bool gameIsRunning() {
     return _nightCount > 0;
   }
 
-  bool isDawn() {
-    return _nightStateNumber == 0;
-  }
+  bool isDawn() => _currentNightStepId == 'phase:dawn';
 
-  bool isDust() {
-    return _nightStateNumber == 1;
-  }
+  bool isDay() => _currentNightStepId == 'day';
 
-  Future<void> previousNightState(List<Character> chracters) async {
-    var aliveCharacters =
-        chracters.where((element) => isCharacterAlive(element)).toList();
-    var validNightStates = aliveCharacters
-        .where((character) {
-          if (_nightCount == 1) {
-            return character.wakeUpAtFirstNight;
-          } else {
-            return character.wakeUpEveryNight;
-          }
-        })
-        .expand((character) => _nightCount == 1
-            ? character.nightStateNumbersFirstNight
-                .where((number) => number >= 0)
-            : character.nightStateNumbersOtherNights
-                .where((number) => number >= 0))
-        .toList();
-    validNightStates.sort();
-    if (_nightCount == 1 && _nightStateNumber == validNightStates[0]) {
+  bool isDust() => _currentNightStepId == 'phase:dusk';
+
+  Future<void> previousNightState(List<Character> characters) async {
+    await _nightOrderService.ready;
+    _ensureCurrentNightStep(characters);
+    if (_currentNightStepId == 'day') {
+      final steps = _stepsFor(characters);
+      if (steps.isNotEmpty) await _setNightStep(steps.last.id);
       return;
     }
-    var previousNightState = validNightStates.lastWhere(
-      (number) => number < _nightStateNumber,
-      orElse: () {
-        previousNight();
-        return validNightStates.last;
-      },
-    );
-    _nightStateNumber = previousNightState;
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(_storageNightStateNumberKey, _nightStateNumber);
-    notifyListeners();
+    var steps = _stepsFor(characters);
+    final currentIndex =
+        steps.indexWhere((step) => step.id == _currentNightStepId);
+    if (currentIndex > 0) {
+      await _setNightStep(steps[currentIndex - 1].id);
+      return;
+    }
+    if (_nightCount <= 1) return;
+    _nightCount--;
+    steps = _stepsFor(characters);
+    await _setNightStep(steps.isEmpty ? 'day' : steps.last.id);
   }
 
   Future<void> nextNightState(List<Character> gameCharacters) async {
+    await _nightOrderService.ready;
     closeMenu();
-    if (_nightStateNumber == 0) {
-      nextNight();
+    _ensureCurrentNightStep(gameCharacters);
+    if (_currentNightStepId == 'day') {
+      await nextNight(gameCharacters);
       return;
     }
-    var aliveCharacters =
-        gameCharacters.where((element) => isCharacterAlive(element)).toList();
-    var validNightStates = aliveCharacters
-        .where((character) {
-          if (_nightCount == 1) {
-            return character.wakeUpAtFirstNight;
-          } else {
-            return character.wakeUpEveryNight;
-          }
-        })
-        .expand((character) => _nightCount == 1
-            ? character.nightStateNumbersFirstNight
-            : character.nightStateNumbersOtherNights)
-        .toList();
-    validNightStates.sort();
-    var nextNightState = validNightStates.firstWhere(
-      (number) => number > _nightStateNumber,
-      orElse: () {
-        startDay();
-        return -5;
-      },
-    );
-    if (nextNightState == -5) {
+    final steps = _stepsFor(gameCharacters);
+    final currentIndex =
+        steps.indexWhere((step) => step.id == _currentNightStepId);
+    if (currentIndex >= 0 && currentIndex + 1 < steps.length) {
+      await _setNightStep(steps[currentIndex + 1].id);
       return;
     }
-    _nightStateNumber = nextNightState;
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(_storageNightStateNumberKey, _nightStateNumber);
-    notifyListeners();
+    if (currentIndex < 0 && _currentNightStepId != null) {
+      final currentOrderIndex = _nightOrderService.orderIndexForStep(
+        _currentNightStepId!,
+        _nightCount,
+      );
+      final next = steps.firstWhereOrNull((step) =>
+          _nightOrderService.orderIndexForStep(step.id, _nightCount) >
+          currentOrderIndex);
+      if (next != null) {
+        await _setNightStep(next.id);
+        return;
+      }
+    }
+    await startDay();
   }
 
   Future<void> startDay() async {
-    _nightStateNumber = 0;
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(_storageNightStateNumberKey, _nightStateNumber);
-    notifyListeners();
+    await _setNightStep('day');
   }
 
-  Future<void> nextNight() async {
+  Future<void> nextNight([List<Character> gameCharacters = const []]) async {
+    await _nightOrderService.ready;
     _nightCount++;
-    _nightStateNumber = 1;
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setInt(_storageNightCountKey, _nightCount);
-    prefs.setDouble(_storageNightStateNumberKey, _nightStateNumber);
-    notifyListeners();
+    final steps = _stepsFor(gameCharacters);
+    await _setNightStep(steps.isEmpty ? 'day' : steps.first.id);
   }
 
-  Future<void> previousNight() async {
+  Future<void> previousNight(
+      [List<Character> gameCharacters = const []]) async {
+    await _nightOrderService.ready;
     if (_nightCount == 1) {
       return;
     }
     _nightCount--;
+    final steps = _stepsFor(gameCharacters);
+    await _setNightStep(steps.isEmpty ? 'day' : steps.last.id);
+  }
+
+  List<NightStep> _stepsFor(List<Character> gameCharacters) {
+    final travellerCount = gameCharacters
+        .where((character) => character.fraction.name == 'traveller')
+        .length;
+    final regularPlayerCount = max(0, playerNames.length - travellerCount);
+    return _nightOrderService.stepsFor(
+      nightCount: _nightCount,
+      gameCharacters: gameCharacters,
+      regularPlayerCount: regularPlayerCount,
+      isAlive: isCharacterAlive,
+    );
+  }
+
+  NightStep? currentNightStep(List<Character> gameCharacters) {
+    _ensureCurrentNightStep(gameCharacters);
+    return _stepsFor(gameCharacters)
+        .firstWhereOrNull((step) => step.id == _currentNightStepId);
+  }
+
+  Future<void> synchronizeNightStep(List<Character> gameCharacters) async {
+    await _nightOrderService.ready;
+    if (_ensureCurrentNightStep(gameCharacters)) {
+      notifyListeners();
+    }
+  }
+
+  bool _ensureCurrentNightStep(List<Character> gameCharacters) {
+    if (!_nightOrderService.isReady ||
+        _nightCount < 1 ||
+        _currentNightStepId == 'day') {
+      return false;
+    }
+    final steps = _stepsFor(gameCharacters);
+    if (_currentNightStepId != null) {
+      if (steps.any((step) => step.id == _currentNightStepId)) return false;
+      final missingOrderIndex = _nightOrderService.orderIndexForStep(
+        _currentNightStepId!,
+        _nightCount,
+      );
+      _currentNightStepId = steps
+              .firstWhereOrNull((step) =>
+                  _nightOrderService.orderIndexForStep(step.id, _nightCount) >
+                  missingOrderIndex)
+              ?.id ??
+          'day';
+      unawaited(_persistNightPosition());
+      return true;
+    }
+    final legacy = _legacyNightStateNumber;
+    if (legacy == 0) {
+      _currentNightStepId = 'day';
+    } else if (legacy == 1) {
+      _currentNightStepId = 'phase:dusk';
+    } else if (_nightCount == 1 &&
+        legacy != null &&
+        legacy >= 2 &&
+        legacy <= 2.7) {
+      _currentNightStepId = 'phase:minioninfo';
+    } else if (_nightCount == 1 &&
+        legacy != null &&
+        legacy >= 3 &&
+        legacy <= 3.7) {
+      _currentNightStepId = 'phase:demoninfo';
+    } else if (legacy != null) {
+      final legacyCharacters = gameCharacters
+          .where((character) => (_nightCount == 1
+                  ? character.nightStateNumbersFirstNight
+                  : character.nightStateNumbersOtherNights)
+              .contains(legacy))
+          .toList();
+      if (legacyCharacters.length == 1) {
+        final legacyCharacter = legacyCharacters.single;
+        _currentNightStepId =
+            'role:${legacyCharacter.roleId}:${legacyCharacter.id}';
+      }
+    }
+    _currentNightStepId ??= steps.isEmpty ? 'day' : steps.first.id;
+    _legacyNightStateNumber = null;
+    unawaited(_persistNightPosition());
+    return true;
+  }
+
+  Future<void> _setNightStep(String stepId) async {
+    _currentNightStepId = stepId;
+    _legacyNightStateNumber = null;
+    _nightStateNumber = stepId == 'day' ? 0 : 1;
+    await _persistNightPosition();
+    notifyListeners();
+  }
+
+  Future<void> _persistNightPosition() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setInt(_storageNightCountKey, _nightCount);
-    notifyListeners();
+    if (_currentNightStepId == null) {
+      prefs.remove(_storageNightStepIdKey);
+    } else {
+      prefs.setString(_storageNightStepIdKey, _currentNightStepId!);
+    }
+    prefs.remove(_storageNightStateNumberKey);
   }
 
   Future<void> addRandomUnusedTokensToRandomCharacters(
       List<Character> characters) async {
     _characterTokens.clear();
-    final List<Token> unusedTokens = getAllTokensInGame(characters, characters);
+    final List<Token> unusedTokens = getAllTokensInGame(characters);
     unusedTokens.shuffle();
-    characters.shuffle();
-    for (var character in characters) {
+    final shuffledCharacters = List<Character>.from(characters)..shuffle();
+    for (var character in shuffledCharacters) {
       if (unusedTokens.isNotEmpty) {
         var randomInt = Random().nextInt(unusedTokens.length);
         var randomToken = unusedTokens[randomInt];
-        _characterTokens[character.id] = [randomToken, randomToken];
+        _characterTokens[character.id] = [randomToken];
         unusedTokens.remove(randomToken);
       }
     }
@@ -718,11 +840,8 @@ class GameStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<Token> getAllTokensInGame(
-      List<Character> gameCharacters, List<Character> gameCharactersBackup) {
-    Set<Character> bothAsSet = {...gameCharacters, ...gameCharactersBackup};
-    List<Character> both = bothAsSet.toList();
-    initUnusedGameTokens(both);
+  List<Token> getAllTokensInGame(List<Character> gameCharacters) {
+    initUnusedGameTokens(gameCharacters);
     final List<Token> allTokens = [];
     for (var tokenList in _characterTokens.values) {
       allTokens.addAll(tokenList);
@@ -779,6 +898,7 @@ class GameStateService extends ChangeNotifier {
   String get selectedScriptId => _scriptService.selectedScriptId;
   get nightCount => _nightCount;
   get nightStateNumber => _nightStateNumber;
+  String? get currentNightStepId => _currentNightStepId;
   get showCharactersToPlayers => charactersWhereShownToPlayers;
   get characterSelectionDone => _chracterSelectionDone;
 

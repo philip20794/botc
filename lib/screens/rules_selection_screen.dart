@@ -62,31 +62,7 @@ class _RulesSelectionScreenState extends State<RulesSelectionScreen> {
 
   Widget _buildCard(String title, String name) {
     var size = MediaQuery.of(context).size.height * 0.14;
-    Uri pdfUri;
-    switch (name) {
-      case 'bad_moon_rising':
-        pdfUri = Uri.parse(
-            'https://firebasestorage.googleapis.com/v0/b/b-o-t-c.appspot.com/o/bad_moon_rising_Rulebook.pdf?alt=media&token=ac237de5-1dd3-4e10-8b0f-ebdc2639a3c0');
-        break;
-      case 'main':
-        pdfUri = Uri.parse(
-            'https://firebasestorage.googleapis.com/v0/b/b-o-t-c.appspot.com/o/main_Rulebook.pdf?alt=media&token=5a7540eb-65a5-48c1-9f79-dcccaafcdc33');
-        break;
-      case 'sects_and_violets':
-        pdfUri = Uri.parse(
-            'https://firebasestorage.googleapis.com/v0/b/b-o-t-c.appspot.com/o/sects_and_violets_Rulebook.pdf?alt=media&token=da63d238-edc8-4ecc-adb6-1cd50fe42ae4');
-        break;
-      case 'traveller_and_fabled':
-        pdfUri = Uri.parse(
-            'https://firebasestorage.googleapis.com/v0/b/b-o-t-c.appspot.com/o/traveller_and_fabled_Rulebook.pdf?alt=media&token=0720b102-8df3-4167-9414-7eeb681c5c5a');
-        break;
-      case 'trouble_brewing':
-        pdfUri = Uri.parse(
-            'https://firebasestorage.googleapis.com/v0/b/b-o-t-c.appspot.com/o/trouble_brewing_Rulebook.pdf?alt=media&token=3a91417a-c5d6-4b90-8b51-80f01dc93b91');
-        break;
-      default:
-        throw Exception('Unknown name: $name');
-    }
+    final pdfUri = rulePdfUriFor(name);
     return Center(
         child: GestureDetector(
             onTap: () {
@@ -132,4 +108,22 @@ class _RulesSelectionScreenState extends State<RulesSelectionScreen> {
               ],
             )));
   }
+}
+
+/// Official TPI links resolve to these current public PDF download endpoints.
+Uri rulePdfUriFor(String name) {
+  const documentIds = <String, String>{
+    'main': '1kZYrIq4P6l4IOcm70-hZE-jPrnq8EeMk',
+    'trouble_brewing': '1nsPHYi4B48GpRTV_V24Zu5MATT3hWIV3',
+    'sects_and_violets': '12Kcyfk0tbEfXF0E-X5k8zYNmkDUVsCia',
+    'bad_moon_rising': '1EyttjAZx4NMeimIHGCeh8fdsPsUXeLYB',
+    'traveller_and_fabled': '1Pj8fWN8wUdp4X1fhM6y3ja9PhFz9w5cp',
+  };
+  final id = documentIds[name];
+  if (id == null) throw ArgumentError.value(name, 'name', 'Unknown rulebook');
+  return Uri.https(
+    'drive.usercontent.google.com',
+    '/download',
+    <String, String>{'id': id, 'export': 'download', 'confirm': 't'},
+  );
 }

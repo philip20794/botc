@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -59,12 +60,15 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
     final characterSignature = characterService.gameCharacters
         .map((character) => character.id)
         .join('|');
-    if (_characterLayoutSignature == characterSignature) {
-      return;
+    final gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
+    if (_characterLayoutSignature != characterSignature) {
+      _characterLayoutSignature = characterSignature;
+      gameStateService.initUnusedGameTokens(characterService.gameCharacters);
     }
-    _characterLayoutSignature = characterSignature;
-    Provider.of<GameStateService>(context, listen: false)
-        .initUnusedGameTokens(characterService.gameCharacters);
+    unawaited(
+      gameStateService.synchronizeNightStep(characterService.gameCharacters),
+    );
   }
 
   @override
@@ -167,111 +171,100 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                 charactersForToken: characterService.gameCharacters),
             // Das Menü in der Bildschirmmitte
 
-            Padding(
-              padding: const EdgeInsets.only(top: 200, bottom: 200),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      if (gameStateService.gameIsRunning()) ...[
-                        IconButton(
-                          onPressed: () => {
-                            setState(() {
-                              gameStateService.nextNightState(
-                                  characterService.gameCharacters);
-                            }),
-                          },
-                          icon: const Icon(Icons.arrow_forward,
-                              color: Colors.white, size: 50),
-                        ),
-                      ],
-                      if (bluffCharacters.isNotEmpty) ...[
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const ThisCharacterSelectedYouScreen(
-                                showDemonBluffsOnly: true,
-                              ),
-                            ),
-                          ),
-                          child: Semantics(
-                            button: true,
-                            label: localizedStrings.demonBluffs,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(localizedStrings.demonBluffs,
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 12)),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    for (final character in bluffCharacters)
-                                      CharacterAvatar(
-                                        character: character,
-                                        showIsSelected: false,
-                                        size: 34,
-                                        showName: false,
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: _toggleMenu,
-                            child: AnimatedBuilder(
-                              animation: _animation,
-                              builder: (context, child) {
-                                return Transform.rotate(
-                                  angle: _animation.value * pi / 4,
-                                  child: child,
-                                );
-                              },
-                              child: const Icon(
-                                Icons.apps,
-                                size: 60,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+            if (gameStateService.gameIsRunning())
+              _buildAnchoredMenuControl(
+                const Offset(0, -230),
+                IconButton(
+                  onPressed: () => gameStateService
+                      .nextNightState(characterService.gameCharacters),
+                  icon: const Icon(Icons.arrow_forward,
+                      color: Colors.white, size: 50),
+                ),
+              ),
+            if (bluffCharacters.isNotEmpty)
+              _buildAnchoredMenuControl(
+                const Offset(0, -154),
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ThisCharacterSelectedYouScreen(
+                        showDemonBluffsOnly: true,
                       ),
-                      if (gameStateService.showNightStateHelpButton()) ...[
-                        IconButton(
-                          onPressed: () => _showHelpDialogBox(context),
-                          icon: const Icon(Icons.help_outline,
-                              color: Colors.white, size: 50),
-                        ),
-                      ],
-                      if (gameStateService.isDawn()) ...[
-                        IconButton(
-                          onPressed: () => _showHelpDialogBox(context),
-                          icon: const Icon(Icons.sunny,
-                              color: Colors.white, size: 50),
-                        ),
-                      ],
-                      if (gameStateService.isDust()) ...[
-                        IconButton(
-                          onPressed: () => _showHelpDialogBox(context),
-                          icon: const Icon(Icons.mode_night,
-                              color: Colors.white, size: 50),
-                        ),
-                      ]
-                    ],
+                    ),
                   ),
-                ],
+                  child: Semantics(
+                    button: true,
+                    label: localizedStrings.demonBluffs,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(localizedStrings.demonBluffs,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final character in bluffCharacters)
+                              CharacterAvatar(
+                                character: character,
+                                showIsSelected: false,
+                                size: 34,
+                                showName: false,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            _buildAnchoredMenuControl(
+              Offset.zero,
+              GestureDetector(
+                key: const ValueKey('playground-menu-anchor'),
+                onTap: _toggleMenu,
+                child: AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) => Transform.rotate(
+                    angle: _animation.value * pi / 4,
+                    child: child,
+                  ),
+                  child: const Icon(Icons.apps, size: 60, color: Colors.white),
+                ),
               ),
             ),
+            if (gameStateService.showNightStateHelpButton())
+              _buildAnchoredMenuControl(
+                const Offset(0, 96),
+                IconButton(
+                  onPressed: () => _showHelpDialogBox(context),
+                  icon: const Icon(Icons.help_outline,
+                      color: Colors.white, size: 50),
+                ),
+              ),
+            if (gameStateService.isDawn())
+              _buildAnchoredMenuControl(
+                const Offset(0, 96),
+                IconButton(
+                  onPressed: () => _showHelpDialogBox(context),
+                  icon: const Icon(Icons.sunny, color: Colors.white, size: 50),
+                ),
+              ),
+            if (gameStateService.isDay())
+              _buildAnchoredMenuControl(
+                const Offset(0, 96),
+                const Icon(Icons.sunny, color: Colors.white, size: 50),
+              ),
+            if (gameStateService.isDust())
+              _buildAnchoredMenuControl(
+                const Offset(0, 96),
+                IconButton(
+                  onPressed: () => _showHelpDialogBox(context),
+                  icon: const Icon(Icons.mode_night,
+                      color: Colors.white, size: 50),
+                ),
+              ),
 
             if (_isMenuVisible) ...[
               _buildMenuButton(CustomIcons.collection, () {
@@ -281,7 +274,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                       builder: (context) => ThisCharacterSelectedYouScreen()),
                 );
                 _toggleMenu();
-              }, const Alignment(0.02, -0.17), false, false, context),
+              }, const Offset(0, -84), false, false, context),
               _buildMenuButton(Icons.person_add, () {
                 Navigator.push(
                   context,
@@ -289,18 +282,18 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                       builder: (context) => AddCharacterWhilePlaying()),
                 );
                 _toggleMenu();
-              }, const Alignment(0.3, -0.07), false, false, context),
+              }, const Offset(84, -42), false, false, context),
               _buildMenuButton(Icons.arrow_back, () {
                 setState(() {
                   gameStateService
                       .previousNightState(characterService.gameCharacters);
                 });
                 // _toggleMenu();
-              }, const Alignment(-0.3, -0.07), false, false, context),
+              }, const Offset(-84, -42), false, false, context),
               _buildMenuButton(Icons.restore, () {
                 _resetOrderOfLayout();
                 _toggleMenu();
-              }, const Alignment(0.3, 0.08), false, true, context),
+              }, const Offset(84, 42), false, true, context),
               _buildMenuButton(Icons.close, () {
                 gameStateService.endGame();
                 characterService.endGame();
@@ -309,7 +302,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                   MaterialPageRoute(builder: (context) => HomeScreen()),
                   (Route<dynamic> route) => false,
                 );
-              }, const Alignment(0.02, 0.18), false, true, context),
+              }, const Offset(0, 84), false, true, context),
               _buildMenuButton(CustomIcons.law, () {
                 Navigator.push(
                   context,
@@ -317,7 +310,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                       builder: (context) => RulesSelectionScreen()),
                 );
                 _toggleMenu();
-              }, const Alignment(-0.3, 0.08), false, false, context),
+              }, const Offset(-84, 42), false, false, context),
             ],
             _buildUnassingedTokens(context),
             _buildSavantGeneratorButton(context, characterService)
@@ -333,13 +326,24 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
       builder: (BuildContext context) {
         final chracterService = Provider.of<CharacterService>(context);
         final gameStateService = Provider.of<GameStateService>(context);
+        final languageCode = Localizations.localeOf(context).languageCode;
         var awakeCharacter =
             gameStateService.getAwakeCharacter(chracterService.gameCharacters);
         return AlertDialog(
           backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
-          title: Text(gameStateService.getNightStanteHelpTitle(awakeCharacter),
+          title: Text(
+              gameStateService.getNightStanteHelpTitle(
+                awakeCharacter,
+                gameCharacters: chracterService.gameCharacters,
+                languageCode: languageCode,
+              ),
               style: const TextStyle(color: Colors.white)),
-          content: Text(gameStateService.getNightStateHelpText(awakeCharacter),
+          content: Text(
+              gameStateService.getNightStateHelpText(
+                awakeCharacter,
+                gameCharacters: chracterService.gameCharacters,
+                languageCode: languageCode,
+              ),
               style: const TextStyle(color: Colors.white)),
         );
       },
@@ -442,18 +446,20 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
   }
 
   // Funktion zum Erstellen der Menü-Buttons
-  Widget _buildMenuButton(
-      IconData icon,
-      VoidCallback onPressed,
-      Alignment alignment,
-      bool disabled,
-      bool showConfirmDialog,
-      BuildContext context) {
+  Widget _buildAnchoredMenuControl(Offset offset, Widget child) {
+    return Align(
+      alignment: Alignment.center,
+      child: Transform.translate(offset: offset, child: child),
+    );
+  }
+
+  Widget _buildMenuButton(IconData icon, VoidCallback onPressed, Offset offset,
+      bool disabled, bool showConfirmDialog, BuildContext context) {
     var closeDialog = icon == Icons.close;
     var localizedStrings = AppLocalizations.of(context)!;
-    return Align(
-      alignment: alignment,
-      child: Material(
+    return _buildAnchoredMenuControl(
+      offset,
+      Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {

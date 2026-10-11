@@ -146,5 +146,6 @@
   "scriptDeleted": "Skript gelöscht",
   "scriptSaved": "Skript gespeichert",
   "scriptChangeWhileRunning": "Skripte können während einer laufenden Partie nicht geändert werden.",
-  "noCustomScripts": "Noch keine eigenen Skripte gespeichert."
+  "noCustomScripts": "Noch keine eigenen Skripte gespeichert.",
+  "pdfLoadError": "Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut."
  }

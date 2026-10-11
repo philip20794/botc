@@ -5,7 +5,6 @@ import 'package:blood_on_the_clocktower/screens/all_characters_screen.dart';
 import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
 import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/screens/playername_screen.dart';
-import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/show_characters_to_players.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -105,29 +104,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     margin: const EdgeInsets.symmetric(
                         vertical: 10, horizontal: 20),
                     child: ListTile(
-                      leading: Icon(CustomIcons.script,
-                          color: gameIsRunning ? Colors.grey : Colors.white),
-                      title: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SelectGameset(disabled: gameIsRunning),
-                          const SizedBox(height: 4),
-                          const ScriptComplexitySummary(),
-                        ],
+                      leading: SizedBox(
+                        width: 40,
+                        child: Center(
+                          child: Icon(CustomIcons.script,
+                              color:
+                                  gameIsRunning ? Colors.grey : Colors.white),
+                        ),
+                      ),
+                      trailing: SizedBox(
+                        width: 48,
+                        child: Center(
+                          child: SelectGameset(
+                            disabled: gameIsRunning,
+                            showSelector: false,
+                          ),
+                        ),
+                      ),
+                      title: LayoutBuilder(
+                        builder: (context, constraints) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SelectGameset(
+                              disabled: gameIsRunning,
+                              scriptWidth: constraints.maxWidth,
+                              showManagementAction: false,
+                            ),
+                            const SizedBox(height: 4),
+                            const ScriptComplexitySummary(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   _buildArrowDown(gameIsRunning),
                   _buildCard(localizedStrings.players, Icons.groups,
                       PlayernameScreen(), gameIsRunning, null),
-                  SizedBox(height: 16),
-                  _buildCard(
-                      localizedStrings.roleNotes,
-                      Icons.manage_search,
-                      RoleNotesScreen(),
-                      gameStateService.playerNames.isEmpty,
-                      null),
-                  SizedBox(height: 16),
                   _buildArrowDown(!playerDone || gameIsRunning),
                   _buildCard(
                       localizedStrings.characterSelection,

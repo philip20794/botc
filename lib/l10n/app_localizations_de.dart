@@ -470,4 +470,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noCustomScripts => 'Noch keine eigenen Skripte gespeichert.';
+
+  @override
+  String get pdfLoadError =>
+      'Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.';
 }

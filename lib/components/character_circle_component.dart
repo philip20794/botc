@@ -31,6 +31,9 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Layout values affect the calculated positions. Register this component
+    // as a listener so changes made in Layout Settings are visible at once.
+    Provider.of<SettingsService>(context);
     initializeCharacterPositions();
   }
 

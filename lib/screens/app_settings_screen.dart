@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/components/select_language.dart';
 import 'package:blood_on_the_clocktower/screens/auth_screen.dart';
+import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
 import 'package:blood_on_the_clocktower/screens/settings_character_circle.dart';
 import 'package:blood_on_the_clocktower/services/auth_service.dart';
@@ -84,6 +85,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
               ),
               _buildCard(localizedStrings.layoutSettings, Icons.video_settings,
                   SettingsCharacterCircle(), null, false),
+              _buildCard(localizedStrings.roleNotes, Icons.manage_search,
+                  const RoleNotesScreen(), null, false),
               _buildCard(localizedStrings.rules, CustomIcons.law,
                   RulesSelectionScreen(), null, false),
               if (user != null) ...[

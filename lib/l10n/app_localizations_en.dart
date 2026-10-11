@@ -465,4 +465,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCustomScripts => 'No custom scripts saved yet.';
+
+  @override
+  String get pdfLoadError =>
+      'This PDF could not be loaded. Check your internet connection and try again.';
 }

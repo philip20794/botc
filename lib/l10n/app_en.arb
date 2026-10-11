@@ -146,5 +146,6 @@
   "scriptDeleted": "Script deleted",
   "scriptSaved": "Script saved",
   "scriptChangeWhileRunning": "Scripts cannot be changed while a game is running.",
-  "noCustomScripts": "No custom scripts saved yet."
+  "noCustomScripts": "No custom scripts saved yet.",
+  "pdfLoadError": "This PDF could not be loaded. Check your internet connection and try again."
  }

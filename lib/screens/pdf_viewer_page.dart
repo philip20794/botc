@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final Uri pdfUrl;
@@ -13,13 +14,9 @@ class PdfViewerPage extends StatefulWidget {
 
 class _PdfViewerPageState extends State<PdfViewerPage> {
   final controller = PdfViewerController();
-  late final PdfTextSearcher textSearcher;
+  PdfTextSearcher? _textSearcher;
 
-  @override
-  void initState() {
-    super.initState();
-    textSearcher = PdfTextSearcher(controller)..addListener(_update);
-  }
+  bool get _isViewerReady => _textSearcher != null;
 
   void _update() {
     if (mounted) {
@@ -29,25 +26,31 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   @override
   void dispose() {
-    textSearcher.removeListener(_update);
-    textSearcher.dispose();
+    _textSearcher?.removeListener(_update);
+    _textSearcher?.dispose();
     super.dispose();
   }
 
   void _searchText(String searchText) {
-    textSearcher.startTextSearch(searchText, caseInsensitive: true);
+    _textSearcher?.startTextSearch(searchText, caseInsensitive: true);
   }
 
   void _goToPreviousResult() {
-    if (textSearcher.hasMatches) {
-      textSearcher.goToPrevMatch();
+    if (_textSearcher?.hasMatches ?? false) {
+      _textSearcher!.goToPrevMatch();
     }
   }
 
   void _goToNextResult() {
-    if (textSearcher.hasMatches) {
-      textSearcher.goToNextMatch();
+    if (_textSearcher?.hasMatches ?? false) {
+      _textSearcher!.goToNextMatch();
     }
+  }
+
+  void _onViewerReady(PdfDocument document, PdfViewerController controller) {
+    if (!mounted || _textSearcher != null) return;
+    final searcher = PdfTextSearcher(controller)..addListener(_update);
+    setState(() => _textSearcher = searcher);
   }
 
   @override
@@ -55,22 +58,25 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: Color(0xFFFAFAFA),
+        backgroundColor: const Color(0xFF4a3b5e),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () async {
-              String? searchText = await showSearch(
-                context: context,
-                delegate: PdfSearchDelegate(),
-              );
-              if (!context.mounted) {
-                return;
-              }
-              if (searchText != null && searchText.isNotEmpty) {
-                _searchText(searchText);
-              }
-            },
+            icon: const Icon(Icons.search),
+            onPressed: !_isViewerReady
+                ? null
+                : () async {
+                    String? searchText = await showSearch(
+                      context: context,
+                      delegate: PdfSearchDelegate(),
+                    );
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (searchText != null && searchText.isNotEmpty) {
+                      _searchText(searchText);
+                    }
+                  },
           ),
         ],
       ),
@@ -78,20 +84,24 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         widget.pdfUrl,
         controller: controller,
         params: PdfViewerParams(
+          backgroundColor: const Color(0xFF21182d),
+          onViewerReady: _onViewerReady,
           loadingBannerBuilder: (context, bytesDownloaded, totalBytes) {
             return Center(
               child: CircularProgressIndicator(
                 value: totalBytes != null ? bytesDownloaded / totalBytes : null,
-                backgroundColor: Colors.grey,
+                backgroundColor: Colors.white24,
               ),
             );
           },
-          pagePaintCallbacks: [
-            textSearcher.pageTextMatchPaintCallback,
-          ],
+          errorBannerBuilder: (context, error, stackTrace, documentRef) =>
+              _PdfLoadError(title: widget.title),
+          pagePaintCallbacks: _textSearcher == null
+              ? const []
+              : [_textSearcher!.pageTextMatchPaintCallback],
         ),
       ),
-      floatingActionButton: textSearcher.hasMatches
+      floatingActionButton: (_textSearcher?.hasMatches ?? false)
           ? Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -110,7 +120,40 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 ),
               ],
             )
-          : SizedBox(),
+          : const SizedBox(),
+    );
+  }
+}
+
+class _PdfLoadError extends StatelessWidget {
+  const _PdfLoadError({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context)!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.picture_as_pdf_outlined,
+                color: Colors.white, size: 48),
+            const SizedBox(height: 16),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 20)),
+            const SizedBox(height: 8),
+            Text(
+              strings.pdfLoadError,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

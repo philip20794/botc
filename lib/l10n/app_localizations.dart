@@ -943,6 +943,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Noch keine eigenen Skripte gespeichert.'**
   String get noCustomScripts;
+
+  /// No description provided for @pdfLoadError.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.'**
+  String get pdfLoadError;
 }
 
 class _AppLocalizationsDelegate

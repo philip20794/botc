@@ -58,6 +58,7 @@ flutter:
   assets:
     - assets/characters/de.json
     - assets/characters/en.json
+    - assets/night_order/order.json
     - assets/ui/script_meta/storyteller_complexity.png
     - assets/ui/script_meta/player_complexity.png
     - assets/images/grim_logo.png

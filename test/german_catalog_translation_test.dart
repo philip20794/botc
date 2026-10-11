@@ -43,17 +43,18 @@ Map<String, dynamic> technicalRoleData(Map<String, dynamic> role) {
 }
 
 void main() {
-  test('this pass adds the next missing English roles only once', () async {
+  test('the completed German catalog contains every English role once',
+      () async {
     final english = await loadRoles('en');
     final german = await loadRoles('de');
     final englishIds = english.map(roleIdOf).toSet();
     final germanIds = german.map(roleIdOf).toList();
     final missing = englishIds.difference(germanIds.toSet()).toList()..sort();
 
-    expect(german, hasLength(106));
+    expect(german, hasLength(english.length));
     expect(germanIds.toSet(), hasLength(germanIds.length));
     expect(germanIds, containsAll(translatedInThisPass));
-    expect(missing.first, 'banshee');
+    expect(missing, isEmpty);
   });
 
   test('translated roles preserve the English technical structure', () async {

@@ -44,7 +44,7 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
           .select<GameStateService, int>((service) => service.nightCount);
       isSelected = nightCount > 0
           ? context.select<GameStateService, bool>(
-              (service) => service.isCharacterAwake(widget.character))
+              (service) => service.isCharacterHighlighted(widget.character))
           : context.select<CharacterService, bool>((service) => service
               .containsCharacter(service.gameCharacters, widget.character));
     }
