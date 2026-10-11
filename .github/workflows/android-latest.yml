@@ -55,4 +55,6 @@ jobs:
         run: |
           gh release view android-latest >/dev/null 2>&1 || \
             gh release create android-latest --title "Android latest" --notes "Automatisch erzeugte aktuelle Android-APK."
-          gh release upload android-latest build/app/outputs/flutter-apk/app-release.apk#b-o-t-c.apk --clobber
+          gh release delete-asset android-latest app-release.apk --yes >/dev/null 2>&1 || true
+          cp build/app/outputs/flutter-apk/app-release.apk b-o-t-c.apk
+          gh release upload android-latest b-o-t-c.apk --clobber
