@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:blood_on_the_clocktower/components/half_circle_clipper.dart';
+import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
-import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +26,13 @@ class FabledToken extends StatefulWidget {
 
 class _FabledTokenState extends State<FabledToken> {
   var showRemoveButton = false;
+  Timer? _removeMenuTimer;
+
+  @override
+  void dispose() {
+    _removeMenuTimer?.cancel();
+    super.dispose();
+  }
 
   void _removeCharacter() {
     final characterService =
@@ -38,15 +46,26 @@ class _FabledTokenState extends State<FabledToken> {
     setState(() {
       showRemoveButton = true;
     });
-    Future.delayed(const Duration(seconds: 2), () {
-      showRemoveButton = false;
+    _removeMenuTimer?.cancel();
+    _removeMenuTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => showRemoveButton = false);
     });
+  }
+
+  void _showDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShowCharacter(
+          character: widget.character,
+          showMoreDetails: true,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    GameStateService gameStateService = Provider.of<GameStateService>(context);
-    CharacterService characterService = Provider.of<CharacterService>(context);
     SettingsService settingsService = Provider.of<SettingsService>(context);
 
     final size = settingsService.tokenKnobSize * 1.75;
@@ -59,10 +78,10 @@ class _FabledTokenState extends State<FabledToken> {
               if (showRemoveButton) {
                 _removeCharacter();
                 return;
-              } else {
-                openRemoveMenu();
               }
+              _showDetails();
             },
+            onLongPress: openRemoveMenu,
             child: Stack(
               children: [
                 Padding(

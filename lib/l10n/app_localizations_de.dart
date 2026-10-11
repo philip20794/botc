@@ -474,4 +474,23 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get pdfLoadError =>
       'Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.';
+
+  @override
+  String get quickFlowInvalidTarget =>
+      'Dieser Spieler ist kein gültiges Ziel für den ausgewählten Reminder.';
+
+  @override
+  String get quickFlowPreviousNightTarget =>
+      'Wähle einen anderen Spieler als in der vorherigen Nacht.';
+
+  @override
+  String get quickFlowUnsupported =>
+      'Dieser QuickFlow-Schritt muss über das Spieler-Menü ausgeführt werden.';
+
+  @override
+  String get onlyTheStorytellerMayContinue =>
+      'Nur der Erzähler darf fortfahren.';
+
+  @override
+  String get continueText => 'Weiter';
 }

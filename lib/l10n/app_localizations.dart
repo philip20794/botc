@@ -949,6 +949,36 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.'**
   String get pdfLoadError;
+
+  /// No description provided for @quickFlowInvalidTarget.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Spieler ist kein gültiges Ziel für den ausgewählten Reminder.'**
+  String get quickFlowInvalidTarget;
+
+  /// No description provided for @quickFlowPreviousNightTarget.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle einen anderen Spieler als in der vorherigen Nacht.'**
+  String get quickFlowPreviousNightTarget;
+
+  /// No description provided for @quickFlowUnsupported.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser QuickFlow-Schritt muss über das Spieler-Menü ausgeführt werden.'**
+  String get quickFlowUnsupported;
+
+  /// No description provided for @onlyTheStorytellerMayContinue.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur der Erzähler darf fortfahren.'**
+  String get onlyTheStorytellerMayContinue;
+
+  /// No description provided for @continueText.
+  ///
+  /// In de, this message translates to:
+  /// **'Weiter'**
+  String get continueText;
 }
 
 class _AppLocalizationsDelegate

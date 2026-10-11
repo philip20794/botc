@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/components/select_character_component.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,10 +11,13 @@ class SelectOneCharater extends StatefulWidget {
   List<Character> charactersToChooseFrom;
   bool travellersAreSelectable = false;
   bool fabledAreSelectable = false;
-  Function(Character) onConfirm;
+  FutureOr<void> Function(Character) onConfirm;
   String title;
   String confirmButtonText;
   bool needToConfirm = true;
+  final List<Character>? allCharactersToChooseFrom;
+  final Future<void> Function(BuildContext context, Character character)?
+      onSelectionConfirmed;
 
   SelectOneCharater({
     required this.charactersToChooseFrom,
@@ -21,12 +27,16 @@ class SelectOneCharater extends StatefulWidget {
     this.travellersAreSelectable = false,
     this.fabledAreSelectable = false,
     this.needToConfirm = true,
+    this.allCharactersToChooseFrom,
+    this.onSelectionConfirmed,
   });
 
   _SelectOneCharaterState createState() => _SelectOneCharaterState();
 }
 
 class _SelectOneCharaterState extends State<SelectOneCharater> {
+  bool _showAllCharacters = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +48,31 @@ class _SelectOneCharaterState extends State<SelectOneCharater> {
             minFontSize: 12),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (widget.allCharactersToChooseFrom != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ToggleButtons(
+                key: const ValueKey('quick-flow-character-source-toggle'),
+                constraints: const BoxConstraints(minHeight: 34, minWidth: 42),
+                borderRadius: BorderRadius.circular(8),
+                isSelected: [_showAllCharacters == false, _showAllCharacters],
+                onPressed: (index) => setState(() {
+                  _showAllCharacters = index == 1;
+                }),
+                children: const [
+                  Tooltip(
+                    message: 'Script characters',
+                    child: Icon(CustomIcons.script, color: Colors.white),
+                  ),
+                  Tooltip(
+                    message: 'All characters',
+                    child: Icon(Icons.apps, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+        ],
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
@@ -50,12 +85,21 @@ class _SelectOneCharaterState extends State<SelectOneCharater> {
         ),
       ),
       body: SelectCharacterComponent(
-        charactersToChooseFrom: widget.charactersToChooseFrom,
+        charactersToChooseFrom: _showAllCharacters
+            ? widget.allCharactersToChooseFrom!
+            : widget.charactersToChooseFrom,
         onConfirm: () {},
-        onResult: (List<Character> characters) {
+        onResult: (List<Character> characters) async {
           if (characters.isNotEmpty) {
-            widget.onConfirm(characters[0]);
-            Navigator.pop(context);
+            final selectorContext = context;
+            await widget.onConfirm(characters[0]);
+            if (!selectorContext.mounted) return;
+            if (widget.onSelectionConfirmed != null) {
+              await widget.onSelectionConfirmed!(
+                  selectorContext, characters[0]);
+            } else if (selectorContext.mounted) {
+              Navigator.pop(selectorContext);
+            }
           }
         },
         needToConfirm: widget.needToConfirm,

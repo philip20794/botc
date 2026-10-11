@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
+import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -11,6 +12,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+
+const Map<Fraction, String> _fractionIconAssetPaths = {
+  Fraction.townsfolk: 'assets/images/characters/Townsfolk.png',
+  Fraction.outsider: 'assets/images/characters/Outsider.png',
+  Fraction.minion: 'assets/images/characters/Minion.png',
+  Fraction.demon: 'assets/images/characters/Demon.png',
+  Fraction.traveller: 'assets/images/characters/Traveller.png',
+  Fraction.fabled: 'assets/images/characters/Fabled.png',
+  Fraction.loric: 'assets/images/characters/Loric.png',
+};
 
 class AddCharacterWhilePlaying extends StatefulWidget {
   @override
@@ -96,8 +107,10 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
     var localizedStrings = AppLocalizations.of(context)!;
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
+    final selectedCharacter = character;
     var disable = characterService.addCharacterToGameWithFractionFabled ||
-        (character != null && character?.fraction == Fraction.fabled);
+        characterService.addCharacterToGameWithFractionLoric ||
+        (selectedCharacter != null && _isSpecialCharacter(selectedCharacter));
     return Container(
       width: maxWhidth * 0.8,
       height: 100,
@@ -144,52 +157,65 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
   Container _buildToggleButtons(BuildContext context) {
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
+    final maxWidth = MediaQuery.of(context).size.width;
     return Container(
       alignment: Alignment.center,
       color: Color(0xFF4a3b5e),
-      child: ToggleButtons(
-        fillColor: Color(0xFF6f678a),
-        children: [
-          _buildFractionAvatar(context, Fraction.townsfolk),
-          _buildFractionAvatar(context, Fraction.outsider),
-          _buildFractionAvatar(context, Fraction.minion),
-          _buildFractionAvatar(context, Fraction.demon),
-          _buildFractionAvatar(context, Fraction.traveller),
-          _buildFractionAvatar(context, Fraction.fabled),
-        ],
-        isSelected: [
-          characterService.addCharacterToGameWithFractionTownsfolk,
-          characterService.addCharacterToGameWithFractionOutsider,
-          characterService.addCharacterToGameWithFractionMinion,
-          characterService.addCharacterToGameWithFractionDemon,
-          characterService.addCharacterToGameWithFractionTraveller,
-          characterService.addCharacterToGameWithFractionFabled,
-        ],
-        onPressed: (int index) {
-          setState(() {
-            characterService.setAllAddCharacterToGameWithFractionToFalse();
-            switch (index) {
-              case 0:
-                characterService.addCharacterToGameWithFractionTownsfolk = true;
-                break;
-              case 1:
-                characterService.addCharacterToGameWithFractionOutsider = true;
-                break;
-              case 2:
-                characterService.addCharacterToGameWithFractionMinion = true;
-                break;
-              case 3:
-                characterService.addCharacterToGameWithFractionDemon = true;
-                break;
-              case 4:
-                characterService.addCharacterToGameWithFractionTraveller = true;
-                break;
-              case 5:
-                characterService.addCharacterToGameWithFractionFabled = true;
-                break;
-            }
-          });
-        },
+      width: maxWidth,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ToggleButtons(
+          fillColor: const Color(0xFF6f678a),
+          children: [
+            _buildFractionAvatar(context, Fraction.townsfolk),
+            _buildFractionAvatar(context, Fraction.outsider),
+            _buildFractionAvatar(context, Fraction.minion),
+            _buildFractionAvatar(context, Fraction.demon),
+            _buildFractionAvatar(context, Fraction.traveller),
+            _buildFractionAvatar(context, Fraction.fabled),
+            _buildFractionAvatar(context, Fraction.loric),
+          ],
+          isSelected: [
+            characterService.addCharacterToGameWithFractionTownsfolk,
+            characterService.addCharacterToGameWithFractionOutsider,
+            characterService.addCharacterToGameWithFractionMinion,
+            characterService.addCharacterToGameWithFractionDemon,
+            characterService.addCharacterToGameWithFractionTraveller,
+            characterService.addCharacterToGameWithFractionFabled,
+            characterService.addCharacterToGameWithFractionLoric,
+          ],
+          onPressed: (int index) {
+            setState(() {
+              characterService.setAllAddCharacterToGameWithFractionToFalse();
+              switch (index) {
+                case 0:
+                  characterService.addCharacterToGameWithFractionTownsfolk =
+                      true;
+                  break;
+                case 1:
+                  characterService.addCharacterToGameWithFractionOutsider =
+                      true;
+                  break;
+                case 2:
+                  characterService.addCharacterToGameWithFractionMinion = true;
+                  break;
+                case 3:
+                  characterService.addCharacterToGameWithFractionDemon = true;
+                  break;
+                case 4:
+                  characterService.addCharacterToGameWithFractionTraveller =
+                      true;
+                  break;
+                case 5:
+                  characterService.addCharacterToGameWithFractionFabled = true;
+                  break;
+                case 6:
+                  characterService.addCharacterToGameWithFractionLoric = true;
+                  break;
+              }
+            });
+          },
+        ),
       ),
     );
   }
@@ -210,18 +236,17 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
               onPressed: () {
                 if (playerName.isNotEmpty &&
                     !playerAllreadyExists() &&
-                    character.fraction != Fraction.fabled) {
+                    !_isSpecialCharacter(character)) {
                   character.playerName = playerName;
                   gameStatusService.addPlayerName(playerName);
                 }
                 characterService.addCharacter(character);
                 Navigator.pop(context);
               },
-              child:
-                  playerName.isNotEmpty && character.fraction != Fraction.fabled
-                      ? Text(localizedStrings.addPlayerAsCharacter(
-                          character.name, playerName))
-                      : Text(localizedStrings.addPlayerName(character.name)),
+              child: playerName.isNotEmpty && !_isSpecialCharacter(character)
+                  ? Text(localizedStrings.addPlayerAsCharacter(
+                      character.name, playerName))
+                  : Text(localizedStrings.addPlayerName(character.name)),
             ),
     );
   }
@@ -259,41 +284,126 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
     );
   }
 
-  CircleAvatar _buildFractionAvatar(BuildContext context, Fraction fraction) {
-    final maxWidth = MediaQuery.of(context).size.width;
+  bool _isSpecialCharacter(Character character) =>
+      character.fraction == Fraction.fabled ||
+      character.fraction == Fraction.loric;
+
+  void _showSpecialCharacterDialog(
+    BuildContext context,
+    Fraction fraction,
+    Function(Character) onCharacterSelected,
+    List<Character> scriptCharacters,
+  ) {
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    Character character;
-    switch (fraction) {
-      case Fraction.townsfolk:
-        character = characterService.getCharacterByImage('Icon_undertaker');
-        break;
-      case Fraction.outsider:
-        character = characterService.getCharacterByImage('Icon_sweetheart');
-        break;
-      case Fraction.minion:
-        character = characterService.getCharacterByImage('Icon_pithag');
-        break;
-      case Fraction.demon:
-        character = characterService.getCharacterByImage('Icon_shabaloth');
-        break;
-      case Fraction.traveller:
-        character = characterService.getCharacterByImage('Icon_bonecollector');
-        break;
-      case Fraction.fabled:
-        character = characterService.getCharacterByImage('Icon_buddhist');
-        break;
-      case Fraction.loric:
-        return CircleAvatar(
-          radius: maxWidth / 12 - 6,
-          backgroundColor: Colors.transparent,
-          backgroundImage: AssetImage(roleImageAssetPath('')),
-        );
-    }
+    final allCharacters = characterService.allCharacters
+        .where((character) => character.fraction == fraction)
+        .toList(growable: false);
+    final scriptedCharacters = scriptCharacters
+        .where((character) => character.fraction == fraction)
+        .toList(growable: false);
+    var showScriptCharacters = scriptedCharacters.isNotEmpty;
+    final strings = AppLocalizations.of(context)!;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final characters =
+              showScriptCharacters ? scriptedCharacters : allCharacters;
+          return AlertDialog(
+            backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(strings.chooseACharacter,
+                      style: const TextStyle(color: Colors.white)),
+                ),
+                ToggleButtons(
+                  key: ValueKey('special-character-filter-${fraction.name}'),
+                  constraints:
+                      const BoxConstraints(minHeight: 32, minWidth: 38),
+                  borderRadius: BorderRadius.circular(8),
+                  isSelected: [showScriptCharacters, !showScriptCharacters],
+                  onPressed: (index) =>
+                      setDialogState(() => showScriptCharacters = index == 0),
+                  children: const [
+                    Tooltip(
+                      message: 'Script',
+                      child: Icon(CustomIcons.script, color: Colors.white),
+                    ),
+                    Tooltip(
+                      message: 'All characters',
+                      child: Icon(Icons.apps, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: characters.isEmpty
+                  ? const Center(
+                      child: Icon(Icons.info_outline, color: Colors.white))
+                  : ListView.builder(
+                      itemCount: characters.length,
+                      itemBuilder: (context, index) {
+                        final character = characters[index];
+                        return ListTile(
+                          minVerticalPadding: 20,
+                          leading: CircleAvatar(
+                            radius: 40,
+                            backgroundImage:
+                                AssetImage(roleImageAssetPath(character.image)),
+                            backgroundColor: Colors.transparent,
+                          ),
+                          title: Text(character.name,
+                              style: const TextStyle(color: Colors.white)),
+                          onLongPress: () => Navigator.push(
+                            dialogContext,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ShowCharacter(character: character),
+                            ),
+                          ),
+                          onTap: () {
+                            onCharacterSelected(character);
+                            Navigator.pop(dialogContext);
+                          },
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(strings.cancel,
+                    style: const TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  CircleAvatar _buildFractionAvatar(BuildContext context, Fraction fraction) {
+    final maxWidth = MediaQuery.of(context).size.width;
+    final imagePath = _fractionIconAssetPaths[fraction];
     return CircleAvatar(
+      key: ValueKey('fractionAvatar-${fraction.name}'),
       radius: maxWidth / 12 - 6,
       backgroundColor: Colors.transparent,
-      backgroundImage: AssetImage(roleImageAssetPath(character.image)),
+      child: imagePath == null
+          ? const Icon(Icons.category, color: Colors.white)
+          : ClipOval(
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.category, color: Colors.white),
+              ),
+            ),
     );
   }
 
@@ -305,6 +415,22 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
     final scriptService = Provider.of<ScriptService>(context, listen: false);
     final allCharactersOfGameset =
         scriptService.resolveCharacters(characterService.allCharacters);
+
+    final specialFraction =
+        characterService.addCharacterToGameWithFractionFabled
+            ? Fraction.fabled
+            : characterService.addCharacterToGameWithFractionLoric
+                ? Fraction.loric
+                : null;
+    if (specialFraction != null) {
+      _showSpecialCharacterDialog(
+        context,
+        specialFraction,
+        onCharacterSelected,
+        allCharactersOfGameset,
+      );
+      return;
+    }
 
     var allCharactersOfGamesetThatAreNotInGame = allCharactersOfGameset
         .where((element) => !gameCharacters.contains(element))
@@ -331,10 +457,6 @@ class _AddCharacterWhilePlayingState extends State<AddCharacterWhilePlaying> {
     } else if (characterService.addCharacterToGameWithFractionTraveller) {
       charactersToChooseFrom = allCharactersOfGamesetThatAreNotInGame
           .where((element) => element.fraction == Fraction.traveller)
-          .toList();
-    } else if (characterService.addCharacterToGameWithFractionFabled) {
-      charactersToChooseFrom = characterService.allCharacters
-          .where((element) => element.fraction == Fraction.fabled)
           .toList();
     }
     var localizedStrings = AppLocalizations.of(context)!;

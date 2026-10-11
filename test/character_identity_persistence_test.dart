@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ Map<String, dynamic> characterJson({
   required String image,
   String? id,
   String? roleId,
+  Fraction fraction = Fraction.minion,
   int numberOfExemplars = 1,
   bool variableNumberOfExemplars = false,
 }) {
@@ -22,7 +24,7 @@ Map<String, dynamic> characterJson({
     'descriptionLong': '$name long',
     'howToRun': 'Run $name',
     'image': image,
-    'fraction': 'minion',
+    'fraction': fraction.name,
     'tokens': <Map<String, dynamic>>[
       <String, dynamic>{
         'name': '$name reminder',
@@ -252,6 +254,25 @@ void main() {
 
     expect(firstReload.characterPositions, positions);
     expect(secondReload.characterPositions, positions);
+  });
+
+  test('Loric roles persist but are excluded from regular player cards',
+      () async {
+    final service = await createCharacterService();
+    final loric = Character.fromJson(characterJson(
+      name: 'Loric',
+      image: 'Icon_loric',
+      fraction: Fraction.loric,
+    ));
+
+    service.addCharacter(loric);
+    service.setCharacterPositions(const <int, Offset>{0: Offset(33, 44)});
+    await Future<void>.delayed(Duration.zero);
+
+    final restored = await createCharacterService();
+    expect(restored.gameCharacters.single.fraction, Fraction.loric);
+    expect(restored.gameCharactersWithoutDrunkAndFabled, isEmpty);
+    expect(restored.characterPositions[0], const Offset(33, 44));
   });
 
   test('token reset is persisted across repeated loads', () async {

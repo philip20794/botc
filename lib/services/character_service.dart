@@ -26,6 +26,7 @@ class CharacterService extends ChangeNotifier {
   bool addCharacterToGameWithFractionDemon = false;
   bool addCharacterToGameWithFractionTraveller = true;
   bool addCharacterToGameWithFractionFabled = false;
+  bool addCharacterToGameWithFractionLoric = false;
 
   CharacterService() {
     init();
@@ -72,6 +73,7 @@ class CharacterService extends ChangeNotifier {
     addCharacterToGameWithFractionDemon = false;
     addCharacterToGameWithFractionTraveller = false;
     addCharacterToGameWithFractionFabled = false;
+    addCharacterToGameWithFractionLoric = false;
   }
 
   bool _loadGameCharacters(SharedPreferences prefs) {
@@ -434,10 +436,13 @@ class CharacterService extends ChangeNotifier {
 
   void putAllFabledCharactersAtTheEnd({bool notify = true}) {
     _gameCharacters.sort((a, b) {
-      if (a.fraction == Fraction.fabled && b.fraction != Fraction.fabled) {
+      final aIsSpecial =
+          a.fraction == Fraction.fabled || a.fraction == Fraction.loric;
+      final bIsSpecial =
+          b.fraction == Fraction.fabled || b.fraction == Fraction.loric;
+      if (aIsSpecial && !bIsSpecial) {
         return 1;
-      } else if (a.fraction != Fraction.fabled &&
-          b.fraction == Fraction.fabled) {
+      } else if (!aIsSpecial && bIsSpecial) {
         return -1;
       } else {
         return 0;
@@ -573,7 +578,9 @@ class CharacterService extends ChangeNotifier {
 
   List<Character> get gameCharactersWithoutDrunkAndFabled =>
       gameCharactersWithoutDrunk
-          .where((element) => element.fraction != Fraction.fabled)
+          .where((element) =>
+              element.fraction != Fraction.fabled &&
+              element.fraction != Fraction.loric)
           .toList();
 
   List<Character> get gameCharactersBackupWithoutDrunk => _gameCharactersBackup
@@ -582,7 +589,9 @@ class CharacterService extends ChangeNotifier {
 
   List<Character> get gameCharactersBackupWithoutDrunkAndFabled =>
       gameCharactersBackupWithoutDrunk
-          .where((element) => element.fraction != Fraction.fabled)
+          .where((element) =>
+              element.fraction != Fraction.fabled &&
+              element.fraction != Fraction.loric)
           .toList();
 
   List<Character> get gameCharactersBackup => _gameCharactersBackup;

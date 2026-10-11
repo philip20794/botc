@@ -5,6 +5,8 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
+import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
+import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/add_character_while_playing.dart';
@@ -219,6 +221,18 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                   ),
                 ),
               ),
+            if (!_isMenuVisible &&
+                gameStateService
+                    .quickFlowEntries(characterService.gameCharacters)
+                    .isNotEmpty)
+              _buildAnchoredMenuControl(
+                const Offset(0, -78),
+                QuickFlowBar(
+                  gameCharacters: characterService.gameCharacters,
+                  allCharacters: characterService.allCharacters,
+                  gameState: gameStateService,
+                ),
+              ),
             _buildAnchoredMenuControl(
               Offset.zero,
               GestureDetector(
@@ -237,10 +251,17 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
             if (gameStateService.showNightStateHelpButton())
               _buildAnchoredMenuControl(
                 const Offset(0, 96),
-                IconButton(
-                  onPressed: () => _showHelpDialogBox(context),
-                  icon: const Icon(Icons.help_outline,
-                      color: Colors.white, size: 50),
+                GestureDetector(
+                  key: const ValueKey('night-phase-info-button'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _showHelpDialogBox(context),
+                  onLongPress: () => _showCurrentNightCharacterDetails(context),
+                  child: const SizedBox(
+                    width: 56,
+                    height: 56,
+                    child:
+                        Icon(Icons.help_outline, color: Colors.white, size: 50),
+                  ),
                 ),
               ),
             if (gameStateService.isDawn())
@@ -347,6 +368,38 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
               style: const TextStyle(color: Colors.white)),
         );
       },
+    );
+  }
+
+  void _showCurrentNightCharacterDetails(BuildContext context) {
+    final characterService =
+        Provider.of<CharacterService>(context, listen: false);
+    final gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
+    final awakeCharacter =
+        gameStateService.getAwakeCharacter(characterService.gameCharacters);
+    final roleId = awakeCharacter?.roleId;
+    if (roleId == null || roleId.isEmpty) return;
+
+    Character? localizedCharacter;
+    for (final character in characterService.allCharacters) {
+      if (character.roleId == roleId) {
+        localizedCharacter = character;
+        break;
+      }
+    }
+    // A running game's role instance is still a safe fallback for legacy or
+    // partially loaded catalogs, while the primary lookup always uses roleId.
+    final character = localizedCharacter ?? awakeCharacter;
+    if (character == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShowCharacter(
+          character: character,
+          showMoreDetails: true,
+        ),
+      ),
     );
   }
 

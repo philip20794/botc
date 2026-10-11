@@ -469,4 +469,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pdfLoadError =>
       'This PDF could not be loaded. Check your internet connection and try again.';
+
+  @override
+  String get quickFlowInvalidTarget =>
+      'This player is not a valid target for the selected reminder.';
+
+  @override
+  String get quickFlowPreviousNightTarget =>
+      'Choose a different player than on the previous night.';
+
+  @override
+  String get quickFlowUnsupported =>
+      'This QuickFlow step must be handled through the player menu.';
+
+  @override
+  String get onlyTheStorytellerMayContinue =>
+      'Only the storyteller may continue.';
+
+  @override
+  String get continueText => 'Continue';
 }

@@ -147,5 +147,10 @@
   "scriptSaved": "Skript gespeichert",
   "scriptChangeWhileRunning": "Skripte können während einer laufenden Partie nicht geändert werden.",
   "noCustomScripts": "Noch keine eigenen Skripte gespeichert.",
-  "pdfLoadError": "Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut."
+  "pdfLoadError": "Dieses PDF konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.",
+  "quickFlowInvalidTarget": "Dieser Spieler ist kein gültiges Ziel für den ausgewählten Reminder.",
+  "quickFlowPreviousNightTarget": "Wähle einen anderen Spieler als in der vorherigen Nacht.",
+  "quickFlowUnsupported": "Dieser QuickFlow-Schritt muss über das Spieler-Menü ausgeführt werden."
+ ,"onlyTheStorytellerMayContinue": "Nur der Erzähler darf fortfahren.",
+  "continueText": "Weiter"
  }

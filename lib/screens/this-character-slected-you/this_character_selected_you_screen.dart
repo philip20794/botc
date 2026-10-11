@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
+import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
@@ -14,10 +15,12 @@ import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class ThisCharacterSelectedYouScreen extends StatefulWidget {
   final bool showDemonBluffsOnly;
+  final QuickFlowInfo? preparedInfo;
 
   const ThisCharacterSelectedYouScreen({
     super.key,
     this.showDemonBluffsOnly = false,
+    this.preparedInfo,
   });
 
   @override
@@ -39,6 +42,9 @@ class _ThisCharacterSelectedYouScreenState
     var localizedStrings = AppLocalizations.of(context)!;
     if (widget.showDemonBluffsOnly) {
       return _buildDemonBluffs(context, localizedStrings);
+    }
+    if (widget.preparedInfo != null) {
+      return _buildPreparedQuickFlow(context, localizedStrings);
     }
     var tokensWithNoAction = [
       Basictoken.this_is_the_demon,
@@ -207,6 +213,143 @@ class _ThisCharacterSelectedYouScreenState
       ),
     );
   }
+
+  Widget _buildPreparedQuickFlow(
+      BuildContext context, AppLocalizations localizedStrings) {
+    final info = widget.preparedInfo!;
+    final isCharacterSelected = info.kind.startsWith('characterSelectedYou');
+    final showsPlayers = info.players.isNotEmpty ||
+        const {
+          'playersAndCharacter',
+          'playerAndCharacter',
+          'pointToPlayers',
+          'characterSelectedYouMadAboutPlayer',
+        }.contains(info.kind);
+    final showsCharacter = const {
+      'playersAndCharacter',
+      'playerAndCharacter',
+      'showCharacter',
+      'characterSelectedYouMadAboutCharacter',
+    }.contains(info.kind);
+    final showsMadAbout = const {
+      'characterSelectedYouMadAboutCharacter',
+      'characterSelectedYouMadAboutPlayer',
+    }.contains(info.kind);
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(
+                'assets/images/backgrounds/background_grim_middel.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isCharacterSelected) ...[
+                  _preparedLabel(localizedStrings.this_chracter_selected_you),
+                  const SizedBox(height: 16),
+                  if (info.sourceCharacter != null)
+                    CharacterAvatar(
+                      character: info.sourceCharacter!,
+                      showIsSelected: false,
+                      showName: true,
+                      size: 160,
+                    ),
+                ],
+                if (showsMadAbout) ...[
+                  const SizedBox(height: 20),
+                  _preparedLabel(localizedStrings.toBeMadAbout),
+                ],
+                if (showsPlayers) ...[
+                  const SizedBox(height: 20),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      for (final player in info.players)
+                        info.kind == 'characterSelectedYouMadAboutPlayer'
+                            ? CharacterAvatar(
+                                character: player,
+                                showIsSelected: false,
+                                showName: true,
+                                size: 150,
+                              )
+                            : _preparedPlayerToken(player),
+                    ],
+                  ),
+                ],
+                if (showsCharacter && info.selectedCharacter != null) ...[
+                  const SizedBox(height: 20),
+                  CharacterAvatar(
+                    character: info.selectedCharacter!,
+                    showIsSelected: false,
+                    showName: true,
+                    size: 180,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _preparedLabel(String text) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFFb5987d),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.black, fontSize: 26),
+        ),
+      );
+
+  Widget _preparedPlayerToken(Character player) => Container(
+        width: 150,
+        height: 150,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: AssetImage('assets/images/backgrounds/token.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.person, size: 54, color: Colors.black87),
+            Text(
+              player.playerName,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildDemonBluffs(
       BuildContext context, AppLocalizations localizedStrings) {

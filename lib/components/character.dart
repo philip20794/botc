@@ -1,8 +1,10 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
+import 'package:blood_on_the_clocktower/components/player_interaction_target.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
@@ -94,6 +96,35 @@ class _CharacterWidgetState extends State<CharacterWidget> {
     });
   }
 
+  Future<void> _handlePlayerTap() async {
+    final characterService =
+        Provider.of<CharacterService>(context, listen: false);
+    final gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
+    final result = await gameStateService.assignActiveQuickFlowReminder(
+      characterService.gameCharacters,
+      widget.character,
+    );
+    if (!mounted) return;
+    if (!result.handled) {
+      toggleMenu(context);
+      return;
+    }
+    if (!result.success || result.warning != null) {
+      final localizedStrings = AppLocalizations.of(context)!;
+      final message = switch (result.failure ?? result.warning) {
+        QuickFlowAssignmentFailure.previousNightTarget =>
+          localizedStrings.quickFlowPreviousNightTarget,
+        QuickFlowAssignmentFailure.unsupported =>
+          localizedStrings.quickFlowUnsupported,
+        _ => localizedStrings.quickFlowInvalidTarget,
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   void setPlayerName(BuildContext context) {
     GameStateService gameStateService =
         Provider.of<GameStateService>(context, listen: false);
@@ -129,7 +160,6 @@ class _CharacterWidgetState extends State<CharacterWidget> {
 
   @override
   Widget build(BuildContext context) {
-    var localizedStrings = AppLocalizations.of(context)!;
     GameStateService gameStateService = Provider.of<GameStateService>(context);
     CharacterService characterService = Provider.of<CharacterService>(context);
     SettingsService settingsService = Provider.of<SettingsService>(context);
@@ -141,32 +171,48 @@ class _CharacterWidgetState extends State<CharacterWidget> {
     // Überprüfen, ob der Charakter lebendig ist
     final bool isAlive = gameStateService.isCharacterAlive(widget.character);
 
-    final maxWidth = MediaQuery.of(context).size.width;
-
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        GestureDetector(
-          onTap: () {
-            if (widget.characterSelectionView &&
-                !characterService.showInfoButtonOnCharacterSelection) {
-              toggleSelection(context);
-              return;
-            } else if (widget.characterSelectionView &&
-                characterService.showInfoButtonOnCharacterSelection) {
-              toggleShowCharacter();
-              return;
-            }
-            toggleMenu(context);
-          },
-          child: CharacterAvatar(
-            character: widget.character,
-            showIsSelected: widget.showIsSelected,
-            showName: true,
-            size: settingsService.characterKnobSize,
+        if (widget.showAddToken &&
+            !widget.settingsView &&
+            !widget.characterSelectionView)
+          PlayerInteractionTarget(
+            key: ValueKey('player-${widget.character.id}'),
+            quickReminderActive: gameStateService
+                    .activeQuickFlowReminder(characterService.gameCharacters) !=
+                null,
+            onQuickTap: _handlePlayerTap,
+            onOpenMenu: () => toggleMenu(context),
+            child: CharacterAvatar(
+              character: widget.character,
+              showIsSelected: widget.showIsSelected,
+              showName: true,
+              size: settingsService.characterKnobSize,
+            ),
+          )
+        else
+          GestureDetector(
+            key: ValueKey('player-${widget.character.id}'),
+            onTap: () {
+              if (widget.characterSelectionView &&
+                  !characterService.showInfoButtonOnCharacterSelection) {
+                toggleSelection(context);
+              } else if (widget.characterSelectionView &&
+                  characterService.showInfoButtonOnCharacterSelection) {
+                toggleShowCharacter();
+              } else {
+                toggleMenu(context);
+              }
+            },
+            child: CharacterAvatar(
+              character: widget.character,
+              showIsSelected: widget.showIsSelected,
+              showName: true,
+              size: settingsService.characterKnobSize,
+            ),
           ),
-        ),
 
         // Bild, wenn der Charakter nicht lebendig ist
         if (!isAlive &&
@@ -175,10 +221,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
             !widget.characterSelectionView) ...[
           Positioned(
             top: 18,
-            child: GestureDetector(
-              onTap: () {
-                toggleMenu(context);
-              },
+            child: IgnorePointer(
               child: Image.asset(
                 'assets/images/dead_character_overlay.png', // Dein Bild für nicht lebendig
                 // width: settingsService.characterKnobSize * 0.5,

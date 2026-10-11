@@ -4,12 +4,16 @@ class Token {
   String attachedTo = '';
   bool unlimited = false;
   bool needsSetup = false;
+  String? quickId;
+  String ownerRoleInstanceId;
 
   Token({
     required this.name,
     required this.image,
     this.needsSetup = false,
     this.unlimited = false,
+    this.quickId,
+    this.ownerRoleInstanceId = '',
   });
   // Methode zum Erstellen eines Token-Objekts aus JSON
   factory Token.fromJson(Map<String, dynamic> json) {
@@ -19,6 +23,10 @@ class Token {
       unlimited: json['unlimited'] != null ? json['unlimited'] as bool : false,
       needsSetup:
           json['needsSetup'] != null ? json['needsSetup'] as bool : false,
+      quickId: json['quickId'] is String ? json['quickId'] as String : null,
+      ownerRoleInstanceId: json['ownerRoleInstanceId'] is String
+          ? json['ownerRoleInstanceId'] as String
+          : '',
     );
   }
 
@@ -29,6 +37,9 @@ class Token {
       'image': image,
       'unlimited': unlimited,
       'needsSetup': needsSetup,
+      if (quickId != null) 'quickId': quickId,
+      if (ownerRoleInstanceId.isNotEmpty)
+        'ownerRoleInstanceId': ownerRoleInstanceId,
     };
   }
 

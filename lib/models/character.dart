@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
+import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 
 class Character {
@@ -27,6 +28,7 @@ class Character {
   int numberOfExemplars = 1;
   List<int> possibleNrOfExemplars;
   bool variableNumberOfExemplars = false;
+  QuickFlow quickFlow;
 
   static String roleIdFromImage(String image) {
     final roleId = image
@@ -69,9 +71,14 @@ class Character {
     this.numberOfExemplars = 1,
     this.variableNumberOfExemplars = false,
     this.possibleNrOfExemplars = const [],
+    this.quickFlow = const QuickFlow(),
     required this.id,
     String? roleId,
-  }) : roleId = normalizedRoleId(image, roleId);
+  }) : roleId = normalizedRoleId(image, roleId) {
+    for (final token in tokens) {
+      token.ownerRoleInstanceId = id;
+    }
+  }
 
   // Methode zum Erstellen einer Card-Instanz aus JSON
   factory Character.fromJson(Map<String, dynamic> json) {
@@ -121,6 +128,7 @@ class Character {
               .map((e) => e as int)
               .toList()
           : [],
+      quickFlow: QuickFlow.fromJson(json['quickFlow']),
     );
   }
 
@@ -150,6 +158,7 @@ class Character {
       'numberOfExemplars': numberOfExemplars,
       'variableNumberOfExemplars': variableNumberOfExemplars,
       'possibleNrOfExemplars': possibleNrOfExemplars,
+      if (quickFlow.toJson().isNotEmpty) 'quickFlow': quickFlow.toJson(),
     };
   }
 

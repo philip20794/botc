@@ -214,7 +214,8 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
       {bool isDragging = false}) {
     final settingsService =
         Provider.of<SettingsService>(context, listen: false);
-    return character.fraction == Fraction.fabled
+    return character.fraction == Fraction.fabled ||
+            character.fraction == Fraction.loric
         ? FabledToken(character: character)
         : Container(
             width: settingsService.characterKnobSize * 1.5,

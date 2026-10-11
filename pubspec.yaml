@@ -68,6 +68,14 @@ flutter:
     - assets/images/backgrounds/background_grim_middel.jpg
     - assets/images/backgrounds/background_grim_top.jpg
     - assets/images/backgrounds/token.png
+    - assets/images/characters/
+    - assets/images/characters/Demon.png
+    - assets/images/characters/Fabled.png
+    - assets/images/characters/Loric.png
+    - assets/images/characters/Minion.png
+    - assets/images/characters/Outsider.png
+    - assets/images/characters/Townsfolk.png
+    - assets/images/characters/Traveller.png
     - assets/images/characters/Icon_acrobat.png
     - assets/images/characters/Icon_alchemist.png
     - assets/images/characters/Icon_alhadikhia.png
