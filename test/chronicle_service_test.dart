@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blood_on_the_clocktower/models/active_night_chronicle_input.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/chronicle.dart';
 import 'package:blood_on_the_clocktower/models/chronicle_schema.dart';
@@ -73,6 +74,19 @@ void main() {
     );
     await state.ready;
     return state;
+  }
+
+  Future<ActiveNightChronicleInput> advanceToChronicleInput(
+    GameStateService state,
+    List<Character> characters,
+    String definitionId,
+  ) async {
+    for (var attempt = 0; attempt < 20; attempt++) {
+      final input = state.activeNightChronicleInput(characters);
+      if (input?.definition.id == definitionId) return input!;
+      await state.nextNightState(characters);
+    }
+    throw StateError('Chronicle input $definitionId was not reached');
   }
 
   test('catalog schemas expose Chef, Empath and Fortune Teller definitions',
@@ -316,6 +330,150 @@ void main() {
       events
           .where((event) => event.type == ChronicleEventType.reminderAssigned),
       isEmpty,
+    );
+  });
+
+  test('playground Chronicle input stores Fortune Teller players and answer',
+      () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    final fortune = catalogRole('fortuneteller', id: 'fortune');
+    final first = player('first', 'First');
+    final second = player('second', 'Second');
+    final third = player('third', 'Third');
+    final characters = [fortune, first, second, third];
+    await state.startNewGame(characters);
+
+    var input = await advanceToChronicleInput(
+      state,
+      characters,
+      'fortuneReading',
+    );
+    await state.toggleNightChroniclePlayer(input, first);
+    input = state.activeNightChronicleInput(characters)!;
+    await state.toggleNightChroniclePlayer(input, second);
+    input = state.activeNightChronicleInput(characters)!;
+    await state.toggleNightChroniclePlayer(input, third);
+    input = state.activeNightChronicleInput(characters)!;
+    await state.toggleNightChronicleYesNo(
+        input, input.yesNoFields.single, true);
+
+    input = state.activeNightChronicleInput(characters)!;
+    await state.toggleNightChronicleYesNo(
+        input, input.yesNoFields.single, false);
+    input = state.activeNightChronicleInput(characters)!;
+    expect(input.values['answer'], isFalse);
+    await state.toggleNightChronicleYesNo(
+        input, input.yesNoFields.single, true);
+
+    input = state.activeNightChronicleInput(characters)!;
+    expect(input.selectedPlayerIdsForAllFields, {first.id, third.id});
+    expect(input.values['answer'], isTrue);
+    final event = chronicle.activeChronicle!.events.singleWhere(
+      (event) => event.id == input.eventId,
+    );
+    expect(event.informationEntries, hasLength(1));
+    expect(event.targets.map((target) => target.characterId),
+        [first.id, third.id]);
+    expect(
+      chronicle.activeChronicle!.events
+          .where((event) => event.type == ChronicleEventType.reminderAssigned),
+      isEmpty,
+    );
+
+    await state.nextNightState(characters);
+    final preserved = chronicle.activeChronicle!.events.singleWhere(
+      (item) => item.id == event.id,
+    );
+    expect(preserved.informationEntries.single['values']['answer'], isTrue);
+  });
+
+  test('playground Chronicle number input can be selected and cleared',
+      () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    final chef = catalogRole('chef', id: 'chef');
+    final characters = [
+      chef,
+      player('one', 'One'),
+      player('two', 'Two'),
+      player('three', 'Three'),
+      player('four', 'Four'),
+    ];
+    await state.startNewGame(characters);
+
+    var input = await advanceToChronicleInput(state, characters, 'chefCount');
+    final field = input.numberFields.single;
+    await state.toggleNightChronicleNumber(input, field, 4);
+    input = state.activeNightChronicleInput(characters)!;
+    expect(input.values[field.id], 4);
+
+    await state.toggleNightChronicleNumber(input, field, 4);
+    input = state.activeNightChronicleInput(characters)!;
+    expect(input.values, isEmpty);
+  });
+
+  test('ending a game keeps the configured demon bluffs', () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    await state.setDemonBluffRoleIds(['chef', 'empath', 'monk']);
+
+    await state.endGame();
+
+    expect(state.demonBluffRoleIds, ['chef', 'empath', 'monk']);
+  });
+
+  test('day timer starts at day and resets when night begins', () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    final chef = catalogRole('chef');
+
+    await state.startNewGame([chef]);
+    await state.startDay([chef]);
+
+    expect(state.isDay(), isTrue);
+    expect(state.dayElapsed.inSeconds, lessThanOrEqualTo(1));
+
+    await state.nextNight([chef]);
+
+    expect(state.isDay(), isFalse);
+    expect(state.dayElapsed, Duration.zero);
+
+    await state.startDay([chef]);
+
+    expect(state.isDay(), isTrue);
+    expect(state.dayElapsed.inSeconds, lessThanOrEqualTo(1));
+  });
+
+  test('restored Chronicle accepts replacement reminder snapshots', () async {
+    final owner = catalogRole('poisoner', id: 'poisoner');
+    final target = player('target', 'Target');
+    final token = owner.tokens.single;
+    final chronicle = ChronicleService();
+    await chronicle.ready;
+    await chronicle.startNewGame([owner, target]);
+    await chronicle.recordQuickFlowReminderSnapshot(
+      owner: owner,
+      stepId: 'poisoned',
+      token: token,
+      targets: [target],
+      round: 1,
+    );
+
+    final restored = ChronicleService();
+    await restored.ready;
+    await restored.recordQuickFlowReminderSnapshot(
+      owner: owner,
+      stepId: 'poisoned',
+      token: token,
+      targets: [target],
+      round: 1,
+    );
+
+    expect(
+      restored.activeChronicle!.events
+          .where((event) => event.details['snapshot'] == true),
+      hasLength(1),
     );
   });
 

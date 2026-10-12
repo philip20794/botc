@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/components/character.dart';
 import 'package:blood_on_the_clocktower/components/fabled_token.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
+import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,8 @@ class CharacterCircleComponent extends StatefulWidget {
   final bool selectionMode;
   final Set<String> selectedCharacterIds;
   final ValueChanged<Character>? onCharacterTap;
+  final Color? selectionBorderColor;
+  final Map<String, List<Token>> previewTokensByCharacterId;
 
   CharacterCircleComponent(
       {required Key key,
@@ -26,6 +29,8 @@ class CharacterCircleComponent extends StatefulWidget {
       this.selectionMode = false,
       this.selectedCharacterIds = const {},
       this.onCharacterTap,
+      this.selectionBorderColor,
+      this.previewTokensByCharacterId = const {},
       required this.charactersForToken});
 
   @override
@@ -249,9 +254,11 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
               selectionMode: widget.selectionMode,
               selectionIsSelected:
                   widget.selectedCharacterIds.contains(character.id),
+              selectionBorderColor: widget.selectionBorderColor,
               onCharacterTap: widget.selectionMode
                   ? () => widget.onCharacterTap?.call(character)
                   : null,
+              previewTokens: widget.previewTokensByCharacterId[character.id],
               menuId: i,
               onSelect: (selectedCharacter) {
                 // Handle select if needed

@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/components/player_interaction_target.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -35,7 +36,9 @@ class CharacterWidget extends StatefulWidget {
   final bool characterSelectionView;
   final bool selectionMode;
   final bool selectionIsSelected;
+  final Color? selectionBorderColor;
   final VoidCallback? onCharacterTap;
+  final List<Token>? previewTokens;
   final Function(Character) onSelect;
 
   CharacterWidget({
@@ -55,7 +58,9 @@ class CharacterWidget extends StatefulWidget {
     this.characterSelectionView = false,
     this.selectionMode = false,
     this.selectionIsSelected = false,
+    this.selectionBorderColor,
     this.onCharacterTap,
+    this.previewTokens,
     required this.menuId,
     required this.onSelect,
   });
@@ -192,6 +197,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
               showIsSelected: true,
               forSelectCharacter: true,
               isSelected: widget.selectionIsSelected,
+              selectionBorderColor: widget.selectionBorderColor,
               showName: true,
               size: settingsService.characterKnobSize,
             ),
@@ -254,7 +260,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
         ],
 
         // Tokens im Kreis um das Charakterbild
-        if (gameStateService.tokensOfCharacter(widget.character).isNotEmpty &&
+        if (_tokensForCharacter(gameStateService).isNotEmpty &&
             widget.showAddToken) ...[
           ..._buildTokenWidgets(context),
         ],
@@ -361,7 +367,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
     final gameStateService = Provider.of<GameStateService>(context);
     final settingsService = Provider.of<SettingsService>(context);
     const double radius = 80.0; // Radius des Kreises um das Charakterbild
-    final tokens = gameStateService.tokensOfCharacter(widget.character);
+    final tokens = _tokensForCharacter(gameStateService);
     final int tokenCount = tokens.length;
     final List<Widget> tokenWidgets = [];
 
@@ -382,7 +388,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
               20, // 20 ist die halbe Höhe der Tokens
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: widget.selectionMode
+            onTap: widget.selectionMode || widget.settingsView
                 ? () {}
                 : () {
                     setState(() {
@@ -442,6 +448,11 @@ class _CharacterWidgetState extends State<CharacterWidget> {
     }
 
     return tokenWidgets;
+  }
+
+  List<Token> _tokensForCharacter(GameStateService gameStateService) {
+    return widget.previewTokens ??
+        gameStateService.tokensOfCharacter(widget.character);
   }
 
   // Menü-Icon erstellen

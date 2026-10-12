@@ -169,13 +169,14 @@ class ChronicleLog {
   final List<ChronicleEvent> events;
   final List<String> hiddenSummaryIds;
 
-  const ChronicleLog({
+  ChronicleLog({
     required this.gameId,
     required this.startedAt,
-    required this.events,
+    required List<ChronicleEvent> events,
     this.endedAt,
-    this.hiddenSummaryIds = const [],
-  });
+    List<String> hiddenSummaryIds = const [],
+  })  : events = List<ChronicleEvent>.from(events),
+        hiddenSummaryIds = List<String>.from(hiddenSummaryIds);
 
   ChronicleLog copyWith({
     DateTime? endedAt,

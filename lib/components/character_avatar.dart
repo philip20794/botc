@@ -11,6 +11,7 @@ class CharacterAvatar extends StatefulWidget {
   final bool showIsSelected;
   final double size;
   final bool showName;
+  final Color? selectionBorderColor;
   bool forSelectCharacter = false;
   bool isSelected = false;
   final bool isBluff;
@@ -21,6 +22,7 @@ class CharacterAvatar extends StatefulWidget {
     required this.showIsSelected,
     required this.size,
     required this.showName,
+    this.selectionBorderColor,
     this.isSelected = false,
     this.isBluff = false,
     this.forSelectCharacter = false,
@@ -70,7 +72,8 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                             color: widget.showIsSelected && widget.isBluff
                                 ? Colors.redAccent
                                 : widget.showIsSelected && isSelected
-                                    ? Colors.white
+                                    ? widget.selectionBorderColor ??
+                                        Colors.white
                                     : Colors.transparent,
                             width: 4,
                           ),

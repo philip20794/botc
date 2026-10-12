@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
+import 'package:blood_on_the_clocktower/components/night_chronicle_controls.dart';
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
 import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
@@ -26,6 +27,37 @@ class SpielbereichScreen extends StatefulWidget {
   _SpielbereichScreenState createState() => _SpielbereichScreenState();
 }
 
+class _DayTimerDisplay extends StatelessWidget {
+  const _DayTimerDisplay({required this.elapsed});
+
+  final Duration elapsed;
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = elapsed.inMinutes.toString().padLeft(2, '0');
+    final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return IgnorePointer(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4A3B5E).withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white54),
+        ),
+        child: Text(
+          '$minutes:$seconds',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SpielbereichScreenState extends State<SpielbereichScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<CharacterCircleComponentState> _characterCircleKey2 =
@@ -33,6 +65,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
   bool _isMenuVisible = false;
   late AnimationController _controller;
   late Animation<double> _animation;
+  late final Timer _dayTimer;
   String? _characterLayoutSignature;
 
   @override
@@ -43,6 +76,12 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
+    _dayTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !context.read<GameStateService>().isDay()) {
+        return;
+      }
+      setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -74,6 +113,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
 
   @override
   void dispose() {
+    _dayTimer.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -119,6 +159,9 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
         }
       }
     }
+    final chronicleInput = gameStateService
+        .activeNightChronicleInput(characterService.gameCharacters);
+    final hasChroniclePlayerField = chronicleInput?.hasPlayerField ?? false;
 
     return WillPopScope(
       onWillPop: () async {
@@ -174,7 +217,20 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
               CharacterCircleComponent(
                   key: _characterCircleKey2,
                   characters: characterService.gameCharactersWithoutDrunk,
-                  charactersForToken: characterService.gameCharacters),
+                  charactersForToken: characterService.gameCharacters,
+                  selectionMode: hasChroniclePlayerField,
+                  selectedCharacterIds: !hasChroniclePlayerField
+                      ? const {}
+                      : chronicleInput!.selectedPlayerIdsForAllFields,
+                  selectionBorderColor: const Color(0xFFD4AF67),
+                  onCharacterTap: chronicleInput == null
+                      ? null
+                      : (character) => unawaited(
+                            gameStateService.toggleNightChroniclePlayer(
+                              chronicleInput,
+                              character,
+                            ),
+                          )),
               // Das Menü in der Bildschirmmitte
 
               if (gameStateService.gameIsRunning())
@@ -264,6 +320,16 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                     ),
                   ),
                 ),
+              if (chronicleInput != null &&
+                  (chronicleInput.yesNoFields.isNotEmpty ||
+                      chronicleInput.numberFields.isNotEmpty))
+                _buildAnchoredMenuControl(
+                  const Offset(0, 122),
+                  NightChronicleControls(
+                    input: chronicleInput,
+                    gameCharacters: characterService.gameCharacters,
+                  ),
+                ),
               if (gameStateService.isDawn())
                 _buildAnchoredMenuControl(
                   const Offset(0, 72),
@@ -277,6 +343,11 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                 _buildAnchoredMenuControl(
                   const Offset(0, 72),
                   const Icon(Icons.sunny, color: Colors.white, size: 50),
+                ),
+              if (gameStateService.isDay())
+                _buildAnchoredMenuControl(
+                  const Offset(0, 126),
+                  _DayTimerDisplay(elapsed: gameStateService.dayElapsed),
                 ),
               if (gameStateService.isDust())
                 _buildAnchoredMenuControl(

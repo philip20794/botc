@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/components/character_circle_component.da
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
@@ -43,6 +44,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
     final characterService = Provider.of<CharacterService>(context);
     final gameStateService = Provider.of<GameStateService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
+    final previewTokens = _previewTokens(characterService);
 
     return AppBackground(
       child: Scaffold(
@@ -72,6 +74,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                   settingsView: true,
                   characters: randomCharacters,
                   charactersForToken: randomCharacters,
+                  previewTokensByCharacterId: previewTokens,
                 ),
               ),
             ],
@@ -109,6 +112,38 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
         ),
       ),
     );
+  }
+
+  Map<String, List<Token>> _previewTokens(CharacterService characterService) {
+    const preferredNames = {'mad', 'poisoned', 'drunk'};
+    final tokenCharacters = characterService.allCharacters.isEmpty
+        ? randomCharacters
+        : characterService.allCharacters;
+    final allTokens = tokenCharacters
+        .expand((character) => character.tokens)
+        .toList(growable: false);
+    final configuredExamples = [
+      ...allTokens.where(
+        (token) => preferredNames.contains(token.name.toLowerCase()),
+      ),
+      ...allTokens.where(
+        (token) => !preferredNames.contains(token.name.toLowerCase()),
+      ),
+    ].take(3).toList(growable: false);
+    final examples = configuredExamples.isNotEmpty
+        ? configuredExamples
+        : [
+            Token(name: 'Mad', image: 'Icon_cerenovus'),
+            Token(name: 'Poisoned', image: 'Icon_poisoner'),
+            Token(name: 'Drunk', image: 'Icon_drunk'),
+          ];
+    return {
+      for (var index = 0; index < randomCharacters.length; index++)
+        randomCharacters[index].id: [
+          for (var tokenIndex = 0; tokenIndex <= index % 3; tokenIndex++)
+            examples[(index + tokenIndex) % examples.length],
+        ],
+    };
   }
 
   // Funktion zum Erstellen des "Dialogs" mit Slidern

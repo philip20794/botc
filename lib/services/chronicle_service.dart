@@ -467,9 +467,14 @@ class ChronicleService extends ChangeNotifier {
     if (owner.chronicle?.recordsQuickFlow != true || !await _ensureActive()) {
       return;
     }
+    final active = _active!;
+    // A log restored by an older app version can still hold a fixed-length
+    // event list in a running isolate. Never mutate that list in place while
+    // replacing a snapshot at the night-to-day boundary.
+    final events = List<ChronicleEvent>.from(active.events);
     final matchingIndexes = <int>[];
-    for (var index = 0; index < _active!.events.length; index++) {
-      final event = _active!.events[index];
+    for (var index = 0; index < events.length; index++) {
+      final event = events[index];
       if (event.type == ChronicleEventType.reminderAssigned &&
           event.phase == ChroniclePhase.night &&
           event.round == round &&
@@ -481,10 +486,11 @@ class ChronicleService extends ChangeNotifier {
       }
     }
     for (final index in matchingIndexes.reversed) {
-      _active!.events.removeAt(index);
+      events.removeAt(index);
     }
     if (targets.isEmpty) {
       if (matchingIndexes.isNotEmpty) {
+        _active = active.copyWith(events: events);
         await _persistActive();
         notifyListeners();
       }
@@ -492,7 +498,7 @@ class ChronicleService extends ChangeNotifier {
     }
     final timestamp = DateTime.now();
     for (final target in targets) {
-      _active!.events.add(ChronicleEvent(
+      events.add(ChronicleEvent(
         id: 'quick-reminder-snapshot:$round:${owner.id}:$stepId:${target.id}',
         timestamp: timestamp,
         type: ChronicleEventType.reminderAssigned,
@@ -512,6 +518,7 @@ class ChronicleService extends ChangeNotifier {
         },
       ));
     }
+    _active = active.copyWith(events: events);
     await _persistActive();
     notifyListeners();
   }

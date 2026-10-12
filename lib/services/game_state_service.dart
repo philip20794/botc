@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:blood_on_the_clocktower/models/active_night_chronicle_input.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/chronicle.dart';
+import 'package:blood_on_the_clocktower/models/chronicle_schema.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
@@ -33,6 +35,7 @@ class GameStateService extends ChangeNotifier {
   List<Token> unsedGameTokens = [];
   List<String> playerNames = [];
   int _nightCount = -1;
+  DateTime? _dayStartedAt;
   bool initIsDone = false;
   bool _chracterSelectionDone = false;
   double _nightStateNumber = 0;
@@ -50,6 +53,7 @@ class GameStateService extends ChangeNotifier {
   final String _storageNightCountKey = 'night_count';
   final String _storageNightStateNumberKey = 'night_state_number';
   static const String _storageNightStepIdKey = 'night_step_id';
+  static const String _storageDayStartedAtKey = 'day_started_at';
   final String _storageShowCharactersToPlayersKey =
       'show_characters_to_players';
   final String _chracterSelectionDoneKey = 'character_selection_done';
@@ -91,6 +95,10 @@ class GameStateService extends ChangeNotifier {
     _loadPlayerNames(prefs);
     _loadNightCount(prefs);
     _currentNightStepId = prefs.getString(_storageNightStepIdKey);
+    _loadDayStartedAt(prefs);
+    if (_currentNightStepId == 'day' && _dayStartedAt == null) {
+      await _startDayTimer();
+    }
     _loadNightStateNumber(prefs);
     _loadShowCharactersToPlayers(prefs);
     _loadChracterSelectionDone(prefs);
@@ -111,6 +119,7 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
     prefs.remove(_storageNightStepIdKey);
+    prefs.remove(_storageDayStartedAtKey);
     prefs.remove(_storageShowCharactersToPlayersKey);
     prefs.remove(_chracterSelectionDoneKey);
     prefs.remove(_storageDemonBluffRoleIdsKey);
@@ -416,6 +425,30 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
+  void _loadDayStartedAt(SharedPreferences prefs) {
+    if (_currentNightStepId != 'day') {
+      _dayStartedAt = null;
+      return;
+    }
+    final rawValue = prefs.getString(_storageDayStartedAtKey);
+    _dayStartedAt = rawValue == null ? null : DateTime.tryParse(rawValue);
+  }
+
+  Future<void> _startDayTimer() async {
+    _dayStartedAt = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageDayStartedAtKey,
+      _dayStartedAt!.toIso8601String(),
+    );
+  }
+
+  Future<void> _clearDayTimer() async {
+    _dayStartedAt = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageDayStartedAtKey);
+  }
+
   void _loadChracterSelectionDone(SharedPreferences prefs) {
     final bool? chracterSelectionDone =
         prefs.getBool(_chracterSelectionDoneKey);
@@ -652,8 +685,8 @@ class GameStateService extends ChangeNotifier {
     final resetFuture = Future.wait([
       resetCharacterTokens([]),
       resetCharacterAliveState(),
-      clearDemonBluffs(),
       _resetQuickFlowRuntime(),
+      _clearDayTimer(),
     ]);
     _nightCount = -1;
     _nightStateNumber = 0;
@@ -664,14 +697,19 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
     prefs.remove(_storageNightStepIdKey);
+    prefs.remove(_storageDayStartedAtKey);
     notifyListeners();
   }
 
   Future<void> startNewGame(List<Character> gameCharacters) async {
     await _nightOrderService.ready;
     await _chronicleService?.startNewGame(gameCharacters);
+    await _clearDayTimer();
     _nightCount = 1;
     final steps = _stepsFor(gameCharacters);
+    if (steps.isEmpty) {
+      await _startDayTimer();
+    }
     await _setNightStep(
       steps.isEmpty ? 'day' : steps.first.id,
       gameCharacters: gameCharacters,
@@ -750,6 +788,13 @@ class GameStateService extends ChangeNotifier {
 
   bool isDay() => _currentNightStepId == 'day';
 
+  Duration get dayElapsed {
+    final startedAt = _dayStartedAt;
+    if (startedAt == null) return Duration.zero;
+    final elapsed = DateTime.now().difference(startedAt);
+    return elapsed.isNegative ? Duration.zero : elapsed;
+  }
+
   bool isDust() => _currentNightStepId == 'phase:dusk';
 
   Future<void> previousNightState(List<Character> characters) async {
@@ -758,6 +803,7 @@ class GameStateService extends ChangeNotifier {
     if (_currentNightStepId == 'day') {
       final steps = _stepsFor(characters);
       if (steps.isNotEmpty) {
+        await _clearDayTimer();
         await _setNightStep(steps.last.id, gameCharacters: characters);
       }
       return;
@@ -819,13 +865,18 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> startDay([List<Character> gameCharacters = const []]) async {
     await _recordCurrentNightReminderSnapshot(gameCharacters);
+    await _startDayTimer();
     await _setNightStep('day', gameCharacters: gameCharacters);
   }
 
   Future<void> nextNight([List<Character> gameCharacters = const []]) async {
     await _nightOrderService.ready;
+    await _clearDayTimer();
     _nightCount++;
     final steps = _stepsFor(gameCharacters);
+    if (steps.isEmpty) {
+      await _startDayTimer();
+    }
     await _setNightStep(
       steps.isEmpty ? 'day' : steps.first.id,
       gameCharacters: gameCharacters,
@@ -838,6 +889,7 @@ class GameStateService extends ChangeNotifier {
     if (_nightCount == 1) {
       return;
     }
+    await _clearDayTimer();
     _nightCount--;
     final steps = _stepsFor(gameCharacters);
     await _setNightStep(
@@ -1003,6 +1055,189 @@ class GameStateService extends ChangeNotifier {
     return _currentNightStepId == 'day'
         ? ChroniclePhase.day
         : ChroniclePhase.night;
+  }
+
+  static const _playgroundChronicleEntryId = 'playground-input';
+
+  /// Returns the automatic Chronicle input declared for the active night
+  /// step. JSON currently declares at most one automatic definition per
+  /// character and phase; forms can still contain several input fields.
+  ActiveNightChronicleInput? activeNightChronicleInput(
+    List<Character> gameCharacters,
+  ) {
+    if (currentChroniclePhase != ChroniclePhase.night || _nightCount < 1) {
+      return null;
+    }
+    final owner = getAwakeCharacter(gameCharacters);
+    if (owner == null) return null;
+    final definition =
+        owner.chronicle?.definitionsForNight(_nightCount).firstOrNull;
+    if (definition == null) return null;
+    final fields = ActiveNightChronicleInput.flattenFields(definition);
+    if (!fields.any((field) =>
+        field.type == ChronicleInputType.player ||
+        field.type == ChronicleInputType.players ||
+        field.type == ChronicleInputType.yesNo ||
+        field.type == ChronicleInputType.number)) {
+      return null;
+    }
+    final event = _chronicleService?.activeChronicle?.events.firstWhereOrNull(
+      (item) =>
+          item.type == ChronicleEventType.nightInformation &&
+          item.round == _nightCount &&
+          item.character?.characterId == owner.id &&
+          item.inputDefinition?.id == definition.id,
+    );
+    final entry = event?.informationEntries.firstWhereOrNull(
+      (item) => item['entryId'] == _playgroundChronicleEntryId,
+    );
+    final values = entry?['values'] is Map
+        ? Map<String, dynamic>.from(entry!['values'] as Map)
+        : <String, dynamic>{};
+    return ActiveNightChronicleInput(
+      owner: owner,
+      definition: definition,
+      eventId: event?.id,
+      values: values,
+    );
+  }
+
+  Future<void> toggleNightChroniclePlayer(
+    ActiveNightChronicleInput input,
+    Character player,
+  ) async {
+    final field = input.playerFieldFor(player.id);
+    if (field == null) return;
+    final values = _storedNightChronicleValues(input);
+    final selected = _chroniclePlayerSnapshots(field, values);
+    final index = selected.indexWhere(
+      (snapshot) => snapshot.characterId == player.id,
+    );
+    if (index >= 0) {
+      selected.removeAt(index);
+    } else {
+      final maximum = field.effectiveMaxCount;
+      if (maximum != null && selected.length >= maximum) {
+        // Keep the first choice and replace the most recently selected one.
+        selected.removeLast();
+      }
+      selected.add(ChronicleCharacterSnapshot.fromCharacter(player));
+    }
+    if (selected.isEmpty) {
+      values.remove(field.id);
+    } else if (field.type == ChronicleInputType.player) {
+      values[field.id] = selected.single.toJson();
+    } else {
+      values[field.id] = selected.map((item) => item.toJson()).toList();
+    }
+    await _saveNightChronicleInput(input, values);
+  }
+
+  Future<void> toggleNightChronicleYesNo(
+    ActiveNightChronicleInput input,
+    ChronicleInputDefinition field,
+    bool value,
+  ) async {
+    final values = _storedNightChronicleValues(input);
+    if (values[field.id] == value) {
+      values.remove(field.id);
+    } else {
+      values[field.id] = value;
+    }
+    await _saveNightChronicleInput(input, values);
+  }
+
+  Future<void> toggleNightChronicleNumber(
+    ActiveNightChronicleInput input,
+    ChronicleInputDefinition field,
+    int value,
+  ) async {
+    final values = _storedNightChronicleValues(input);
+    if (values[field.id] == value) {
+      values.remove(field.id);
+    } else {
+      values[field.id] = value;
+    }
+    await _saveNightChronicleInput(input, values);
+  }
+
+  Future<void> _saveNightChronicleInput(
+    ActiveNightChronicleInput input,
+    Map<String, dynamic> values,
+  ) async {
+    var eventId = input.eventId;
+    if (eventId == null && values.isNotEmpty) {
+      final event = await _chronicleService?.addOptionalInformation(
+        character: ChronicleCharacterSnapshot.fromCharacter(input.owner),
+        definition: input.definition,
+        round: _nightCount,
+      );
+      eventId = event?.id;
+    }
+    if (eventId == null) return;
+    if (values.isEmpty) {
+      await _chronicleService?.deleteInformationEntry(
+        eventId: eventId,
+        entryId: _playgroundChronicleEntryId,
+      );
+    } else {
+      await _chronicleService?.saveInformationEntry(
+        eventId: eventId,
+        entryId: _playgroundChronicleEntryId,
+        values: values,
+        targets: _chroniclePlayerTargets(input.definition, values),
+      );
+    }
+    notifyListeners();
+  }
+
+  Map<String, dynamic> _storedNightChronicleValues(
+    ActiveNightChronicleInput input,
+  ) {
+    if (input.eventId == null) return <String, dynamic>{};
+    final event = _chronicleService?.activeChronicle?.events
+        .firstWhereOrNull((item) => item.id == input.eventId);
+    final entry = event?.informationEntries.firstWhereOrNull(
+      (item) => item['entryId'] == _playgroundChronicleEntryId,
+    );
+    return entry?['values'] is Map
+        ? Map<String, dynamic>.from(entry!['values'] as Map)
+        : <String, dynamic>{};
+  }
+
+  List<ChronicleCharacterSnapshot> _chroniclePlayerSnapshots(
+    ChronicleInputDefinition field,
+    Map<String, dynamic> values,
+  ) {
+    final raw = values[field.id];
+    final items = field.type == ChronicleInputType.players
+        ? (raw is List ? raw : const [])
+        : [if (raw is Map) raw];
+    return items
+        .whereType<Map>()
+        .map((item) => ChronicleCharacterSnapshot.fromJson(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList(growable: true);
+  }
+
+  List<ChronicleCharacterSnapshot> _chroniclePlayerTargets(
+    ChronicleInputDefinition definition,
+    Map<String, dynamic> values,
+  ) {
+    final targets = <ChronicleCharacterSnapshot>[];
+    for (final field in ActiveNightChronicleInput.flattenFields(definition)) {
+      if (field.type != ChronicleInputType.player &&
+          field.type != ChronicleInputType.players) {
+        continue;
+      }
+      for (final snapshot in _chroniclePlayerSnapshots(field, values)) {
+        if (!targets.any((item) => item.characterId == snapshot.characterId)) {
+          targets.add(snapshot);
+        }
+      }
+    }
+    return targets;
   }
 
   Future<void> _persistNightPosition() async {
