@@ -9,6 +9,7 @@ import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
+import 'package:blood_on_the_clocktower/utils/basic_token_info.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -205,6 +206,8 @@ class _ThisCharacterSelectedYouScreenState
       BuildContext context, AppLocalizations localizedStrings) {
     final info = widget.preparedInfo!;
     final isCharacterSelected = info.kind.startsWith('characterSelectedYou');
+    final isYouAre = info.kind == 'youAre';
+    final shownCharacters = info.characters;
     final showsPlayers = info.players.isNotEmpty ||
         const {
           'playersAndCharacter',
@@ -212,10 +215,11 @@ class _ThisCharacterSelectedYouScreenState
           'pointToPlayers',
           'characterSelectedYouMadAboutPlayer',
         }.contains(info.kind);
-    final showsCharacter = const {
+    final supportsCharacters = const {
       'playersAndCharacter',
       'playerAndCharacter',
       'showCharacter',
+      'youAre',
       'characterSelectedYouMadAboutCharacter',
     }.contains(info.kind);
     final showsMadAbout = const {
@@ -233,56 +237,95 @@ class _ThisCharacterSelectedYouScreenState
           iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isCharacterSelected) ...[
-                  _preparedLabel(localizedStrings.this_chracter_selected_you),
-                  const SizedBox(height: 16),
-                  if (info.sourceCharacter != null)
-                    CharacterAvatar(
-                      character: info.sourceCharacter!,
-                      showIsSelected: false,
-                      showName: true,
-                      size: 160,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final minGroupHeight =
+                  (constraints.maxHeight - 32).clamp(0.0, double.infinity);
+              return SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: minGroupHeight),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (info.infoToken != null) ...[
+                          _preparedLabel(
+                            info.infoToken!.localizedText(localizedStrings),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (isCharacterSelected) ...[
+                          if (info.infoToken == null) ...[
+                            _preparedLabel(
+                              localizedStrings.this_chracter_selected_you,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (info.sourceCharacter != null)
+                            CharacterAvatar(
+                              character: info.sourceCharacter!,
+                              showIsSelected: false,
+                              showName: true,
+                              size: 160,
+                            ),
+                        ],
+                        if (isYouAre && info.infoToken == null) ...[
+                          _preparedLabel(localizedStrings.you_are),
+                          const SizedBox(height: 20),
+                        ],
+                        if (showsMadAbout) ...[
+                          const SizedBox(height: 20),
+                          _preparedLabel(localizedStrings.toBeMadAbout),
+                        ],
+                        if (showsPlayers) ...[
+                          const SizedBox(height: 20),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: [
+                              for (final player in info.players)
+                                info.kind ==
+                                        'characterSelectedYouMadAboutPlayer'
+                                    ? CharacterAvatar(
+                                        character: player,
+                                        showIsSelected: false,
+                                        showName: true,
+                                        size: 150,
+                                      )
+                                    : _preparedPlayerToken(player),
+                            ],
+                          ),
+                        ],
+                        if (supportsCharacters &&
+                            shownCharacters.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Wrap(
+                            key: const ValueKey(
+                                'quick-flow-prepared-characters'),
+                            alignment: WrapAlignment.center,
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: [
+                              for (final character in shownCharacters)
+                                CharacterAvatar(
+                                  character: character,
+                                  showIsSelected: false,
+                                  showName: true,
+                                  size: shownCharacters.length == 1 ? 180 : 140,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
-                ],
-                if (showsMadAbout) ...[
-                  const SizedBox(height: 20),
-                  _preparedLabel(localizedStrings.toBeMadAbout),
-                ],
-                if (showsPlayers) ...[
-                  const SizedBox(height: 20),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      for (final player in info.players)
-                        info.kind == 'characterSelectedYouMadAboutPlayer'
-                            ? CharacterAvatar(
-                                character: player,
-                                showIsSelected: false,
-                                showName: true,
-                                size: 150,
-                              )
-                            : _preparedPlayerToken(player),
-                    ],
                   ),
-                ],
-                if (showsCharacter && info.selectedCharacter != null) ...[
-                  const SizedBox(height: 20),
-                  CharacterAvatar(
-                    character: info.selectedCharacter!,
-                    showIsSelected: false,
-                    showName: true,
-                    size: 180,
-                  ),
-                ],
-              ],
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -553,31 +596,7 @@ class _ThisCharacterSelectedYouScreenState
   }
 
   String getTokenText(Basictoken selectedToken) {
-    var localizedStrings = AppLocalizations.of(context)!;
-    switch (selectedToken) {
-      case Basictoken.this_chracter_selected_you:
-        return localizedStrings.this_chracter_selected_you;
-      case Basictoken.you_are:
-        return localizedStrings.you_are;
-      case Basictoken.this_player_is:
-        return localizedStrings.this_player_is;
-      case Basictoken.this_is_the_demon:
-        return localizedStrings.this_is_the_demon;
-      case Basictoken.these_are_your_minions:
-        return localizedStrings.these_are_your_minions;
-      case Basictoken.these_chracters_are_not_in_play:
-        return localizedStrings.these_chracters_are_not_in_play;
-      case Basictoken.these_are_all_outsiders:
-        return localizedStrings.these_are_all_outsiders;
-      case Basictoken.did_you_vote_today:
-        return localizedStrings.did_you_vote_today;
-      case Basictoken.did_you_nominate_today:
-        return localizedStrings.did_you_nominate_today;
-      case Basictoken.choose_a_character:
-        return localizedStrings.choose_a_character;
-      case Basictoken.empty_string:
-        return localizedStrings.empty_string;
-    }
+    return selectedToken.localizedText(AppLocalizations.of(context)!);
   }
 
   void _showChangeCharacterDialog(BuildContext context,

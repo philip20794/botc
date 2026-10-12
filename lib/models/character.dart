@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
+import 'package:blood_on_the_clocktower/models/chronicle_schema.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 
@@ -29,6 +30,8 @@ class Character {
   List<int> possibleNrOfExemplars;
   bool variableNumberOfExemplars = false;
   QuickFlow quickFlow;
+  ChronicleSchema? chronicle;
+  NightWake nightWake;
 
   static String roleIdFromImage(String image) {
     final roleId = image
@@ -72,6 +75,8 @@ class Character {
     this.variableNumberOfExemplars = false,
     this.possibleNrOfExemplars = const [],
     this.quickFlow = const QuickFlow(),
+    this.chronicle,
+    this.nightWake = const NightWake(),
     required this.id,
     String? roleId,
   }) : roleId = normalizedRoleId(image, roleId) {
@@ -129,6 +134,8 @@ class Character {
               .toList()
           : [],
       quickFlow: QuickFlow.fromJson(json['quickFlow']),
+      chronicle: ChronicleSchema.fromJson(json['chronicle']),
+      nightWake: NightWake.fromJson(json['nightWake']),
     );
   }
 
@@ -159,6 +166,8 @@ class Character {
       'variableNumberOfExemplars': variableNumberOfExemplars,
       'possibleNrOfExemplars': possibleNrOfExemplars,
       if (quickFlow.toJson().isNotEmpty) 'quickFlow': quickFlow.toJson(),
+      if (chronicle != null) 'chronicle': chronicle!.toJson(),
+      if (!nightWake.isEmpty) 'nightWake': nightWake.toJson(),
     };
   }
 
@@ -192,4 +201,32 @@ class Character {
   get getNumberOfExemplars => numberOfExemplars;
   get getVariableNumberOfExemplars => variableNumberOfExemplars;
   get getPossibleNrOfExemplars => possibleNrOfExemplars;
+}
+
+class NightWake {
+  final bool allowWhenApparentDead;
+  final bool otherNightsRequireNoDeathsPreviousDay;
+
+  const NightWake({
+    this.allowWhenApparentDead = false,
+    this.otherNightsRequireNoDeathsPreviousDay = false,
+  });
+
+  factory NightWake.fromJson(dynamic json) {
+    if (json is! Map) return const NightWake();
+    return NightWake(
+      allowWhenApparentDead: json['allowWhenApparentDead'] == true,
+      otherNightsRequireNoDeathsPreviousDay:
+          json['otherNightsRequireNoDeathsPreviousDay'] == true,
+    );
+  }
+
+  bool get isEmpty =>
+      !allowWhenApparentDead && !otherNightsRequireNoDeathsPreviousDay;
+
+  Map<String, dynamic> toJson() => {
+        if (allowWhenApparentDead) 'allowWhenApparentDead': true,
+        if (otherNightsRequireNoDeathsPreviousDay)
+          'otherNightsRequireNoDeathsPreviousDay': true,
+      };
 }

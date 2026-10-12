@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 
 class QuickFlowEntry {
@@ -18,17 +19,38 @@ class QuickFlowEntry {
 class QuickFlowInfo {
   final String kind;
   final Character owner;
+  final Character? recipient;
   final Character? sourceCharacter;
   final Character? selectedCharacter;
+  final List<Character> selectedCharacters;
   final List<Character> players;
+  final Basictoken? infoToken;
 
   const QuickFlowInfo({
     required this.kind,
     required this.owner,
+    this.recipient,
     this.sourceCharacter,
     this.selectedCharacter,
+    this.selectedCharacters = const [],
     this.players = const [],
+    this.infoToken,
   });
+
+  /// All character tokens that belong to this single prepared display.
+  ///
+  /// [selectedCharacter] is retained for persisted/older callers which only
+  /// provide one token. New presentations may use [selectedCharacters].
+  List<Character> get characters {
+    final result = <Character>[];
+    if (selectedCharacter != null) result.add(selectedCharacter!);
+    for (final character in selectedCharacters) {
+      if (!result.any((item) => item.roleId == character.roleId)) {
+        result.add(character);
+      }
+    }
+    return result;
+  }
 }
 
 class QuickFlowAssignmentResult {

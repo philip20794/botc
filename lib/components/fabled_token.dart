@@ -13,11 +13,13 @@ class FabledToken extends StatefulWidget {
   final Character character;
   final bool settingsView;
   final bool characterSelectionView;
+  final bool readOnly;
 
   FabledToken({
     required this.character,
     this.settingsView = false,
     this.characterSelectionView = false,
+    this.readOnly = false,
   });
 
   @override
@@ -73,8 +75,10 @@ class _FabledTokenState extends State<FabledToken> {
     return Container(
         width: size,
         height: size,
-        child: GestureDetector(
-            onTap: () {
+        child: AbsorbPointer(
+            absorbing: widget.readOnly,
+            child: GestureDetector(
+                onTap: () {
               if (showRemoveButton) {
                 _removeCharacter();
                 return;
@@ -140,6 +144,6 @@ class _FabledTokenState extends State<FabledToken> {
                   ),
                 ),
               ],
-            )));
+            ))));
   }
 }

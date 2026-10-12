@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/services/character_service.dart';
+import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/night_order_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
@@ -25,17 +26,24 @@ void main() async {
   ]).then((_) {
     final scriptService = ScriptService();
     final nightOrderService = NightOrderService();
+    final chronicleService = ChronicleService();
     runApp(
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => LanguageService()),
-          ChangeNotifierProvider(create: (context) => CharacterService()),
+          ChangeNotifierProvider.value(value: chronicleService),
+          ChangeNotifierProvider(
+            create: (context) => CharacterService(
+              chronicleService: chronicleService,
+            ),
+          ),
           ChangeNotifierProvider.value(value: scriptService),
           ChangeNotifierProvider.value(value: nightOrderService),
           ChangeNotifierProvider(
             create: (context) => GameStateService(
               scriptService: scriptService,
               nightOrderService: nightOrderService,
+              chronicleService: chronicleService,
             ),
           ),
           ChangeNotifierProvider(create: (context) => RoleNotesService()),

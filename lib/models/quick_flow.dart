@@ -1,3 +1,6 @@
+import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
+import 'package:blood_on_the_clocktower/utils/basic_token_info.dart';
+
 enum QuickFlowPhase { setup, firstNight, otherNights }
 
 enum QuickFlowStepType { reminder, reminderCharacterToken, showInfo }
@@ -262,18 +265,22 @@ class QuickFlowRecipient {
 class QuickFlowPresentation {
   final String kind;
   final List<String> playerSteps;
+  final List<String> characterSteps;
   final String? playerStep;
   final String? characterStep;
   final String? sourceRoleId;
   final String? pointToRolePlayer;
+  final Basictoken? infoToken;
 
   const QuickFlowPresentation({
     required this.kind,
     this.playerSteps = const [],
+    this.characterSteps = const [],
     this.playerStep,
     this.characterStep,
     this.sourceRoleId,
     this.pointToRolePlayer,
+    this.infoToken,
   });
 
   static QuickFlowPresentation? fromJson(dynamic json) {
@@ -281,6 +288,7 @@ class QuickFlowPresentation {
     return QuickFlowPresentation(
       kind: json['kind'] as String,
       playerSteps: _strings(json['playerSteps']),
+      characterSteps: _strings(json['characterSteps']),
       playerStep:
           json['playerStep'] is String ? json['playerStep'] as String : null,
       characterStep: json['characterStep'] is String
@@ -292,16 +300,19 @@ class QuickFlowPresentation {
       pointToRolePlayer: json['pointToRolePlayer'] is String
           ? json['pointToRolePlayer'] as String
           : null,
+      infoToken: basicTokenFromJson(json['infoToken']),
     );
   }
 
   Map<String, dynamic> toJson() => {
         'kind': kind,
         if (playerSteps.isNotEmpty) 'playerSteps': playerSteps,
+        if (characterSteps.isNotEmpty) 'characterSteps': characterSteps,
         if (playerStep != null) 'playerStep': playerStep,
         if (characterStep != null) 'characterStep': characterStep,
         if (sourceRoleId != null) 'sourceRoleId': sourceRoleId,
         if (pointToRolePlayer != null) 'pointToRolePlayer': pointToRolePlayer,
+        if (infoToken != null) 'infoToken': infoToken!.name,
       };
 }
 

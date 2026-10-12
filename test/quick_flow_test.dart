@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
@@ -653,6 +654,280 @@ void main() {
         [stormCatcher, chosen],
       )?.roleId,
       'washerwoman',
+    );
+  });
+
+  test('Snake Charmer keeps both prepared role displays separate', () async {
+    final snakeCharmer = _role(
+      'snakecharmer',
+      tokens: [_token('Chosen', 'chosen'), _token('Poisoned', 'poisoned')],
+      quickFlow: {
+        'otherNights': [
+          _reminder('chosenPlayer', 'chosen'),
+          _reminder('poisonedSnakeCharmer', 'poisoned', operation: 'setOnce'),
+          {
+            'id': 'demonCharacter',
+            'type': 'reminderCharacterToken',
+            'selection': {
+              'type': 'fromReminderTarget',
+              'stepId': 'chosenPlayer',
+            },
+            'allowManualOverride': true,
+            'allowedFractions': ['demon'],
+          },
+          {
+            'id': 'showNewDemon',
+            'type': 'showInfo',
+            'recipient': {'type': 'abilityOwner'},
+            'presentation': {
+              'kind': 'youAre',
+              'characterStep': 'demonCharacter',
+            },
+            'requires': [
+              'chosenPlayer',
+              'demonCharacter',
+              'poisonedSnakeCharmer',
+            ],
+            'showOnlyWhen': {'type': 'storytellerConfirmed'},
+          },
+          {
+            'id': 'snakeCharmerCharacter',
+            'type': 'reminderCharacterToken',
+            'selection': {
+              'type': 'fromReminderTarget',
+              'stepId': 'poisonedSnakeCharmer',
+            },
+            'allowManualOverride': true,
+            'allowedFractions': ['townsfolk'],
+          },
+          {
+            'id': 'showNewSnakeCharmer',
+            'type': 'showInfo',
+            'recipient': {
+              'type': 'reminderTarget',
+              'stepId': 'poisonedSnakeCharmer',
+            },
+            'presentation': {
+              'kind': 'youAre',
+              'characterStep': 'snakeCharmerCharacter',
+            },
+            'requires': [
+              'poisonedSnakeCharmer',
+              'snakeCharmerCharacter',
+            ],
+            'showOnlyWhen': {'type': 'storytellerConfirmed'},
+          },
+        ],
+      },
+    );
+    final demon = _role('imp', id: 'demon', fraction: Fraction.demon);
+    final characters = [snakeCharmer, demon];
+    final state = await _nightState(snakeCharmer, characters);
+
+    await state.assignActiveQuickFlowReminder(characters, demon);
+    final demonCharacter =
+        _entry(snakeCharmer, QuickFlowPhase.otherNights, 'demonCharacter');
+    expect(
+      state
+          .quickFlowSelectedCharacter(demonCharacter, characters, characters)
+          ?.roleId,
+      'imp',
+    );
+
+    await state.assignActiveQuickFlowReminder(characters, demon);
+    final snakeCharacter = _entry(
+      snakeCharmer,
+      QuickFlowPhase.otherNights,
+      'snakeCharmerCharacter',
+    );
+    expect(
+      await state.setQuickFlowSelectedCharacter(snakeCharacter, snakeCharmer),
+      isTrue,
+    );
+
+    final newDemon =
+        _entry(snakeCharmer, QuickFlowPhase.otherNights, 'showNewDemon');
+    final newSnakeCharmer = _entry(
+      snakeCharmer,
+      QuickFlowPhase.otherNights,
+      'showNewSnakeCharmer',
+    );
+    await state.confirmQuickFlowInfo(newDemon);
+    await state.confirmQuickFlowInfo(newSnakeCharmer);
+
+    final demonInfo =
+        state.buildQuickFlowInfo(newDemon, characters, characters)!;
+    final snakeInfo =
+        state.buildQuickFlowInfo(newSnakeCharmer, characters, characters)!;
+    expect(demonInfo.recipient?.id, snakeCharmer.id);
+    expect(demonInfo.characters.single.roleId, 'imp');
+    expect(snakeInfo.recipient?.id, demon.id);
+    expect(snakeInfo.characters.single.roleId, 'snakecharmer');
+    expect(snakeCharmer.roleId, 'snakecharmer');
+    expect(demon.roleId, 'imp');
+  });
+
+  test('Dreamer style displays keep multiple character tokens together',
+      () async {
+    final dreamer = _role(
+      'dreamer',
+      tokens: [_token('Chosen', 'chosen')],
+      quickFlow: {
+        'otherNights': [
+          _reminder('chosenPlayer', 'chosen'),
+          {
+            'id': 'trueCharacter',
+            'type': 'reminderCharacterToken',
+            'selection': {
+              'type': 'fromReminderTarget',
+              'stepId': 'chosenPlayer',
+            },
+            'allowManualOverride': true,
+          },
+          {
+            'id': 'otherCharacter',
+            'type': 'reminderCharacterToken',
+            'selection': {'type': 'manual'},
+          },
+          {
+            'id': 'showDreamer',
+            'type': 'showInfo',
+            'recipient': {'type': 'abilityOwner'},
+            'presentation': {
+              'kind': 'playersAndCharacter',
+              'playerStep': 'chosenPlayer',
+              'characterSteps': ['trueCharacter', 'otherCharacter'],
+            },
+            'requires': [
+              'chosenPlayer',
+              'trueCharacter',
+              'otherCharacter',
+            ],
+          },
+        ],
+      },
+    );
+    final chosen = _role('washerwoman', id: 'chosen');
+    final falseCharacter =
+        _role('imp', id: 'imp-catalog', fraction: Fraction.demon);
+    final characters = [dreamer, chosen];
+    final allCharacters = [...characters, falseCharacter];
+    final state = await _nightState(dreamer, characters);
+
+    await state.assignActiveQuickFlowReminder(characters, chosen);
+    expect(
+      await state.setQuickFlowSelectedCharacter(
+        _entry(dreamer, QuickFlowPhase.otherNights, 'otherCharacter'),
+        falseCharacter,
+      ),
+      isTrue,
+    );
+    final info = state.buildQuickFlowInfo(
+      _entry(dreamer, QuickFlowPhase.otherNights, 'showDreamer'),
+      characters,
+      allCharacters,
+    )!;
+
+    expect(info.recipient?.id, dreamer.id);
+    expect(info.players.single.id, chosen.id);
+    expect(info.characters.map((character) => character.roleId),
+        ['washerwoman', 'imp']);
+  });
+
+  test('multiple target players stay attached to their one presentation',
+      () async {
+    final owner = _role(
+      'balloonist',
+      tokens: [_token('Know', 'know', unlimited: true)],
+      quickFlow: {
+        'otherNights': [
+          _reminder('targets', 'know', operation: 'append'),
+          {
+            'id': 'showTargets',
+            'type': 'showInfo',
+            'recipient': {'type': 'abilityOwner'},
+            'presentation': {
+              'kind': 'pointToPlayers',
+              'playerSteps': ['targets'],
+            },
+            'requires': ['targets'],
+          },
+        ],
+      },
+    );
+    final a = _role('washerwoman', id: 'a');
+    final b = _role('investigator', id: 'b');
+    final characters = [owner, a, b];
+    final state = await _nightState(owner, characters);
+
+    await state.assignActiveQuickFlowReminder(characters, a);
+    await state.activateQuickFlowEntry(
+      _entry(owner, QuickFlowPhase.otherNights, 'targets'),
+      characters,
+    );
+    await state.assignActiveQuickFlowReminder(characters, b);
+    final info = state.buildQuickFlowInfo(
+      _entry(owner, QuickFlowPhase.otherNights, 'showTargets'),
+      characters,
+      characters,
+    )!;
+
+    expect(info.players.map((character) => character.id), ['a', 'b']);
+    expect(info.recipient?.id, owner.id);
+  });
+
+  test('storyteller can skip and later confirm a conditional display',
+      () async {
+    final owner = _role(
+      'conditional',
+      quickFlow: {
+        'otherNights': [
+          {
+            'id': 'conditionalInfo',
+            'type': 'showInfo',
+            'recipient': {'type': 'abilityOwner'},
+            'presentation': {'kind': 'showCharacter'},
+            'showOnlyWhen': {'type': 'storytellerConfirmed'},
+          },
+        ],
+      },
+    );
+    final state = await _state();
+    final entry = _entry(owner, QuickFlowPhase.otherNights, 'conditionalInfo');
+
+    expect(state.quickFlowInfoNeedsConfirmation(entry), isTrue);
+    await state.skipQuickFlowInfo(entry);
+    expect(state.isQuickFlowInfoSkipped(entry), isTrue);
+    expect(state.buildQuickFlowInfo(entry, [owner], [owner]), isNull);
+
+    await state.confirmQuickFlowInfo(entry);
+    expect(state.isQuickFlowInfoSkipped(entry), isFalse);
+    expect(state.quickFlowInfoNeedsConfirmation(entry), isFalse);
+  });
+
+  test('a ready regular information display needs no confirmation popup',
+      () async {
+    final owner = _role(
+      'regularInfo',
+      quickFlow: {
+        'otherNights': [
+          {
+            'id': 'showInfo',
+            'type': 'showInfo',
+            'recipient': {'type': 'abilityOwner'},
+            'presentation': {'kind': 'showCharacter', 'infoToken': 'you_are'},
+          },
+        ],
+      },
+    );
+    final state = await _state();
+    final entry = _entry(owner, QuickFlowPhase.otherNights, 'showInfo');
+
+    expect(state.isQuickFlowInfoReady(entry, [owner], [owner]), isTrue);
+    expect(state.quickFlowInfoNeedsConfirmation(entry), isFalse);
+    expect(
+      state.buildQuickFlowInfo(entry, [owner], [owner])?.infoToken,
+      Basictoken.you_are,
     );
   });
 }

@@ -11,6 +11,8 @@ class SettingsService extends ChangeNotifier {
   double _offsetY = -125;
   double _tokenOffsetY = 30;
   double _tokenOffsetX = 45;
+  double _selectedReminderTokenSize = 48;
+  double _unselectedReminderTokenSize = 24;
   final String _settingsCharacterKnobSizeKey = 'characterKnobSize';
   final String _settingsTokenKnobSizeKey = 'tokenKnobSize';
   final String _settingsRadiusXKey = 'radiusX';
@@ -20,6 +22,10 @@ class SettingsService extends ChangeNotifier {
   final String _settingsOffsetYKey = 'offsetY';
   final String _settingsTokenOffsetYKey = 'tokenOffsetY';
   final String _settingsTokenOffsetXKey = 'tokenOffsetX';
+  final String _settingsSelectedReminderTokenSizeKey =
+      'selectedReminderTokenSize';
+  final String _settingsUnselectedReminderTokenSizeKey =
+      'unselectedReminderTokenSize';
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   late final Future<void> initialized;
   bool hideDescription = true;
@@ -38,6 +44,8 @@ class SettingsService extends ChangeNotifier {
   double get offsetY => _offsetY;
   double get tokenOffsetY => _tokenOffsetY;
   double get tokenOffsetX => _tokenOffsetX;
+  double get selectedReminderTokenSize => _selectedReminderTokenSize;
+  double get unselectedReminderTokenSize => _unselectedReminderTokenSize;
 
   SettingsService() {
     initialized = _loadSettings();
@@ -57,6 +65,12 @@ class SettingsService extends ChangeNotifier {
     _offsetY = prefs.getDouble(_settingsOffsetYKey) ?? _offsetY;
     _tokenOffsetY = prefs.getDouble(_settingsTokenOffsetYKey) ?? _tokenOffsetY;
     _tokenOffsetX = prefs.getDouble(_settingsTokenOffsetXKey) ?? _tokenOffsetX;
+    _selectedReminderTokenSize =
+        prefs.getDouble(_settingsSelectedReminderTokenSizeKey) ??
+            _selectedReminderTokenSize;
+    _unselectedReminderTokenSize =
+        prefs.getDouble(_settingsUnselectedReminderTokenSizeKey) ??
+            _unselectedReminderTokenSize;
     notifyListeners();
   }
 
@@ -72,6 +86,10 @@ class SettingsService extends ChangeNotifier {
       prefs.setDouble(_settingsOffsetYKey, _offsetY),
       prefs.setDouble(_settingsTokenOffsetYKey, _tokenOffsetY),
       prefs.setDouble(_settingsTokenOffsetXKey, _tokenOffsetX),
+      prefs.setDouble(
+          _settingsSelectedReminderTokenSizeKey, _selectedReminderTokenSize),
+      prefs.setDouble(_settingsUnselectedReminderTokenSizeKey,
+          _unselectedReminderTokenSize),
     ]);
   }
 
@@ -95,6 +113,38 @@ class SettingsService extends ChangeNotifier {
     if (persist) {
       final prefs = await _prefs;
       await prefs.setDouble(_settingsTokenKnobSizeKey, _tokenKnobSize);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setSelectedReminderTokenSize(
+    double value, {
+    bool persist = true,
+  }) async {
+    if (_selectedReminderTokenSize == value) return;
+    _selectedReminderTokenSize = value;
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(
+        _settingsSelectedReminderTokenSizeKey,
+        _selectedReminderTokenSize,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> setUnselectedReminderTokenSize(
+    double value, {
+    bool persist = true,
+  }) async {
+    if (_unselectedReminderTokenSize == value) return;
+    _unselectedReminderTokenSize = value;
+    if (persist) {
+      final prefs = await _prefs;
+      await prefs.setDouble(
+        _settingsUnselectedReminderTokenSizeKey,
+        _unselectedReminderTokenSize,
+      );
     }
     notifyListeners();
   }
@@ -191,6 +241,8 @@ class SettingsService extends ChangeNotifier {
     _startAngleDiv = 4;
     _offsetX = 80;
     _offsetY = 90;
+    _selectedReminderTokenSize = 48;
+    _unselectedReminderTokenSize = 24;
     saveSettings();
     notifyListeners();
   }

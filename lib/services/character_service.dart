@@ -1,14 +1,17 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
+import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CharacterService extends ChangeNotifier {
+  final ChronicleService? _chronicleService;
   final List<Character> _gameCharacters = [];
   final List<Character> _gameCharactersBackup = [];
   final List<Character> _allCharacters = [];
@@ -28,7 +31,8 @@ class CharacterService extends ChangeNotifier {
   bool addCharacterToGameWithFractionFabled = false;
   bool addCharacterToGameWithFractionLoric = false;
 
-  CharacterService() {
+  CharacterService({ChronicleService? chronicleService})
+      : _chronicleService = chronicleService {
     init();
   }
 
@@ -246,6 +250,28 @@ class CharacterService extends ChangeNotifier {
 
     _allCharacters.clear();
     _allCharacters.addAll(allCharacters);
+    var chronicleMigrated = false;
+    for (final stored in [..._gameCharacters, ..._gameCharactersBackup]) {
+      for (final catalogCharacter in allCharacters) {
+        if (catalogCharacter.roleId == stored.roleId &&
+            catalogCharacter.chronicle != null) {
+          final canonical = catalogCharacter.chronicle!;
+          if (stored.chronicle == null ||
+              jsonEncode(stored.chronicle!.toJson()) !=
+                  jsonEncode(canonical.toJson())) {
+            stored.chronicle = canonical;
+            chronicleMigrated = true;
+          }
+          break;
+        }
+      }
+    }
+    if (chronicleMigrated) {
+      await Future.wait([
+        _saveGameCharacters(),
+        _saveGameCharactersBackup(),
+      ]);
+    }
     _allCharactersLocaleCode = localeCode;
     notifyListeners();
   }
@@ -409,9 +435,16 @@ class CharacterService extends ChangeNotifier {
           '${newCharacter.roleId}-${DateTime.timestamp().microsecondsSinceEpoch}');
       _gameCharacters[index] = newCharacter.copyWith(id: replacementId);
       _gameCharacters[index].playerName = oldCharacter.playerName;
+      final replacement = _gameCharacters[index];
       _saveGameCharacters();
+      if (_chronicleService != null) {
+        unawaited(_chronicleService.recordCharacterChange(
+          oldCharacter: oldCharacter,
+          newCharacter: replacement,
+        ));
+      }
       notifyListeners();
-      return _gameCharacters[index].id;
+      return replacement.id;
     }
     return "";
   }

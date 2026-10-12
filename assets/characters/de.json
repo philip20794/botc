@@ -114,6 +114,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -225,6 +231,20 @@
             "shownCharacter"
           ],
           "note": "Only for the case where an Outsider is shown; the zero-Outsiders case must remain available via the existing manual flow."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "noOutsidersShown",
+          "type": "yesNo",
+          "label": "Wurden null Outsider statt eines Charakters angezeigt?",
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -339,6 +359,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -382,6 +408,19 @@
     "nightInstructions": {
       "firstNight": "Gib die Information mit einer entsprechenden Anzahl Finger weiter.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "chefCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl benachbarter böser Paare",
+          "min": 0
+        }
+      ]
     }
   },
   {
@@ -431,6 +470,29 @@
     "nightInstructions": {
       "firstNight": "Gib die Information mit einer entsprechenden Anzahl Finger weiter.",
       "otherNight": "Gib die Information mit einer entsprechenden Anzahl Finger weiter."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "empathCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl böser Nachbarn",
+          "min": 0,
+          "max": 2
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "empathCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl böser Nachbarn",
+          "min": 0,
+          "max": 2
+        }
+      ]
     }
   },
   {
@@ -503,6 +565,51 @@
           "note": "Keep this hidden permanent marker; not one of the two players the Fortune Teller selects each night."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "fortuneReading",
+          "type": "form",
+          "label": "Information des Fortune Teller",
+          "fields": [
+            {
+              "id": "chosenPlayers",
+              "type": "players",
+              "label": "Zwei ausgewählte Spieler",
+              "count": 2
+            },
+            {
+              "id": "answer",
+              "type": "yesNo",
+              "label": "Wurde JA signalisiert?"
+            }
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "fortuneReading",
+          "type": "form",
+          "label": "Information des Fortune Teller",
+          "fields": [
+            {
+              "id": "chosenPlayers",
+              "type": "players",
+              "label": "Zwei ausgewählte Spieler",
+              "count": 2
+            },
+            {
+              "id": "answer",
+              "type": "yesNo",
+              "label": "Wurde JA signalisiert?"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -542,6 +649,17 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "redirectedVictim",
+          "type": "player",
+          "label": "Spieler, der statt des Mayor starb",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -605,6 +723,12 @@
           "note": "Effective only tonight; token lifecycle still governed by the original Storyteller rules."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -643,7 +767,13 @@
     "gameset": [
       "trouble_brewing"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Gewählt",
+        "image": "Icon_ravenkeeper",
+        "quickId": "chosen"
+      }
+    ],
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
@@ -654,6 +784,67 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Ravenkeeper heute Nacht gestorben ist, wählt er einen Spieler. Zeige dessen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "ravenkeeperReading",
+          "type": "form",
+          "label": "Information des Ravenkeeper",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "shownCharacter",
+              "type": "character",
+              "label": "Gezeigter Charaktermarker"
+            }
+          ]
+        }
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "shownCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showRavenkeeper",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "shownCharacter"
+          },
+          "requires": [
+            "chosenPlayer",
+            "shownCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -748,6 +939,17 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "survivedDemonAttack",
+          "type": "yesNo",
+          "label": "Hat der Soldier einen Dämonenangriff überlebt?",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -834,6 +1036,12 @@
           ],
           "note": "Only show the executed player character if an execution caused a death today. The Storyteller can override registration."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -959,6 +1167,12 @@
           "tokenId": "master",
           "operation": "move"
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -1223,6 +1437,12 @@
           "operation": "move"
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -1256,6 +1476,11 @@
         "name": "Ist der Dämon",
         "image": "Icon_scarletwoman",
         "quickId": "is_the_demon"
+      },
+      {
+        "name": "Neuer Dämon",
+        "image": "Icon_scarletwoman",
+        "quickId": "new_demon"
       }
     ],
     "wakeUpEveryNight": false,
@@ -1268,6 +1493,59 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls die Scarlet Woman heute zum Dämon wurde, zeige YOU ARE und den neuen Dämonenmarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "newDemonPlayer",
+          "type": "reminder",
+          "tokenId": "new_demon",
+          "operation": "move",
+          "allowedTargets": {
+            "roles": [
+              "scarletwoman",
+              "imp"
+            ],
+            "aliveOnly": true
+          }
+        },
+        {
+          "id": "newDemonCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "demon"
+          ]
+        },
+        {
+          "id": "showScarletWomanSuccession",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "newDemonPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newDemonCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "newDemonPlayer",
+            "newDemonCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -1328,6 +1606,11 @@
     "nightInstructions": {
       "firstNight": "Zeige dem Spy das Grimoire, solange er es benötigt.",
       "otherNight": "Zeige dem Spy das Grimoire, solange er es benötigt."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -1374,6 +1657,11 @@
         "name": "Tot",
         "image": "Icon_imp",
         "quickId": "dead"
+      },
+      {
+        "name": "Neuer Dämon",
+        "image": "Icon_imp",
+        "quickId": "new_demon"
       }
     ],
     "wakeUpEveryNight": true,
@@ -1397,7 +1685,56 @@
           "tokenId": "dead",
           "operation": "move",
           "note": "Reminder follows the current attack target; death/shroud and Imp self-kill transfer remain manual. Not an accumulating list of dead players."
+        },
+        {
+          "id": "newDemonPlayer",
+          "type": "reminder",
+          "tokenId": "new_demon",
+          "operation": "move",
+          "allowedTargets": {
+            "fractions": [
+              "minion"
+            ],
+            "aliveOnly": true
+          }
+        },
+        {
+          "id": "shownImpCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "demon"
+          ]
+        },
+        {
+          "id": "showNewImp",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "newDemonPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "shownImpCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "newDemonPlayer",
+            "shownImpCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -1437,6 +1774,19 @@
     "nightInstructions": {
       "firstNight": "Gib die Information mit einer entsprechenden Anzahl Finger weiter.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "clockmakerSteps",
+          "type": "number",
+          "label": "Angezeigter Abstand zum nächsten Minion",
+          "min": 0
+        }
+      ]
     }
   },
   {
@@ -1474,7 +1824,13 @@
     "gameset": [
       "sects_and_violets"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Gewählt",
+        "image": "Icon_dreamer",
+        "quickId": "chosen"
+      }
+    ],
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
@@ -1487,6 +1843,111 @@
     "nightInstructions": {
       "firstNight": "Der Dreamer deutet auf einen Spieler. Zeige einen guten und einen bösen Charaktermarker; einer davon muss dessen tatsächlicher Charakter sein.",
       "otherNight": "Der Dreamer deutet auf einen Spieler. Zeige einen guten und einen bösen Charaktermarker; einer davon muss dessen tatsächlicher Charakter sein."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "dreamerReading",
+          "type": "form",
+          "label": "Information des Dreamer",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "goodCharacter",
+              "type": "character",
+              "label": "Gezeigter guter Charakter"
+            },
+            {
+              "id": "evilCharacter",
+              "type": "character",
+              "label": "Gezeigter böser Charakter"
+            }
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "dreamerReading",
+          "type": "form",
+          "label": "Information des Dreamer",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "goodCharacter",
+              "type": "character",
+              "label": "Gezeigter guter Charakter"
+            },
+            {
+              "id": "evilCharacter",
+              "type": "character",
+              "label": "Gezeigter böser Charakter"
+            }
+          ]
+        }
+      ]
+    },
+    "quickFlow": {
+      "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "trueCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "otherCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "trueCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "otherCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true
+        }
+      ]
     }
   },
   {
@@ -1524,6 +1985,11 @@
         "name": "Vergiftet",
         "image": "Icon_snakecharmer",
         "quickId": "poisoned"
+      },
+      {
+        "name": "Gewählt",
+        "image": "Icon_snakecharmer",
+        "quickId": "chosen"
       }
     ],
     "wakeUpEveryNight": true,
@@ -1542,20 +2008,180 @@
     "quickFlow": {
       "firstNight": [
         {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
           "id": "poisonedSnakeCharmer",
           "type": "reminder",
           "tokenId": "poisoned",
           "operation": "setOnce",
           "note": "ONLY if Snake Charmer selects the Demon and the two characters swap. Assign to the NEW Snake Charmer after manual swap; otherwise do nothing."
+        },
+        {
+          "id": "demonCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "demon"
+          ]
+        },
+        {
+          "id": "showNewDemon",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "demonCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "chosenPlayer",
+            "demonCharacter",
+            "poisonedSnakeCharmer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "snakeCharmerCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "poisonedSnakeCharmer"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "townsfolk"
+          ]
+        },
+        {
+          "id": "showNewSnakeCharmer",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "poisonedSnakeCharmer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "snakeCharmerCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "poisonedSnakeCharmer",
+            "snakeCharmerCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
         }
       ],
       "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
         {
           "id": "poisonedSnakeCharmer",
           "type": "reminder",
           "tokenId": "poisoned",
           "operation": "setOnce",
           "note": "ONLY if Snake Charmer selects the Demon and two characters swap. Assign to the NEW Snake Charmer after manual swap; otherwise do nothing."
+        },
+        {
+          "id": "demonCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "demon"
+          ]
+        },
+        {
+          "id": "showNewDemon",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "demonCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "chosenPlayer",
+            "demonCharacter",
+            "poisonedSnakeCharmer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "snakeCharmerCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "poisonedSnakeCharmer"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "townsfolk"
+          ]
+        },
+        {
+          "id": "showNewSnakeCharmer",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "poisonedSnakeCharmer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "snakeCharmerCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "poisonedSnakeCharmer",
+            "snakeCharmerCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Vom Snake Charmer gewählter Spieler"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Vom Snake Charmer gewählter Spieler"
         }
       ]
     }
@@ -1629,6 +2255,28 @@
           "tokenId": "abnormal",
           "operation": "append",
           "note": "Only mark a character whose ability malfunctioned due to another ability. Can be repeated for multiple characters; clear all after giving the count."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "abnormalCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl fehlerhafter Fähigkeiten",
+          "min": 0
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "abnormalCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl fehlerhafter Fähigkeiten",
+          "min": 0
         }
       ]
     }
@@ -1712,6 +2360,19 @@
           "note": "ALTERNATIVE when Demon voted for an execution during the day: use this instead of NOT VOTED. Do not mark both."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "demonVoted",
+          "type": "yesNo",
+          "label": "Wurde signalisiert, dass ein Dämon abgestimmt hat?"
+        }
+      ]
     }
   },
   {
@@ -1792,6 +2453,19 @@
           "note": "ALTERNATIVE if at least one Minion nominated. Choose one of the two tokens and clear its opposite manually."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "minionNominated",
+          "type": "yesNo",
+          "label": "Wurde signalisiert, dass ein Minion nominiert hat?"
+        }
+      ]
     }
   },
   {
@@ -1830,6 +2504,19 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Gib die Information mit einer entsprechenden Anzahl Finger weiter."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "evilDeadCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl toter böser Spieler",
+          "min": 0
+        }
+      ]
     }
   },
   {
@@ -1951,6 +2638,52 @@
           "note": "Only set if Seamstress actually uses the once-per-game ability; leave untouched on a no-choice night."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "seamstressReading",
+          "type": "form",
+          "label": "Information der Seamstress",
+          "fields": [
+            {
+              "id": "chosenPlayers",
+              "type": "players",
+              "label": "Zwei ausgewählte Spieler",
+              "count": 2
+            },
+            {
+              "id": "sameAlignment",
+              "type": "yesNo",
+              "label": "Wurde dieselbe Gesinnung signalisiert?"
+            }
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "seamstressReading",
+          "type": "form",
+          "label": "Information der Seamstress",
+          "fields": [
+            {
+              "id": "chosenPlayers",
+              "type": "players",
+              "label": "Zwei ausgewählte Spieler",
+              "count": 2
+            },
+            {
+              "id": "sameAlignment",
+              "type": "yesNo",
+              "label": "Wurde dieselbe Gesinnung signalisiert?"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -2047,6 +2780,28 @@
             "outsider"
           ],
           "allowManualOverride": true
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "borrowedAbilityAction",
+          "type": "text",
+          "label": "Optionale Details einer in dieser Nacht kopierten Fähigkeit",
+          "when": "onlyIfApplicable"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "borrowedAbilityAction",
+          "type": "text",
+          "label": "Optionale Details einer in dieser Nacht kopierten Fähigkeit",
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -2161,6 +2916,21 @@
           "note": "For EACH correct first-day guess, add one CORRECT reminder to the Juggler. At most five correct guesses; remove markers after giving count. Repeated assignments must allow multiple identical unlimited tokens on the same character."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "correctCount",
+          "type": "number",
+          "label": "Angezeigte Anzahl richtiger Vermutungen des Juggler",
+          "min": 0,
+          "max": 5
+        }
+      ]
     }
   },
   {
@@ -2185,7 +2955,18 @@
     "gameset": [
       "sects_and_violets"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Dämon",
+        "image": "Icon_sage",
+        "quickId": "demon"
+      },
+      {
+        "name": "Anderer",
+        "image": "Icon_sage",
+        "quickId": "other"
+      }
+    ],
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
@@ -2196,6 +2977,64 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Dämon den Sage getötet hat, wecke den Sage und deute auf zwei Spieler, von denen einer der Dämon ist."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "possibleDemons",
+          "type": "players",
+          "label": "Dem Sage angezeigte zwei Spieler",
+          "count": 2
+        }
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "demonPlayer",
+          "type": "reminder",
+          "tokenId": "demon",
+          "operation": "move",
+          "allowedTargets": {
+            "fractions": [
+              "demon"
+            ]
+          }
+        },
+        {
+          "id": "otherPlayer",
+          "type": "reminder",
+          "tokenId": "other",
+          "operation": "move",
+          "distinctFrom": [
+            "demonPlayer"
+          ]
+        },
+        {
+          "id": "showSage",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "pointToPlayers",
+            "playerSteps": [
+              "demonPlayer",
+              "otherPlayer"
+            ]
+          },
+          "requires": [
+            "demonPlayer",
+            "otherPlayer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -2287,6 +3126,12 @@
           "note": "Only choose a player if Sweetheart has died and this player is made drunk. Also applies to death outside the night; the timing remains manual."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -2323,6 +3168,16 @@
         "name": "Haarschnitte heute Abend",
         "image": "Icon_barber",
         "quickId": "haircuts_tonight"
+      },
+      {
+        "name": "Getauschter Spieler",
+        "image": "Icon_barber",
+        "quickId": "swap_target"
+      },
+      {
+        "name": "Dämon informiert",
+        "image": "Icon_barber",
+        "quickId": "demon_informed"
       }
     ],
     "wakeUpEveryNight": true,
@@ -2335,6 +3190,99 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Barber heute oder heute Nacht gestorben ist, zeige dem Dämon THIS CHARACTER SELECTED YOU und den Barber-Marker. Falls der Dämon zwei Spieler auswählt, wecke sie einzeln und zeige YOU ARE und den neuen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "swapTargets",
+          "type": "players",
+          "label": "Für einen möglichen Charaktertausch gewählte Spieler",
+          "count": 2
+        }
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "barberTriggered",
+          "type": "reminder",
+          "tokenId": "haircuts_tonight",
+          "operation": "setOnce",
+          "allowedTargets": {
+            "roles": [
+              "barber"
+            ]
+          }
+        },
+        {
+          "id": "demonRecipient",
+          "type": "reminder",
+          "tokenId": "demon_informed",
+          "operation": "move",
+          "allowedTargets": {
+            "fractions": [
+              "demon"
+            ]
+          }
+        },
+        {
+          "id": "notifyDemonOfBarber",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "demonRecipient"
+          },
+          "presentation": {
+            "kind": "characterSelectedYou",
+            "sourceRoleId": "barber",
+            "infoToken": "this_chracter_selected_you"
+          },
+          "requires": [
+            "barberTriggered",
+            "demonRecipient"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "swappedPlayer",
+          "type": "reminder",
+          "tokenId": "swap_target",
+          "operation": "move"
+        },
+        {
+          "id": "newSwappedCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showBarberSwap",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "swappedPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newSwappedCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "swappedPlayer",
+            "newSwappedCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -2413,6 +3361,11 @@
         "name": "Twin",
         "image": "Icon_eviltwin",
         "quickId": "twin"
+      },
+      {
+        "name": "Böser Zwilling",
+        "image": "Icon_eviltwin",
+        "quickId": "evil_twin"
       }
     ],
     "wakeUpEveryNight": false,
@@ -2440,7 +3393,79 @@
             ]
           },
           "note": "Twin info presentation remains on the existing manual path."
+        },
+        {
+          "id": "evilTwinPlayer",
+          "type": "reminder",
+          "tokenId": "evil_twin",
+          "operation": "setOnce",
+          "allowedTargets": {
+            "roles": [
+              "eviltwin"
+            ]
+          }
         }
+      ],
+      "firstNight": [
+        {
+          "id": "goodTwinCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "goodTwin"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showGoodTwinCharacter",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "playerAndCharacter",
+            "playerStep": "goodTwin",
+            "characterStep": "goodTwinCharacter"
+          },
+          "requires": [
+            "goodTwin",
+            "goodTwinCharacter"
+          ]
+        },
+        {
+          "id": "evilTwinCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "minion"
+          ]
+        },
+        {
+          "id": "showEvilTwinCharacter",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "goodTwin"
+          },
+          "presentation": {
+            "kind": "playerAndCharacter",
+            "playerStep": "evilTwinPlayer",
+            "characterStep": "evilTwinCharacter"
+          },
+          "requires": [
+            "goodTwin",
+            "evilTwinCharacter",
+            "evilTwinPlayer"
+          ]
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
       ]
     }
   },
@@ -2509,6 +3534,12 @@
           "tokenId": "cursed",
           "operation": "move"
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -2597,7 +3628,8 @@
           "presentation": {
             "kind": "characterSelectedYouMadAboutCharacter",
             "sourceRoleId": "cerenovus",
-            "characterStep": "madCharacter"
+            "characterStep": "madCharacter",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "madPlayer",
@@ -2634,13 +3666,20 @@
           "presentation": {
             "kind": "characterSelectedYouMadAboutCharacter",
             "sourceRoleId": "cerenovus",
-            "characterStep": "madCharacter"
+            "characterStep": "madCharacter",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "madPlayer",
             "madCharacter"
           ]
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -2676,7 +3715,13 @@
     "gameset": [
       "sects_and_violets"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Gewählt",
+        "image": "Icon_pithag",
+        "quickId": "chosen"
+      }
+    ],
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
@@ -2689,6 +3734,68 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Der Pit-Hag wählt einen Spieler und einen Charakter. Falls dieser Charakter nicht im Spiel ist: Lass den Pit-Hag einschlafen, wecke das Ziel und zeige YOU ARE und dessen neuen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "pitHagChoice",
+          "type": "form",
+          "label": "Wahl der Pit-Hag",
+          "fields": [
+            {
+              "id": "target",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "newCharacter",
+              "type": "character",
+              "label": "Gewählter Charakter"
+            }
+          ]
+        }
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "newCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showPitHag",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "chosenPlayer",
+            "newCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -2751,7 +3858,44 @@
           "tokenId": "dead",
           "operation": "move",
           "note": "Storyteller chooses who actually dies. Outsider jumps, ONCE state, character change, evil alignment and shrouds are NOT automated; the dead player may be Fang Gu rather than its selected target."
+        },
+        {
+          "id": "newFangGuCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "demon"
+          ]
+        },
+        {
+          "id": "showNewFangGu",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "deadPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newFangGuCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "deadPlayer",
+            "newFangGuCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -2848,6 +3992,12 @@
           "note": "ONLY following a Minion death: mark nearest Townsfolk clockwise or counterclockwise. In other cases skip these additional steps."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -2936,6 +4086,12 @@
           "note": "Attack target only. Update dead state/shroud separately."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -2996,6 +4152,12 @@
           "operation": "move",
           "note": "Attack reminder, not an automatic death; shrouds and end-game effects remain manual."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -3092,6 +4254,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -3157,6 +4325,26 @@
           "note": "Select the player who is actually drunk (Sailor or chosen target); this is not necessarily the player Sailor pointed at. No automatic choice or effect resolution."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Ausgewählter lebender Spieler (nicht unbedingt der Betrunkene)"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Ausgewählter lebender Spieler (nicht unbedingt der Betrunkene)"
+        }
+      ]
     }
   },
   {
@@ -3198,6 +4386,55 @@
     "nightInstructions": {
       "firstNight": "Der Chambermaid wählt zwei lebende Spieler. Gib die Information mit einer entsprechenden Anzahl Finger weiter.",
       "otherNight": "Der Chambermaid wählt zwei lebende Spieler. Gib die Information mit einer entsprechenden Anzahl Finger weiter."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "chambermaidReading",
+          "type": "form",
+          "label": "Information der Chambermaid",
+          "fields": [
+            {
+              "id": "chosenPlayers",
+              "type": "players",
+              "label": "Zwei ausgewählte lebende Spieler",
+              "count": 2
+            },
+            {
+              "id": "awokeCount",
+              "type": "number",
+              "label": "Gezeigte Zahl",
+              "min": 0,
+              "max": 2
+            }
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chambermaidReading",
+          "type": "form",
+          "label": "Information der Chambermaid",
+          "fields": [
+            {
+              "id": "chosenPlayers",
+              "type": "players",
+              "label": "Zwei ausgewählte lebende Spieler",
+              "count": 2
+            },
+            {
+              "id": "awokeCount",
+              "type": "number",
+              "label": "Gezeigte Zahl",
+              "min": 0,
+              "max": 2
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -3265,7 +4502,8 @@
           "presentation": {
             "kind": "characterSelectedYou",
             "sourceRoleId": "exorcist",
-            "pointToRolePlayer": "exorcist"
+            "pointToRolePlayer": "exorcist",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "chosenPlayer"
@@ -3275,6 +4513,12 @@
             "reason": "Only if the selected player is the Demon and should be woken."
           }
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -3367,6 +4611,12 @@
           "note": "Choose which of the two protected players becomes drunk."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -3426,6 +4676,31 @@
             ]
           },
           "note": "Only tap the Gambler player if their guess was wrong and they die; the guessed player and character are chosen via existing manual UI."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "gamblerGuess",
+          "type": "form",
+          "label": "Vermutung des Gambler",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "guessedCharacter",
+              "type": "character",
+              "label": "Geratener Charakter"
+            }
+          ]
         }
       ]
     }
@@ -3488,6 +4763,31 @@
           "tokenId": "dead",
           "operation": "move",
           "note": "Optional and only after true public Gossip; Storyteller decides whether victim dies and marks shroud manually."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "gossipResolution",
+          "type": "form",
+          "label": "Auflösung der Gossip-Aussage",
+          "fields": [
+            {
+              "id": "statementTrue",
+              "type": "yesNo",
+              "label": "War die öffentliche Aussage des Gossip wahr?"
+            },
+            {
+              "id": "statement",
+              "type": "text",
+              "label": "Optionaler Wortlaut der Aussage"
+            }
+          ]
         }
       ]
     }
@@ -3613,6 +4913,12 @@
           "note": "Only when Courtier actually uses the ability. The DRUNK 1/2/3 countdown across three nights is not representable as a simple single-night selection and stays manual."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -3687,6 +4993,12 @@
           "note": "Only after Professor actually revives a dead Townsfolk. Do not set on a no-choice night or an invalid target."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -3728,6 +5040,17 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "allPlayersDrunk",
+          "type": "yesNo",
+          "label": "Hat die Trunkenheit des Minstrel gewirkt?",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -3800,6 +5123,17 @@
             "neighbor1"
           ],
           "note": "Mark other living neighbour only if BOTH are good; update/remove manually when condition fails."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "protectedNeighbour",
+          "type": "player",
+          "label": "Durch die Tea Lady geretteter Nachbar",
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -3880,6 +5214,17 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "firstDeathPrevented",
+          "type": "yesNo",
+          "label": "Wurde der erste Tod des Fool verhindert?",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -3919,6 +5264,39 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "goonInteraction",
+          "type": "form",
+          "label": "Erste Fähigkeit, die den Goon in dieser Nacht auswählte",
+          "fields": [
+            {
+              "id": "actor",
+              "type": "player",
+              "label": "Spieler, der den Goon auswählte"
+            },
+            {
+              "id": "newAlignment",
+              "type": "choice",
+              "label": "Gesinnung des Goon nach der Auswahl",
+              "options": [
+                {
+                  "value": "good",
+                  "label": "Gut"
+                },
+                {
+                  "value": "evil",
+                  "label": "Böse"
+                }
+              ]
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -3983,6 +5361,35 @@
           "note": "Record each target the Lunatic selects for the real Demon; repeat for multi-target demon abilities. Clear prior-night CHOSEN reminders manually. Actual Demon attack and information stay manual."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "lunaticStartingInfo",
+          "type": "form",
+          "label": "Dem Lunatic gezeigte Informationen",
+          "fields": [
+            {
+              "id": "fakeMinions",
+              "type": "players",
+              "label": "Als Minions angezeigte Spieler",
+              "minCount": 0,
+              "maxCount": 3
+            },
+            {
+              "id": "demonBluffs",
+              "type": "characters",
+              "label": "Gezeigte gute Bluff-Charaktere",
+              "count": 3
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -4042,6 +5449,12 @@
           },
           "note": "Only if the Storyteller chooses that Tinker dies during the night; daytime death stays manual."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4103,6 +5516,12 @@
           },
           "note": "Only if the chosen target is good after Moonchild death; target must have been alive when selected. Resolve death at night manually."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4166,6 +5585,21 @@
           "tokenId": "dead",
           "operation": "move",
           "note": "Only if an Outsider died today; other conditional game actions remain manual."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "shownOutsiders",
+          "type": "characters",
+          "label": "Gezeigte Outsider-Charaktere",
+          "minCount": 0,
+          "maxCount": 10
         }
       ]
     }
@@ -4234,6 +5668,12 @@
           "operation": "move",
           "nightConstraint": "differentFromPreviousNight"
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4304,6 +5744,12 @@
           },
           "note": "Only mark Assassin after their one actual attack; the app does not automatically end their future night turns."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4403,6 +5849,16 @@
           "note": "Only when no player died today; Storyteller verifies this before assigning. Death handled manually."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
+    },
+    "nightWake": {
+      "allowWhenApparentDead": true,
+      "otherNightsRequireNoDeathsPreviousDay": true
     }
   },
   {
@@ -4482,6 +5938,12 @@
           "note": "Select the NEW poisoned target. Doing the DEAD step first preserves the previous target reference. No automatic poisoning/death calculations."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -4554,6 +6016,12 @@
           "group": "attacks",
           "note": "Second attack choice. Resurrection is Storyteller-controlled and remains manual."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4653,6 +6121,12 @@
           "note": "ALTERNATIVE to all attack steps: if Po chooses no one this night, manually select this step and mark Po with 3 ATTACKS. The following night use attacks 1,2,3; remove 3 ATTACKS manually afterward. Exorcist skips do not count as charging."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -4746,10 +6220,10 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      14.3
+      14.1
     ],
     "nightStateNumbersOtherNights": [
-      14.3
+      14.1
     ],
     "roleId": "bureaucrat",
     "nightInstructions": {
@@ -4772,6 +6246,12 @@
           "tokenId": "3_votes",
           "operation": "move"
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4797,10 +6277,10 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      15.3
+      15.1
     ],
     "nightStateNumbersOtherNights": [
-      15.3
+      15.1
     ],
     "roleId": "thief",
     "nightInstructions": {
@@ -4823,6 +6303,12 @@
           "tokenId": "negative_vote",
           "operation": "move"
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -4877,7 +6363,7 @@
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
     "nightStateNumbersOtherNights": [
-      20.3
+      20.2
     ],
     "roleId": "bonecollector",
     "nightInstructions": {
@@ -4927,6 +6413,12 @@
           "note": "Only after granting a dead player their ability; the player regains it temporarily. Skip this when Bone Collector declines."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -4952,7 +6444,7 @@
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
     "nightStateNumbersOtherNights": [
-      21.3
+      21.2
     ],
     "roleId": "harlot",
     "nightInstructions": {
@@ -4977,12 +6469,65 @@
           },
           "presentation": {
             "kind": "characterSelectedYou",
-            "sourceRoleId": "harlot"
+            "sourceRoleId": "harlot",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "selectedPlayer"
           ],
           "note": "Only show after waking the chosen player. Consent/reply is handled manually."
+        },
+        {
+          "id": "harlotLearnsCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "selectedPlayer"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showHarlotAnswer",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "harlotLearnsCharacter"
+          },
+          "requires": [
+            "selectedPlayer",
+            "harlotLearnsCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "harlotVisit",
+          "type": "form",
+          "label": "Besuch der Harlot",
+          "fields": [
+            {
+              "id": "consent",
+              "type": "yesNo",
+              "label": "Hat der besuchte Spieler zugestimmt?"
+            },
+            {
+              "id": "shownCharacter",
+              "type": "character",
+              "label": "Der Harlot gezeigter Charakter (bei Zustimmung)"
+            }
+          ]
         }
       ]
     }
@@ -5015,7 +6560,7 @@
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
     "nightStateNumbersOtherNights": [
-      22.3
+      22.2
     ],
     "roleId": "barista",
     "nightInstructions": {
@@ -5037,7 +6582,51 @@
           "tokenId": "acts_twice",
           "operation": "move",
           "note": "ALTERNATIVE B: choose this target OR the SOBER AND HEALTHY target, never both in the same night. Remove/adjust previous-night markers manually."
+        },
+        {
+          "id": "showSoberAndHealthy",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "soberTarget"
+          },
+          "presentation": {
+            "kind": "characterSelectedYou",
+            "sourceRoleId": "barista",
+            "infoToken": "this_chracter_selected_you"
+          },
+          "requires": [
+            "soberTarget"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "showActsTwice",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "actsTwiceTarget"
+          },
+          "presentation": {
+            "kind": "characterSelectedYou",
+            "sourceRoleId": "barista",
+            "infoToken": "this_chracter_selected_you"
+          },
+          "requires": [
+            "actsTwiceTarget"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -5123,12 +6712,19 @@
           },
           "presentation": {
             "kind": "showCharacter",
-            "characterStep": "apprenticeAbility"
+            "characterStep": "apprenticeAbility",
+            "infoToken": "you_are"
           },
           "requires": [
             "apprenticeAbility"
           ]
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -5376,7 +6972,7 @@
     "descriptionShort": "Es ist bekannt, dass zwei benachbarte Spieler die gleiche Ausrichtung haben.",
     "descriptionLong": "Nutzen Sie den Revolutionary, um benachteiligten Spielern die Teilnahme zu ermöglichen.",
     "howToRun": "Bevor das Spiel vorbereitet wird, muss vor der Übergabe der Tasche an die Spieler erklärt werden, dass der Revolutionary im Spiel ist und welche zwei benachbarten Spieler Revolutionarye sind.",
-    "image": "Icon_Revolutionary",
+    "image": "Icon_revolutionary",
     "tipsAndTricks": [],
     "bluffs": [],
     "fraction": "fabled",
@@ -5605,6 +7201,47 @@
           "note": "Third visitor gets false information. Wake and tell each visitor a number manually. If the number volunteering is not exactly three, do not set any of these tokens."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "duchessReading",
+          "type": "form",
+          "label": "Information beim Besuch der Duchess",
+          "fields": [
+            {
+              "id": "visitors",
+              "type": "players",
+              "label": "Drei Besucher",
+              "count": 3
+            },
+            {
+              "id": "trueEvilCount",
+              "type": "number",
+              "label": "Tatsächliche Anzahl böser Besucher",
+              "min": 0,
+              "max": 3
+            },
+            {
+              "id": "falseVisitor",
+              "type": "player",
+              "label": "Besucher, dem eine falsche Zahl gezeigt wurde"
+            },
+            {
+              "id": "falseCount",
+              "type": "number",
+              "label": "Gezeigte falsche Zahl",
+              "min": 0,
+              "max": 3
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -5729,6 +7366,12 @@
           "note": "Only this target is chosen. If they are drunk/poisoned and Acrobat dies, death is handled manually."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -5805,11 +7448,26 @@
           },
           "presentation": {
             "kind": "showCharacter",
-            "characterStep": "minionAbility"
+            "characterStep": "minionAbility",
+            "infoToken": "you_are"
           },
           "requires": [
             "minionAbility"
           ]
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "borrowedMinionAbility",
+          "type": "text",
+          "label": "Optionale Nachtaktion der übernommenen Minion-Fähigkeit",
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -5915,6 +7573,66 @@
           "note": "Third player chosen this night, in order. Resolve all three choices and subsequent deaths manually."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "threeDecisions",
+          "type": "form",
+          "label": "Antworten der drei ausgewählten Spieler",
+          "fields": [
+            {
+              "id": "firstResponse",
+              "type": "choice",
+              "label": "Entscheidung des ersten Spielers",
+              "options": [
+                {
+                  "value": "live",
+                  "label": "Leben"
+                },
+                {
+                  "value": "die",
+                  "label": "Sterben"
+                }
+              ]
+            },
+            {
+              "id": "secondResponse",
+              "type": "choice",
+              "label": "Entscheidung des zweiten Spielers",
+              "options": [
+                {
+                  "value": "live",
+                  "label": "Leben"
+                },
+                {
+                  "value": "die",
+                  "label": "Sterben"
+                }
+              ]
+            },
+            {
+              "id": "thirdResponse",
+              "type": "choice",
+              "label": "Entscheidung des dritten Spielers",
+              "options": [
+                {
+                  "value": "live",
+                  "label": "Leben"
+                },
+                {
+                  "value": "die",
+                  "label": "Sterben"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -6004,6 +7722,25 @@
     "nightInstructions": {
       "firstNight": "Führe die für die Fähigkeit des Amnesiac nötigen Schritte aus.",
       "otherNight": "Führe die für die Fähigkeit des Amnesiac nötigen Schritte aus."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "customAbility",
+          "type": "text",
+          "label": "Was geschah durch die individuelle Amnesiac-Fähigkeit?"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "customAbility",
+          "type": "text",
+          "label": "Was geschah durch die individuelle Amnesiac-Fähigkeit?"
+        }
+      ]
     }
   },
   {
@@ -6129,6 +7866,12 @@
           ],
           "note": "Display first-night KNOW target selected during setup. Character type constraints are checked by Storyteller."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -6293,6 +8036,11 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Dämon heute Nacht den Banshee getötet hat, verkünde, dass der Banshee gestorben ist."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -6312,7 +8060,13 @@
     "gameset": [
       "experimental"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Wissen",
+        "image": "Icon_bountyhunter",
+        "quickId": "know"
+      }
+    ],
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
@@ -6325,6 +8079,86 @@
     "nightInstructions": {
       "firstNight": "Deute auf den Spieler, der mit KNOW markiert ist.",
       "otherNight": "Falls der mit KNOW markierte Spieler heute oder heute Nacht gestorben ist, deute auf den neuen mit KNOW markierten Spieler."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "knownEvil",
+          "type": "player",
+          "label": "Dem Bounty Hunter gezeigter böser Spieler"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "knownEvil",
+          "type": "player",
+          "label": "Neu erkannter böser Spieler",
+          "when": "onlyIfApplicable"
+        }
+      ]
+    },
+    "quickFlow": {
+      "firstNight": [
+        {
+          "id": "evilPlayer",
+          "type": "reminder",
+          "tokenId": "know",
+          "operation": "move",
+          "allowedTargets": {
+            "alignment": [
+              "evil"
+            ]
+          }
+        },
+        {
+          "id": "showBountyHunterTarget",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "pointToPlayers",
+            "playerSteps": [
+              "evilPlayer"
+            ]
+          },
+          "requires": [
+            "evilPlayer"
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "evilPlayer",
+          "type": "reminder",
+          "tokenId": "know",
+          "operation": "move",
+          "allowedTargets": {
+            "alignment": [
+              "evil"
+            ]
+          }
+        },
+        {
+          "id": "showBountyHunterTarget",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "pointToPlayers",
+            "playerSteps": [
+              "evilPlayer"
+            ]
+          },
+          "requires": [
+            "evilPlayer"
+          ]
+        }
+      ]
     }
   },
   {
@@ -6364,6 +8198,17 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "copiedNightAbility",
+          "type": "text",
+          "label": "Nachtaktion der übernommenen Fähigkeit des hingerichteten Charakters",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -6383,7 +8228,13 @@
     "gameset": [
       "experimental"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Dämon",
+        "image": "Icon_choirboy",
+        "quickId": "demon"
+      }
+    ],
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
@@ -6392,6 +8243,52 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Dämon den King getötet hat, deute auf den Spieler, der der Dämon ist."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "knownDemon",
+          "type": "player",
+          "label": "Dem Choirboy enthüllter Dämonenspieler"
+        }
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "demonPlayer",
+          "type": "reminder",
+          "tokenId": "demon",
+          "operation": "move",
+          "allowedTargets": {
+            "fractions": [
+              "demon"
+            ]
+          }
+        },
+        {
+          "id": "showChoirboy",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "pointToPlayers",
+            "playerSteps": [
+              "demonPlayer"
+            ]
+          },
+          "requires": [
+            "demonPlayer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -6424,6 +8321,47 @@
     "nightInstructions": {
       "firstNight": "Die Gesinnung des Cult Leader kann sich ändern. Falls dies geschieht, zeige YOU ARE und signalisiere die Gesinnung mit dem Daumen.",
       "otherNight": "Die Gesinnung des Cult Leader kann sich ändern. Falls dies geschieht, zeige YOU ARE und signalisiere die Gesinnung mit dem Daumen."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "newAlignment",
+          "type": "choice",
+          "label": "Angezeigte / erhaltene Gesinnung",
+          "options": [
+            {
+              "value": "good",
+              "label": "Gut"
+            },
+            {
+              "value": "evil",
+              "label": "Böse"
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "newAlignment",
+          "type": "choice",
+          "label": "Angezeigte / erhaltene Gesinnung",
+          "options": [
+            {
+              "value": "good",
+              "label": "Gut"
+            },
+            {
+              "value": "evil",
+              "label": "Böse"
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -6448,6 +8386,11 @@
         "name": "No ability",
         "image": "Icon_engineer",
         "quickId": "no_ability"
+      },
+      {
+        "name": "Geänderter Spieler",
+        "image": "Icon_engineer",
+        "quickId": "changed"
       }
     ],
     "wakeUpEveryNight": true,
@@ -6462,6 +8405,179 @@
     "nightInstructions": {
       "firstNight": "Der Engineer kann die Minions oder den Dämon auswählen, die gewechselt werden sollen. Lass den Engineer einschlafen. Wecke die betroffenen Spieler einzeln und zeige YOU ARE und ihren neuen Charaktermarker.",
       "otherNight": "Der Engineer kann die Minions oder den Dämon auswählen, die gewechselt werden sollen. Lass den Engineer einschlafen. Wecke die betroffenen Spieler einzeln und zeige YOU ARE und ihren neuen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "engineerChoice",
+          "type": "form",
+          "label": "Fähigkeit des Engineer eingesetzt",
+          "fields": [
+            {
+              "id": "changeKind",
+              "type": "choice",
+              "label": "Was wurde geändert?",
+              "options": [
+                {
+                  "value": "minions",
+                  "label": "Minion-Rollen"
+                },
+                {
+                  "value": "demon",
+                  "label": "Dämonenrolle"
+                }
+              ]
+            },
+            {
+              "id": "selectedRoles",
+              "type": "characters",
+              "label": "Gewählte neue Charaktere",
+              "minCount": 1,
+              "maxCount": 5
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "engineerChoice",
+          "type": "form",
+          "label": "Fähigkeit des Engineer eingesetzt",
+          "fields": [
+            {
+              "id": "changeKind",
+              "type": "choice",
+              "label": "Was wurde geändert?",
+              "options": [
+                {
+                  "value": "minions",
+                  "label": "Minion-Rollen"
+                },
+                {
+                  "value": "demon",
+                  "label": "Dämonenrolle"
+                }
+              ]
+            },
+            {
+              "id": "selectedRoles",
+              "type": "characters",
+              "label": "Gewählte neue Charaktere",
+              "minCount": 1,
+              "maxCount": 5
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ]
+    },
+    "quickFlow": {
+      "firstNight": [
+        {
+          "id": "changedPlayer",
+          "type": "reminder",
+          "tokenId": "changed",
+          "operation": "move"
+        },
+        {
+          "id": "newEvilCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "minion",
+            "demon"
+          ]
+        },
+        {
+          "id": "showEngineeredCharacter",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "changedPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newEvilCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "changedPlayer",
+            "newEvilCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "abilityUsed",
+          "type": "reminder",
+          "tokenId": "no_ability",
+          "operation": "setOnce",
+          "allowedTargets": {
+            "roles": [
+              "engineer"
+            ]
+          }
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "changedPlayer",
+          "type": "reminder",
+          "tokenId": "changed",
+          "operation": "move"
+        },
+        {
+          "id": "newEvilCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "minion",
+            "demon"
+          ]
+        },
+        {
+          "id": "showEngineeredCharacter",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "changedPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newEvilCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "changedPlayer",
+            "newEvilCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "abilityUsed",
+          "type": "reminder",
+          "tokenId": "no_ability",
+          "operation": "setOnce",
+          "allowedTargets": {
+            "roles": [
+              "engineer"
+            ]
+          }
+        }
+      ]
     }
   },
   {
@@ -6481,7 +8597,13 @@
     "gameset": [
       "experimental"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Neuer Farmer",
+        "image": "Icon_farmer",
+        "quickId": "new_farmer"
+      }
+    ],
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
@@ -6490,6 +8612,58 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Farmer heute Nacht gestorben ist, wecke einen lebenden guten Spieler. Zeige YOU ARE und einen Farmer-Marker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "newFarmerPlayer",
+          "type": "reminder",
+          "tokenId": "new_farmer",
+          "operation": "move",
+          "allowedTargets": {
+            "alignment": [
+              "good"
+            ],
+            "aliveOnly": true
+          }
+        },
+        {
+          "id": "farmerCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "townsfolk"
+          ]
+        },
+        {
+          "id": "showNewFarmer",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "newFarmerPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "farmerCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "newFarmerPlayer",
+            "farmerCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -6556,6 +8730,69 @@
     "nightInstructions": {
       "firstNight": "Signalisiere die Information mit dem Daumen.",
       "otherNight": "Signalisiere die Information mit dem Daumen."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "judgment",
+          "type": "choice",
+          "label": "Angezeigte Einschätzung des Storytellers",
+          "options": [
+            {
+              "value": "strongGood",
+              "label": "Gut liegt deutlich vorn"
+            },
+            {
+              "value": "good",
+              "label": "Gut liegt vorn"
+            },
+            {
+              "value": "even",
+              "label": "Keines der Teams liegt vorn"
+            },
+            {
+              "value": "evil",
+              "label": "Böse liegt vorn"
+            },
+            {
+              "value": "strongEvil",
+              "label": "Böse liegt deutlich vorn"
+            }
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "judgment",
+          "type": "choice",
+          "label": "Angezeigte Einschätzung des Storytellers",
+          "options": [
+            {
+              "value": "strongGood",
+              "label": "Gut liegt deutlich vorn"
+            },
+            {
+              "value": "good",
+              "label": "Gut liegt vorn"
+            },
+            {
+              "value": "even",
+              "label": "Keines der Teams liegt vorn"
+            },
+            {
+              "value": "evil",
+              "label": "Böse liegt vorn"
+            },
+            {
+              "value": "strongEvil",
+              "label": "Böse liegt deutlich vorn"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -6575,7 +8812,13 @@
     "gameset": [
       "experimental"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Wissen",
+        "image": "Icon_highpriestess",
+        "quickId": "know"
+      }
+    ],
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
@@ -6588,6 +8831,75 @@
     "nightInstructions": {
       "firstNight": "Deute auf einen Spieler.",
       "otherNight": "Deute auf einen Spieler."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "suggestedPlayer",
+          "type": "player",
+          "label": "Vom Storyteller angezeigter Spieler"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "suggestedPlayer",
+          "type": "player",
+          "label": "Vom Storyteller angezeigter Spieler"
+        }
+      ]
+    },
+    "quickFlow": {
+      "firstNight": [
+        {
+          "id": "shownPlayer",
+          "type": "reminder",
+          "tokenId": "know",
+          "operation": "move"
+        },
+        {
+          "id": "showHighPriestess",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "pointToPlayers",
+            "playerSteps": [
+              "shownPlayer"
+            ]
+          },
+          "requires": [
+            "shownPlayer"
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "shownPlayer",
+          "type": "reminder",
+          "tokenId": "know",
+          "operation": "move"
+        },
+        {
+          "id": "showHighPriestess",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "pointToPlayers",
+            "playerSteps": [
+              "shownPlayer"
+            ]
+          },
+          "requires": [
+            "shownPlayer"
+          ]
+        }
+      ]
     }
   },
   {
@@ -6612,6 +8924,11 @@
         "name": "No ability",
         "image": "Icon_huntsman",
         "quickId": "no_ability"
+      },
+      {
+        "name": "Gewählt",
+        "image": "Icon_huntsman",
+        "quickId": "chosen"
       }
     ],
     "wakeUpEveryNight": true,
@@ -6626,6 +8943,107 @@
     "nightInstructions": {
       "firstNight": "Der Huntsman kann einen Spieler auswählen. Falls er die Damsel gewählt hat: Lass den Huntsman einschlafen. Wecke das Ziel und zeige YOU ARE und den neuen Charaktermarker.",
       "otherNight": "Der Huntsman kann einen Spieler auswählen. Falls er die Damsel gewählt hat: Lass den Huntsman einschlafen. Wecke das Ziel und zeige YOU ARE und den neuen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Vom Huntsman gewählter Spieler",
+          "when": "onlyIfApplicable"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Vom Huntsman gewählter Spieler",
+          "when": "onlyIfApplicable"
+        }
+      ]
+    },
+    "quickFlow": {
+      "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "newDamselCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "townsfolk"
+          ]
+        },
+        {
+          "id": "showTransformedDamsel",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newDamselCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "chosenPlayer",
+            "newDamselCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "newDamselCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "townsfolk"
+          ]
+        },
+        {
+          "id": "showTransformedDamsel",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newDamselCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "chosenPlayer",
+            "newDamselCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -6645,7 +9063,18 @@
     "gameset": [
       "experimental"
     ],
-    "tokens": [],
+    "tokens": [
+      {
+        "name": "Dämon informiert",
+        "image": "Icon_king",
+        "quickId": "demon_knows_king"
+      },
+      {
+        "name": "König",
+        "image": "Icon_king",
+        "quickId": "king_player"
+      }
+    ],
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": false,
     "nightStateNumbersFirstNight": [],
@@ -6654,6 +9083,102 @@
     "nightInstructions": {
       "firstNight": "Wecke den Dämon. Zeige THIS PLAYER IS und den King-Marker und deute auf den King.",
       "otherNight": "Falls mindestens so viele Spieler tot wie lebendig sind, zeige den Charaktermarker eines lebenden Spielers."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "knownCharacter",
+          "type": "character",
+          "label": "Dem King gezeigter lebender Charakter",
+          "when": "onlyIfApplicable"
+        }
+      ]
+    },
+    "quickFlow": {
+      "firstNight": [
+        {
+          "id": "demonRecipient",
+          "type": "reminder",
+          "tokenId": "demon_knows_king",
+          "operation": "move",
+          "allowedTargets": {
+            "fractions": [
+              "demon"
+            ]
+          }
+        },
+        {
+          "id": "kingCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "townsfolk"
+          ]
+        },
+        {
+          "id": "kingPlayer",
+          "type": "reminder",
+          "tokenId": "king_player",
+          "operation": "move",
+          "allowedTargets": {
+            "roles": [
+              "king"
+            ]
+          }
+        },
+        {
+          "id": "showKingToDemon",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "demonRecipient"
+          },
+          "presentation": {
+            "kind": "playerAndCharacter",
+            "playerStep": "kingPlayer",
+            "characterStep": "kingCharacter",
+            "infoToken": "this_player_is"
+          },
+          "requires": [
+            "demonRecipient",
+            "kingCharacter",
+            "kingPlayer"
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "shownLivingCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showCharacterToKing",
+          "type": "showInfo",
+          "recipient": {
+            "type": "abilityOwner"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "shownLivingCharacter"
+          },
+          "requires": [
+            "shownLivingCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -6751,6 +9276,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -6818,6 +9349,19 @@
           "note": "Only place if chosen target is good and dies. On an evil target nothing happens; protection from other night deaths is handled manually."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Vom Lycanthrope gewählter Spieler (auch wenn nicht getötet)"
+        }
+      ]
     }
   },
   {
@@ -6846,6 +9390,11 @@
     "nightInstructions": {
       "firstNight": "Zeige den Minions während Minion Info den Magician und den Dämon. Zeige dem Dämon während Demon Info den Magician und die Minions.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -6870,6 +9419,11 @@
         "name": "No ability",
         "image": "Icon_nightwatchman",
         "quickId": "no_ability"
+      },
+      {
+        "name": "Gewählt",
+        "image": "Icon_nightwatchman",
+        "quickId": "chosen"
       }
     ],
     "wakeUpEveryNight": true,
@@ -6887,6 +9441,32 @@
     },
     "quickFlow": {
       "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "showNightwatchman",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "presentation": {
+            "kind": "characterSelectedYou",
+            "sourceRoleId": "nightwatchman",
+            "pointToRolePlayer": "nightwatchman",
+            "infoToken": "this_chracter_selected_you"
+          },
+          "requires": [
+            "chosenPlayer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
         {
           "id": "abilityUsed",
           "type": "reminder",
@@ -6912,6 +9492,54 @@
             ]
           },
           "note": "Only mark after the once-per-game selection. The selected recipient must still be handled in existing player UI; cannot encode it with existing three step types."
+        },
+        {
+          "id": "chosenPlayer",
+          "type": "reminder",
+          "tokenId": "chosen",
+          "operation": "move"
+        },
+        {
+          "id": "showNightwatchman",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "chosenPlayer"
+          },
+          "presentation": {
+            "kind": "characterSelectedYou",
+            "sourceRoleId": "nightwatchman",
+            "pointToRolePlayer": "nightwatchman",
+            "infoToken": "this_chracter_selected_you"
+          },
+          "requires": [
+            "chosenPlayer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Spieler, der den Nightwatchman erfahren soll",
+          "when": "onlyIfApplicable"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "chosenPlayer",
+          "type": "player",
+          "label": "Spieler, der den Nightwatchman erfahren soll",
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -7037,6 +9665,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -7118,6 +9752,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -7152,6 +9792,11 @@
     "nightInstructions": {
       "firstNight": "Überspringe Minion Info und Demon Info. Wecke den Dämon. Zeige THESE CHARACTERS ARE NOT IN PLAY und drei gute Charaktermarker, die nicht im Spiel sind.",
       "otherNight": "Falls der Poppy Grower heute oder heute Nacht gestorben ist, wecke alle Minions. Zeige THIS IS THE DEMON und deute auf den Dämon. Lass die Minions einschlafen. Wecke den Dämon. Zeige THESE ARE YOUR MINIONS und deute auf die Minions."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -7215,7 +9860,8 @@
           },
           "presentation": {
             "kind": "characterSelectedYou",
-            "sourceRoleId": "preacher"
+            "sourceRoleId": "preacher",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "disabledMinion"
@@ -7248,7 +9894,8 @@
           },
           "presentation": {
             "kind": "characterSelectedYou",
-            "sourceRoleId": "preacher"
+            "sourceRoleId": "preacher",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "disabledMinion"
@@ -7258,6 +9905,12 @@
             "reason": "Only if a Minion actually loses their ability tonight."
           }
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -7289,6 +9942,28 @@
     "nightInstructions": {
       "firstNight": "Deute im Uhrzeigersinn oder gegen den Uhrzeigersinn.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "direction",
+          "type": "choice",
+          "label": "Angezeigte Richtung",
+          "options": [
+            {
+              "value": "clockwise",
+              "label": "Im Uhrzeigersinn"
+            },
+            {
+              "value": "anticlockwise",
+              "label": "Gegen den Uhrzeigersinn"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -7359,6 +10034,12 @@
           ]
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -7418,6 +10099,69 @@
           }
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "villageIdiotReading",
+          "type": "form",
+          "label": "Information des Village Idiot",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "alignmentShown",
+              "type": "choice",
+              "label": "Angezeigte Gesinnung",
+              "options": [
+                {
+                  "value": "good",
+                  "label": "Gut"
+                },
+                {
+                  "value": "evil",
+                  "label": "Böse"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "villageIdiotReading",
+          "type": "form",
+          "label": "Information des Village Idiot",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Ausgewählter Spieler"
+            },
+            {
+              "id": "alignmentShown",
+              "type": "choice",
+              "label": "Angezeigte Gesinnung",
+              "options": [
+                {
+                  "value": "good",
+                  "label": "Gut"
+                },
+                {
+                  "value": "evil",
+                  "label": "Böse"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -7455,6 +10199,11 @@
     "nightInstructions": {
       "firstNight": "Zeige den Minions während Minion Info den Damsel-Marker. Falls das noch nicht geschehen ist, hole es jetzt nach. Falls der Huntsman die Damsel gewählt hat, zeige YOU ARE und ihren neuen Charaktermarker.",
       "otherNight": "Falls der Huntsman die Damsel gewählt hat, zeige YOU ARE und ihren neuen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -7511,6 +10260,11 @@
         "name": "Tea party",
         "image": "Icon_hatter",
         "quickId": "tea_party"
+      },
+      {
+        "name": "Getauschter Spieler",
+        "image": "Icon_hatter",
+        "quickId": "swap_target"
       }
     ],
     "wakeUpEveryNight": false,
@@ -7521,6 +10275,80 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Hatter gestorben ist, wecke die Minions und Dämonen. Jeder kann einen neuen Charakter wählen. Falls sie wechseln, zeige YOU ARE und den neuen Charaktermarker."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
+    },
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "hatterTriggered",
+          "type": "reminder",
+          "tokenId": "tea_party",
+          "operation": "setOnce",
+          "allowedTargets": {
+            "roles": [
+              "hatter"
+            ]
+          }
+        },
+        {
+          "id": "swappedPlayer",
+          "type": "reminder",
+          "tokenId": "swap_target",
+          "operation": "move"
+        },
+        {
+          "id": "notifyHatterPlayer",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "swappedPlayer"
+          },
+          "presentation": {
+            "kind": "characterSelectedYou",
+            "sourceRoleId": "hatter",
+            "infoToken": "this_chracter_selected_you"
+          },
+          "requires": [
+            "hatterTriggered",
+            "swappedPlayer"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        },
+        {
+          "id": "newSwappedCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true
+        },
+        {
+          "id": "showHatterSwap",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "swappedPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "newSwappedCharacter"
+          },
+          "requires": [
+            "hatterTriggered",
+            "swappedPlayer",
+            "newSwappedCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
     }
   },
   {
@@ -7578,6 +10406,40 @@
     "nightInstructions": {
       "firstNight": "Der Ogre wählt einen Spieler.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "ogreChoice",
+          "type": "form",
+          "label": "Wahl des Ogre",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Vom Ogre gewählter Spieler"
+            },
+            {
+              "id": "alignment",
+              "type": "choice",
+              "label": "Gesinnung des Ogre (nur dem Storyteller bekannt)",
+              "options": [
+                {
+                  "value": "good",
+                  "label": "Gut"
+                },
+                {
+                  "value": "evil",
+                  "label": "Böse"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -7611,6 +10473,19 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls der Plague Doctor gestorben ist, hat der Storyteller eine Minion-Fähigkeit erhalten. Falls du das noch nicht umgesetzt hast, hole es jetzt nach."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "storytellerMinionAbility",
+          "type": "character",
+          "label": "Vom Storyteller erhaltene Minion-Fähigkeit",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -7717,6 +10592,32 @@
     "nightInstructions": {
       "firstNight": "Wecke jeden Minion. Zeige THESE CHARACTERS ARE NOT IN PLAY und drei Charaktermarker, die nicht im Spiel sind.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "minionBluffs",
+          "type": "form",
+          "label": "Einem Minion gezeigte Bluff-Charaktere",
+          "fields": [
+            {
+              "id": "recipient",
+              "type": "player",
+              "label": "Minion, der die Bluffs erhält"
+            },
+            {
+              "id": "bluffCharacters",
+              "type": "characters",
+              "label": "Drei gezeigte Bluff-Charaktere",
+              "count": 3
+            }
+          ],
+          "repeatable": true
+        }
+      ]
     }
   },
   {
@@ -7818,13 +10719,20 @@
           },
           "presentation": {
             "kind": "showCharacter",
-            "characterStep": "extraAbilityCharacter"
+            "characterStep": "extraAbilityCharacter",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "extraAbilityCharacter",
             "empoweredDemon"
           ]
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -7908,6 +10816,12 @@
           "tokenId": "fear",
           "operation": "move"
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -8016,7 +10930,8 @@
           "presentation": {
             "kind": "characterSelectedYouMadAboutPlayer",
             "sourceRoleId": "harpy",
-            "playerStep": "secondPlayer"
+            "playerStep": "secondPlayer",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "madPlayer",
@@ -8053,13 +10968,20 @@
           "presentation": {
             "kind": "characterSelectedYouMadAboutPlayer",
             "sourceRoleId": "harpy",
-            "playerStep": "secondPlayer"
+            "playerStep": "secondPlayer",
+            "infoToken": "this_chracter_selected_you"
           },
           "requires": [
             "madPlayer",
             "secondPlayer"
           ]
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -8108,6 +11030,45 @@
           "operation": "setOnce",
           "note": "Demon notification and setup character replacement stay in the existing manual flow."
         }
+      ],
+      "firstNight": [
+        {
+          "id": "marionetteCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "fromReminderTarget",
+            "stepId": "marionettePlayer"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "minion"
+          ]
+        },
+        {
+          "id": "showMarionetteToPlayer",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "marionettePlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "marionetteCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "marionettePlayer",
+            "marionetteCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
       ]
     }
   },
@@ -8150,6 +11111,26 @@
     "nightInstructions": {
       "firstNight": "Zeige das geheime Wort.",
       "otherNight": "Falls ein guter Spieler das geheime Wort gesagt hat, wecke diesen Spieler. Zeige YOU ARE und signalisiere mit dem Daumen nach unten, dass er böse geworden ist."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "secretWord",
+          "type": "text",
+          "label": "Dem Mezepheles gezeigtes Geheimwort"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "turnedEvil",
+          "type": "player",
+          "label": "Guter Spieler, der nach dem Geheimwort böse wurde",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -8223,6 +11204,12 @@
           "note": "Only if Organ Grinder chooses to be drunk; if choosing sobriety instead, remove the marker manually. Voting/death state is not automated."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -8281,6 +11268,11 @@
         "name": "Night 3",
         "image": "Icon_summoner",
         "quickId": "night_3"
+      },
+      {
+        "name": "Neuer Dämon",
+        "image": "Icon_summoner",
+        "quickId": "new_demon"
       }
     ],
     "wakeUpEveryNight": true,
@@ -8335,6 +11327,70 @@
             ]
           },
           "note": "Only during third night, set NIGHT 3 on Summoner. Choosing the player and Demon role and performing the transformation remain manual."
+        },
+        {
+          "id": "newDemonPlayer",
+          "type": "reminder",
+          "tokenId": "new_demon",
+          "operation": "move"
+        },
+        {
+          "id": "summonedDemonCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "demon"
+          ]
+        },
+        {
+          "id": "showSummonedDemon",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "newDemonPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "summonedDemonCharacter",
+            "infoToken": "you_are"
+          },
+          "requires": [
+            "newDemonPlayer",
+            "summonedDemonCharacter"
+          ],
+          "showOnlyWhen": {
+            "type": "storytellerConfirmed"
+          }
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "otherNights": [
+        {
+          "id": "summonedDemon",
+          "type": "form",
+          "label": "Summoner erschafft einen Dämon",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Als neuer Dämon gewählter Spieler"
+            },
+            {
+              "id": "demonCharacter",
+              "type": "character",
+              "label": "Gewählter Dämonencharakter"
+            }
+          ],
+          "when": "onlyIfApplicable",
+          "night": 3
         }
       ]
     }
@@ -8364,6 +11420,11 @@
     "nightInstructions": {
       "firstNight": "Verkünde, welcher Spieler der Vizier ist.",
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -8388,6 +11449,11 @@
         "name": "Poisoned",
         "image": "Icon_widow",
         "quickId": "poisoned"
+      },
+      {
+        "name": "Informiert",
+        "image": "Icon_widow",
+        "quickId": "informed"
       }
     ],
     "wakeUpEveryNight": false,
@@ -8409,6 +11475,58 @@
           "tokenId": "poisoned",
           "operation": "setOnce",
           "note": "Only first Widow activation. Notification of any other good player remains manual; self-poison means nobody is informed."
+        },
+        {
+          "id": "informedPlayer",
+          "type": "reminder",
+          "tokenId": "informed",
+          "operation": "move",
+          "allowedTargets": {
+            "alignment": [
+              "good"
+            ]
+          }
+        },
+        {
+          "id": "widowCharacter",
+          "type": "reminderCharacterToken",
+          "selection": {
+            "type": "manual"
+          },
+          "allowManualOverride": true,
+          "allowedFractions": [
+            "minion"
+          ]
+        },
+        {
+          "id": "showWidow",
+          "type": "showInfo",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "informedPlayer"
+          },
+          "presentation": {
+            "kind": "showCharacter",
+            "characterStep": "widowCharacter"
+          },
+          "requires": [
+            "informedPlayer",
+            "widowCharacter"
+          ]
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "widowInPlayRecipient",
+          "type": "player",
+          "label": "Guter Spieler, dem die Widow gemeldet wurde",
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -8440,6 +11558,27 @@
     "nightInstructions": {
       "firstNight": "Führe die für die Fähigkeit des Wizard nötigen Schritte aus.",
       "otherNight": "Führe die für die Fähigkeit des Wizard nötigen Schritte aus."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "wishEffect",
+          "type": "text",
+          "label": "Wunsch / Wirkung / Preis (falls eingesetzt)",
+          "when": "onlyIfApplicable"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "wishEffect",
+          "type": "text",
+          "label": "Wunsch / Wirkung / Preis (falls eingesetzt)",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -8499,6 +11638,27 @@
     "nightInstructions": {
       "firstNight": "Falls X gleich 1 ist, markiere den Xaan mit dem Erinnerungsmarker X.",
       "otherNight": "Aktualisiere den Xaan-Erinnerungsmarker auf die aktuelle Nacht. Falls es Nacht X ist, markiere den Xaan mit X."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "xValue",
+          "type": "number",
+          "label": "Gewähltes X / Nacht der Massenvergiftung",
+          "min": 0
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "massPoisoningTriggered",
+          "type": "yesNo",
+          "label": "Wurde die Massenvergiftung heute Nacht ausgelöst?",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -8546,6 +11706,32 @@
           "tokenId": "dead",
           "operation": "move",
           "note": "Only normal later-night attack. First-night Minion conversion remains manual."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "minionAssignments",
+          "type": "form",
+          "label": "Minion-Zuweisungen des Kazali",
+          "fields": [
+            {
+              "id": "chosenPlayer",
+              "type": "player",
+              "label": "Spieler, der zum Minion wurde"
+            },
+            {
+              "id": "minionCharacter",
+              "type": "character",
+              "label": "Zugewiesener Minion-Charakter"
+            }
+          ],
+          "repeatable": true
         }
       ]
     }
@@ -8602,6 +11788,12 @@
           "operation": "move",
           "note": "Optional Storyteller-chosen night death. Multiple Legion role instances and their shared ability need manual coordination. If nobody dies, do not assign."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -8663,6 +11855,11 @@
     "nightInstructions": {
       "firstNight": "Verkünde, dass der Leviathan im Spiel ist.",
       "otherNight": "Aktualisiere den Leviathan-Erinnerungsmarker auf den aktuellen Tag. Du kannst verkünden, dass der Leviathan im Spiel ist."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ]
     }
   },
   {
@@ -8720,6 +11917,12 @@
           "operation": "move",
           "note": "Long Press only places reminder; game-specific demon-holder logic is unchanged."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -8785,6 +11988,12 @@
           "note": "Attack reminder only; death effects are handled manually."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -8834,6 +12043,12 @@
           "operation": "move",
           "note": "Later-night attack only; first-night transformations remain manual."
         }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
       ]
     }
   },
@@ -8899,6 +12114,12 @@
           "note": "If named character is in play, mark that player; otherwise Storyteller chooses a victim. No death state changes automatically."
         }
       ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ]
     }
   },
   {
@@ -8935,6 +12156,20 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Aktualisiere den Erinnerungsmarker des Riot auf den aktuellen Tag. In Nacht 3 kannst du die Minions wecken und ihnen YOU ARE und die Riot-Marker zeigen."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "minionsTransformed",
+          "type": "yesNo",
+          "label": "Wurden Minions in Riot verwandelt?",
+          "when": "onlyIfApplicable",
+          "night": 3
+        }
+      ]
     }
   },
   {
@@ -8982,6 +12217,28 @@
           "tokenId": "dead",
           "operation": "append",
           "note": "Place any number of existing unlimited-type Dead tokens according to how often phrase was said; apply death/shrouds manually."
+        }
+      ]
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep",
+        "quickFlow"
+      ],
+      "firstNight": [
+        {
+          "id": "secretPhrase",
+          "type": "text",
+          "label": "Dem Yaggababble gezeigter Geheimsatz"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "phraseCount",
+          "type": "number",
+          "label": "Anzahl öffentlicher Verwendungen des Satzes heute",
+          "min": 0,
+          "when": "onlyIfApplicable"
         }
       ]
     }
@@ -9110,6 +12367,29 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "changedCharacter",
+          "type": "form",
+          "label": "Durch Cacklejack geänderter Charakter",
+          "fields": [
+            {
+              "id": "affectedPlayer",
+              "type": "player",
+              "label": "Betroffener Spieler"
+            },
+            {
+              "id": "newCharacter",
+              "type": "character",
+              "label": "Neu zugewiesener Charakter"
+            }
+          ],
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -9207,6 +12487,17 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": null
+    },
+    "chronicle": {
+      "auto": [],
+      "otherNights": [
+        {
+          "id": "outsiderNightAbility",
+          "type": "text",
+          "label": "Optionale Nachtaktion einer Outsider-Fähigkeit",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -9305,6 +12596,19 @@
     "nightInstructions": {
       "firstNight": null,
       "otherNight": "Falls die Princess den Spieler nominiert hat, der heute hingerichtet wurde, wecke den Dämon wie gewöhnlich; durch seine Fähigkeit stirbt in dieser Nacht jedoch niemand."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "otherNights": [
+        {
+          "id": "demonKillBlocked",
+          "type": "yesNo",
+          "label": "Wurde der Dämon durch die Princess am Töten gehindert?",
+          "when": "onlyIfApplicable"
+        }
+      ]
     }
   },
   {
@@ -9380,6 +12684,25 @@
     "nightInstructions": {
       "firstNight": "Wecke den Wraith immer dann, wenn andere böse Spieler aufwachen.",
       "otherNight": "Wecke den Wraith immer dann, wenn andere böse Spieler aufwachen."
+    },
+    "chronicle": {
+      "auto": [
+        "nightStep"
+      ],
+      "firstNight": [
+        {
+          "id": "openedEyes",
+          "type": "yesNo",
+          "label": "Hat der Wraith die Augen geöffnet?"
+        }
+      ],
+      "otherNights": [
+        {
+          "id": "openedEyes",
+          "type": "yesNo",
+          "label": "Hat der Wraith die Augen geöffnet?"
+        }
+      ]
     }
   },
   {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const translatedInThisPass = <String>{
@@ -68,7 +69,8 @@ void main() {
     for (final id in translatedInThisPass) {
       final english = englishById[id]!;
       final german = germanById[id]!;
-      expect(german.keys.toSet(), equals(english.keys.toSet()));
+      final expectedLocalizedKeys = english.keys.toSet()..remove('chronicle');
+      expect(german.keys.toSet(), equals(expectedLocalizedKeys));
       expect(technicalRoleData(german), equals(technicalRoleData(english)));
       expect(german['descriptionShort'],
           isNot(equals(english['descriptionShort'])));
@@ -76,5 +78,25 @@ void main() {
           german['descriptionLong'], isNot(equals(english['descriptionLong'])));
       expect(german['howToRun'], isNot(equals(english['howToRun'])));
     }
+  });
+
+  test('German runtime catalog inherits English chronicle metadata', () async {
+    final english = await loadRoles('en');
+    final german = await loadRoles('de');
+    final merged = CharacterService.mergeLocalizedCatalog(english, german);
+
+    expect(
+      merged.where((character) => character.chronicle != null),
+      hasLength(123),
+    );
+    expect(
+      merged
+          .singleWhere((character) => character.roleId == 'fortuneteller')
+          .chronicle
+          ?.otherNights
+          .single
+          .id,
+      'fortuneReading',
+    );
   });
 }

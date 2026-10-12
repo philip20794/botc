@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
@@ -11,13 +10,12 @@ import 'package:blood_on_the_clocktower/components/show_character.dart';
 import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/add_character_while_playing.dart';
+import 'package:blood_on_the_clocktower/screens/chronicle_screen.dart';
 import 'package:blood_on_the_clocktower/screens/home_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
 import 'package:blood_on_the_clocktower/screens/this-character-slected-you/this_character_selected_you_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
-import 'package:blood_on_the_clocktower/services/settings_service.dart';
-import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -165,7 +163,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                       .quickFlowEntries(characterService.gameCharacters)
                       .isNotEmpty)
                 _buildAnchoredMenuControl(
-                  const Offset(0, -78),
+                  const Offset(0, -70),
                   QuickFlowBar(
                     gameCharacters: characterService.gameCharacters,
                     allCharacters: characterService.allCharacters,
@@ -181,7 +179,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
 
               if (gameStateService.gameIsRunning())
                 _buildAnchoredMenuControl(
-                  const Offset(0, -230),
+                  const Offset(0, -154),
                   IconButton(
                     onPressed: () => gameStateService
                         .nextNightState(characterService.gameCharacters),
@@ -190,39 +188,45 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                   ),
                 ),
               if (bluffCharacters.isNotEmpty)
-                _buildAnchoredMenuControl(
-                  const Offset(0, -154),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ThisCharacterSelectedYouScreen(
-                          showDemonBluffsOnly: true,
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const ThisCharacterSelectedYouScreen(
+                              showDemonBluffsOnly: true,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    child: Semantics(
-                      button: true,
-                      label: localizedStrings.demonBluffs,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(localizedStrings.demonBluffs,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 12)),
-                          Row(
+                        child: Semantics(
+                          button: true,
+                          label: localizedStrings.demonBluffs,
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              for (final character in bluffCharacters)
-                                CharacterAvatar(
-                                  character: character,
-                                  showIsSelected: false,
-                                  size: 34,
-                                  showName: false,
-                                ),
+                              Text(localizedStrings.demonBluffs,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12)),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  for (final character in bluffCharacters)
+                                    CharacterAvatar(
+                                      character: character,
+                                      showIsSelected: false,
+                                      size: 34,
+                                      showName: false,
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -245,7 +249,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
               ),
               if (gameStateService.showNightStateHelpButton())
                 _buildAnchoredMenuControl(
-                  const Offset(0, 96),
+                  const Offset(0, 72),
                   GestureDetector(
                     key: const ValueKey('night-phase-info-button'),
                     behavior: HitTestBehavior.opaque,
@@ -262,7 +266,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                 ),
               if (gameStateService.isDawn())
                 _buildAnchoredMenuControl(
-                  const Offset(0, 96),
+                  const Offset(0, 72),
                   IconButton(
                     onPressed: () => _showHelpDialogBox(context),
                     icon:
@@ -271,12 +275,12 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                 ),
               if (gameStateService.isDay())
                 _buildAnchoredMenuControl(
-                  const Offset(0, 96),
+                  const Offset(0, 72),
                   const Icon(Icons.sunny, color: Colors.white, size: 50),
                 ),
               if (gameStateService.isDust())
                 _buildAnchoredMenuControl(
-                  const Offset(0, 96),
+                  const Offset(0, 72),
                   IconButton(
                     onPressed: () => _showHelpDialogBox(context),
                     icon: const Icon(Icons.mode_night,
@@ -285,6 +289,15 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                 ),
 
               if (_isMenuVisible) ...[
+                _buildMenuButton(Icons.menu_book, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChronicleScreen(),
+                    ),
+                  );
+                  _toggleMenu();
+                }, const Offset(0, -80), false, false, context),
                 _buildMenuButton(CustomIcons.collection, () {
                   Navigator.push(
                     context,
@@ -292,7 +305,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                         builder: (context) => ThisCharacterSelectedYouScreen()),
                   );
                   _toggleMenu();
-                }, const Offset(0, -84), false, false, context),
+                }, const Offset(-62, -48), false, false, context),
                 _buildMenuButton(Icons.person_add, () {
                   Navigator.push(
                     context,
@@ -300,27 +313,28 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                         builder: (context) => AddCharacterWhilePlaying()),
                   );
                   _toggleMenu();
-                }, const Offset(84, -42), false, false, context),
+                }, const Offset(62, -48), false, false, context),
                 _buildMenuButton(Icons.arrow_back, () {
                   setState(() {
                     gameStateService
                         .previousNightState(characterService.gameCharacters);
                   });
                   // _toggleMenu();
-                }, const Offset(-84, -42), false, false, context),
+                }, const Offset(76, 12), false, false, context),
                 _buildMenuButton(Icons.restore, () {
                   _resetOrderOfLayout();
                   _toggleMenu();
-                }, const Offset(84, 42), false, true, context),
-                _buildMenuButton(Icons.close, () {
-                  gameStateService.endGame();
+                }, const Offset(46, 68), false, true, context),
+                _buildMenuButton(Icons.close, () async {
+                  await gameStateService.endGame();
                   characterService.endGame();
+                  if (!context.mounted) return;
                   _toggleMenu();
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => HomeScreen()),
                     (Route<dynamic> route) => false,
                   );
-                }, const Offset(0, 84), false, true, context),
+                }, const Offset(-46, 68), false, true, context),
                 _buildMenuButton(CustomIcons.law, () {
                   Navigator.push(
                     context,
@@ -328,9 +342,8 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                         builder: (context) => RulesSelectionScreen()),
                   );
                   _toggleMenu();
-                }, const Offset(-84, 42), false, false, context),
+                }, const Offset(-76, 12), false, false, context),
               ],
-              _buildUnassingedTokens(context),
               _buildSavantGeneratorButton(context, characterService)
             ],
           ),
@@ -399,67 +412,6 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
         ),
       ),
     );
-  }
-
-  Widget _buildUnassingedTokens(BuildContext context) {
-    final gameStateService = Provider.of<GameStateService>(context);
-    final settingsService = Provider.of<SettingsService>(context);
-    final characterService = Provider.of<CharacterService>(context);
-    return Positioned(
-        bottom: 4,
-        right: 4,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (var token in gameStateService
-                    .getUnassignedSetupTokens(characterService.gameCharacters))
-                  Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF493131),
-                    ),
-                    child: Padding(
-                        padding: EdgeInsets.all(
-                            settingsService.tokenKnobSize * 0.11),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: settingsService.tokenKnobSize,
-                              height: settingsService.tokenKnobSize * 0.6,
-                              alignment: Alignment.center,
-                              child: CircleAvatar(
-                                radius: settingsService.tokenKnobSize,
-                                backgroundImage:
-                                    AssetImage(roleImageAssetPath(token.image)),
-                                backgroundColor: const Color(0xFF493131),
-                              ),
-                            ),
-                            SizedBox(
-                              width: settingsService.tokenKnobSize * 0.8,
-                              child: AutoSizeText(
-                                token.name,
-                                textAlign: TextAlign.center,
-                                minFontSize: 4,
-                                maxFontSize: 12,
-                                maxLines: 1,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            // Ein kleiner Abstand zwischen Bild und Text
-
-                            const SizedBox(height: 2),
-                          ],
-                        )),
-                  ),
-              ],
-            ),
-          ],
-        ));
   }
 
   Widget _buildSavantGeneratorButton(

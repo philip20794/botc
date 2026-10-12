@@ -1,7 +1,10 @@
 import 'package:blood_on_the_clocktower/components/player_interaction_target.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
+import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/screens/quick_flow_selected_character_screen.dart';
+import 'package:blood_on_the_clocktower/screens/this-character-slected-you/this_character_selected_you_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -96,6 +99,36 @@ void main() {
     await tester.tap(find.text('I am the storyteller'));
     await tester.pumpAndSettle();
     expect(result, isTrue);
+  });
+
+  testWidgets('prepared YOU ARE display renders every assigned character',
+      (tester) async {
+    final owner = testCharacter();
+    final secondCharacter = Character.fromJson({
+      ...owner.toJson(),
+      'id': 'washerwoman-instance',
+      'roleId': 'washerwoman',
+      'name': 'Washerwoman',
+      'image': 'Icon_washerwoman',
+    });
+    await tester.pumpWidget(safeApp(
+      ThisCharacterSelectedYouScreen(
+        preparedInfo: QuickFlowInfo(
+          kind: 'youAre',
+          owner: owner,
+          recipient: owner,
+          selectedCharacters: [owner, secondCharacter],
+          infoToken: Basictoken.you_are,
+        ),
+      ),
+    ));
+
+    expect(find.text('You \nare'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('quick-flow-prepared-characters')),
+      findsOneWidget,
+    );
+    expect(find.byType(DropdownButton<Basictoken>), findsNothing);
   });
 
   testWidgets('tap and long press with an active reminder stay exclusive',

@@ -11,6 +11,7 @@ class QuickFlowInterpreter {
     'playerAndCharacter',
     'pointToPlayers',
     'showCharacter',
+    'youAre',
     'characterSelectedYou',
     'characterSelectedYouMadAboutCharacter',
     'characterSelectedYouMadAboutPlayer',

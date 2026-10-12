@@ -223,6 +223,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tokenSize => 'Token-Größe';
 
   @override
+  String get reminderTokenSettings => 'Reminder-Token-Einstellungen';
+
+  @override
+  String get selectedReminderSize => 'Größe ausgewählter Reminder';
+
+  @override
+  String get unselectedReminderSize => 'Größe nicht ausgewählter Reminder';
+
+  @override
   String get tokenOffsetX => 'Token-Versatz X';
 
   @override
@@ -518,5 +527,163 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur der Erzähler darf fortfahren.';
 
   @override
+  String get skipQuickFlowAction => 'Überspringen';
+
+  @override
+  String get chronicleEntryRemoved => 'Eintrag entfernt';
+
+  @override
+  String get undo => 'Rückgängig';
+
+  @override
+  String get chronicleDeadTitle => 'Tot';
+
+  @override
+  String get chronicleRevivedTitle => 'Wiederbelebt';
+
+  @override
   String get continueText => 'Weiter';
+
+  @override
+  String get chronicle => 'Chronik';
+
+  @override
+  String get lastChronicle => 'Letzte Chronik';
+
+  @override
+  String get chronicleEmpty => 'Noch keine Chronik-Einträge vorhanden.';
+
+  @override
+  String get chronicleSetup => 'Aufbau';
+
+  @override
+  String chronicleNight(int round) {
+    return 'Nacht $round';
+  }
+
+  @override
+  String chronicleDay(int round) {
+    return 'Tag $round';
+  }
+
+  @override
+  String get chronicleGameStarted => 'Spiel gestartet';
+
+  @override
+  String get chroniclePhaseStarted => 'Phase begonnen';
+
+  @override
+  String chronicleDied(String player) {
+    return '$player ist gestorben.';
+  }
+
+  @override
+  String chronicleRevived(String player) {
+    return '$player lebt wieder.';
+  }
+
+  @override
+  String chronicleReminderAssigned(String token, String player) {
+    return '$token wurde $player zugewiesen.';
+  }
+
+  @override
+  String chronicleReminderMoved(String token, String from, String to) {
+    return '$token wurde von $from zu $to verschoben.';
+  }
+
+  @override
+  String chronicleReminderRemoved(String token, String player) {
+    return '$token wurde von $player entfernt.';
+  }
+
+  @override
+  String chronicleCharacterChanged(String player, String from, String to) {
+    return '$player: $from wurde zu $to.';
+  }
+
+  @override
+  String chronicleQuickCharacter(String role) {
+    return '$role wurde für den QuickFlow ausgewählt.';
+  }
+
+  @override
+  String chronicleQuickInfo(String role) {
+    return 'Die vorbereitete Information für $role wurde gezeigt.';
+  }
+
+  @override
+  String get chronicleMissingInformation => 'Noch keine Information erfasst';
+
+  @override
+  String get chronicleRecordInformation => 'Information erfassen';
+
+  @override
+  String chronicleSelectPlayers(int count) {
+    return '$count Spieler auswählen';
+  }
+
+  @override
+  String get chronicleAnswerYes => 'Ja';
+
+  @override
+  String get chronicleAnswerNo => 'Nein';
+
+  @override
+  String chronicleNumberResult(int value) {
+    return 'Information: $value';
+  }
+
+  @override
+  String chronicleYesNoResult(String answer) {
+    return 'Information: $answer';
+  }
+
+  @override
+  String chroniclePlayersResult(String players) {
+    return 'Ausgewählt: $players';
+  }
+
+  @override
+  String get chronicleAddDetails => 'Details ergänzen';
+
+  @override
+  String get chronicleAddAnother => 'Weiteren Eintrag hinzufügen';
+
+  @override
+  String get chronicleAddOptionalEvent => 'Optionales Ereignis hinzufügen';
+
+  @override
+  String get chronicleRemoveEntry => 'Eintrag entfernen';
+
+  @override
+  String get chronicleClearValue => 'Wert löschen';
+
+  @override
+  String get chronicleInvalidNumber =>
+      'Gib eine Zahl im konfigurierten Bereich ein.';
+
+  @override
+  String get chronicleSelect => 'Auswählen';
+
+  @override
+  String get chronicleSearch => 'Suchen';
+
+  @override
+  String get chronicleIncomplete => 'Unvollständiger Eintrag';
+
+  @override
+  String chronicleExactCount(int count) {
+    return 'Konfigurierte Auswahl: $count';
+  }
+
+  @override
+  String chronicleCountRange(int min, String max) {
+    return 'Konfigurierte Auswahl: $min–$max';
+  }
+
+  @override
+  String chronicleNightActionVisited(String role) {
+    return 'Nachtaktion von $role besucht.';
+  }
 }

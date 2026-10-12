@@ -223,6 +223,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tokenSize => 'Token size';
 
   @override
+  String get reminderTokenSettings => 'Reminder token settings';
+
+  @override
+  String get selectedReminderSize => 'Selected reminder size';
+
+  @override
+  String get unselectedReminderSize => 'Unselected reminder size';
+
+  @override
   String get tokenOffsetX => 'Token offset X';
 
   @override
@@ -513,5 +522,163 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only the storyteller may continue.';
 
   @override
+  String get skipQuickFlowAction => 'Skip';
+
+  @override
+  String get chronicleEntryRemoved => 'Entry removed';
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get chronicleDeadTitle => 'Dead';
+
+  @override
+  String get chronicleRevivedTitle => 'Revived';
+
+  @override
   String get continueText => 'Continue';
+
+  @override
+  String get chronicle => 'Chronicle';
+
+  @override
+  String get lastChronicle => 'Last chronicle';
+
+  @override
+  String get chronicleEmpty => 'No chronicle entries yet.';
+
+  @override
+  String get chronicleSetup => 'Setup';
+
+  @override
+  String chronicleNight(int round) {
+    return 'Night $round';
+  }
+
+  @override
+  String chronicleDay(int round) {
+    return 'Day $round';
+  }
+
+  @override
+  String get chronicleGameStarted => 'Game started';
+
+  @override
+  String get chroniclePhaseStarted => 'Phase started';
+
+  @override
+  String chronicleDied(String player) {
+    return '$player died.';
+  }
+
+  @override
+  String chronicleRevived(String player) {
+    return '$player is alive again.';
+  }
+
+  @override
+  String chronicleReminderAssigned(String token, String player) {
+    return '$token assigned to $player.';
+  }
+
+  @override
+  String chronicleReminderMoved(String token, String from, String to) {
+    return '$token moved from $from to $to.';
+  }
+
+  @override
+  String chronicleReminderRemoved(String token, String player) {
+    return '$token removed from $player.';
+  }
+
+  @override
+  String chronicleCharacterChanged(String player, String from, String to) {
+    return '$player: $from changed to $to.';
+  }
+
+  @override
+  String chronicleQuickCharacter(String role) {
+    return '$role selected for the QuickFlow.';
+  }
+
+  @override
+  String chronicleQuickInfo(String role) {
+    return 'Prepared information for $role was shown.';
+  }
+
+  @override
+  String get chronicleMissingInformation => 'No information recorded yet';
+
+  @override
+  String get chronicleRecordInformation => 'Record information';
+
+  @override
+  String chronicleSelectPlayers(int count) {
+    return 'Select $count players';
+  }
+
+  @override
+  String get chronicleAnswerYes => 'Yes';
+
+  @override
+  String get chronicleAnswerNo => 'No';
+
+  @override
+  String chronicleNumberResult(int value) {
+    return 'Information: $value';
+  }
+
+  @override
+  String chronicleYesNoResult(String answer) {
+    return 'Information: $answer';
+  }
+
+  @override
+  String chroniclePlayersResult(String players) {
+    return 'Selected: $players';
+  }
+
+  @override
+  String get chronicleAddDetails => 'Add details';
+
+  @override
+  String get chronicleAddAnother => 'Add another entry';
+
+  @override
+  String get chronicleAddOptionalEvent => 'Add optional event';
+
+  @override
+  String get chronicleRemoveEntry => 'Remove entry';
+
+  @override
+  String get chronicleClearValue => 'Clear value';
+
+  @override
+  String get chronicleInvalidNumber =>
+      'Enter a number within the configured range.';
+
+  @override
+  String get chronicleSelect => 'Select';
+
+  @override
+  String get chronicleSearch => 'Search';
+
+  @override
+  String get chronicleIncomplete => 'Incomplete entry';
+
+  @override
+  String chronicleExactCount(int count) {
+    return 'Configured selection: $count';
+  }
+
+  @override
+  String chronicleCountRange(int min, String max) {
+    return 'Configured selection: $min–$max';
+  }
+
+  @override
+  String chronicleNightActionVisited(String role) {
+    return '$role night action visited.';
+  }
 }

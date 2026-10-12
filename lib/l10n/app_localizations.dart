@@ -494,6 +494,24 @@ abstract class AppLocalizations {
   /// **'Token-Größe'**
   String get tokenSize;
 
+  /// No description provided for @reminderTokenSettings.
+  ///
+  /// In de, this message translates to:
+  /// **'Reminder-Token-Einstellungen'**
+  String get reminderTokenSettings;
+
+  /// No description provided for @selectedReminderSize.
+  ///
+  /// In de, this message translates to:
+  /// **'Größe ausgewählter Reminder'**
+  String get selectedReminderSize;
+
+  /// No description provided for @unselectedReminderSize.
+  ///
+  /// In de, this message translates to:
+  /// **'Größe nicht ausgewählter Reminder'**
+  String get unselectedReminderSize;
+
   /// No description provided for @tokenOffsetX.
   ///
   /// In de, this message translates to:
@@ -1022,11 +1040,257 @@ abstract class AppLocalizations {
   /// **'Nur der Erzähler darf fortfahren.'**
   String get onlyTheStorytellerMayContinue;
 
+  /// No description provided for @skipQuickFlowAction.
+  ///
+  /// In de, this message translates to:
+  /// **'Überspringen'**
+  String get skipQuickFlowAction;
+
+  /// No description provided for @chronicleEntryRemoved.
+  ///
+  /// In de, this message translates to:
+  /// **'Eintrag entfernt'**
+  String get chronicleEntryRemoved;
+
+  /// No description provided for @undo.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückgängig'**
+  String get undo;
+
+  /// No description provided for @chronicleDeadTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Tot'**
+  String get chronicleDeadTitle;
+
+  /// No description provided for @chronicleRevivedTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederbelebt'**
+  String get chronicleRevivedTitle;
+
   /// No description provided for @continueText.
   ///
   /// In de, this message translates to:
   /// **'Weiter'**
   String get continueText;
+
+  /// No description provided for @chronicle.
+  ///
+  /// In de, this message translates to:
+  /// **'Chronik'**
+  String get chronicle;
+
+  /// No description provided for @lastChronicle.
+  ///
+  /// In de, this message translates to:
+  /// **'Letzte Chronik'**
+  String get lastChronicle;
+
+  /// No description provided for @chronicleEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Chronik-Einträge vorhanden.'**
+  String get chronicleEmpty;
+
+  /// No description provided for @chronicleSetup.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufbau'**
+  String get chronicleSetup;
+
+  /// No description provided for @chronicleNight.
+  ///
+  /// In de, this message translates to:
+  /// **'Nacht {round}'**
+  String chronicleNight(int round);
+
+  /// No description provided for @chronicleDay.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag {round}'**
+  String chronicleDay(int round);
+
+  /// No description provided for @chronicleGameStarted.
+  ///
+  /// In de, this message translates to:
+  /// **'Spiel gestartet'**
+  String get chronicleGameStarted;
+
+  /// No description provided for @chroniclePhaseStarted.
+  ///
+  /// In de, this message translates to:
+  /// **'Phase begonnen'**
+  String get chroniclePhaseStarted;
+
+  /// No description provided for @chronicleDied.
+  ///
+  /// In de, this message translates to:
+  /// **'{player} ist gestorben.'**
+  String chronicleDied(String player);
+
+  /// No description provided for @chronicleRevived.
+  ///
+  /// In de, this message translates to:
+  /// **'{player} lebt wieder.'**
+  String chronicleRevived(String player);
+
+  /// No description provided for @chronicleReminderAssigned.
+  ///
+  /// In de, this message translates to:
+  /// **'{token} wurde {player} zugewiesen.'**
+  String chronicleReminderAssigned(String token, String player);
+
+  /// No description provided for @chronicleReminderMoved.
+  ///
+  /// In de, this message translates to:
+  /// **'{token} wurde von {from} zu {to} verschoben.'**
+  String chronicleReminderMoved(String token, String from, String to);
+
+  /// No description provided for @chronicleReminderRemoved.
+  ///
+  /// In de, this message translates to:
+  /// **'{token} wurde von {player} entfernt.'**
+  String chronicleReminderRemoved(String token, String player);
+
+  /// No description provided for @chronicleCharacterChanged.
+  ///
+  /// In de, this message translates to:
+  /// **'{player}: {from} wurde zu {to}.'**
+  String chronicleCharacterChanged(String player, String from, String to);
+
+  /// No description provided for @chronicleQuickCharacter.
+  ///
+  /// In de, this message translates to:
+  /// **'{role} wurde für den QuickFlow ausgewählt.'**
+  String chronicleQuickCharacter(String role);
+
+  /// No description provided for @chronicleQuickInfo.
+  ///
+  /// In de, this message translates to:
+  /// **'Die vorbereitete Information für {role} wurde gezeigt.'**
+  String chronicleQuickInfo(String role);
+
+  /// No description provided for @chronicleMissingInformation.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Information erfasst'**
+  String get chronicleMissingInformation;
+
+  /// No description provided for @chronicleRecordInformation.
+  ///
+  /// In de, this message translates to:
+  /// **'Information erfassen'**
+  String get chronicleRecordInformation;
+
+  /// No description provided for @chronicleSelectPlayers.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} Spieler auswählen'**
+  String chronicleSelectPlayers(int count);
+
+  /// No description provided for @chronicleAnswerYes.
+  ///
+  /// In de, this message translates to:
+  /// **'Ja'**
+  String get chronicleAnswerYes;
+
+  /// No description provided for @chronicleAnswerNo.
+  ///
+  /// In de, this message translates to:
+  /// **'Nein'**
+  String get chronicleAnswerNo;
+
+  /// No description provided for @chronicleNumberResult.
+  ///
+  /// In de, this message translates to:
+  /// **'Information: {value}'**
+  String chronicleNumberResult(int value);
+
+  /// No description provided for @chronicleYesNoResult.
+  ///
+  /// In de, this message translates to:
+  /// **'Information: {answer}'**
+  String chronicleYesNoResult(String answer);
+
+  /// No description provided for @chroniclePlayersResult.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgewählt: {players}'**
+  String chroniclePlayersResult(String players);
+
+  /// No description provided for @chronicleAddDetails.
+  ///
+  /// In de, this message translates to:
+  /// **'Details ergänzen'**
+  String get chronicleAddDetails;
+
+  /// No description provided for @chronicleAddAnother.
+  ///
+  /// In de, this message translates to:
+  /// **'Weiteren Eintrag hinzufügen'**
+  String get chronicleAddAnother;
+
+  /// No description provided for @chronicleAddOptionalEvent.
+  ///
+  /// In de, this message translates to:
+  /// **'Optionales Ereignis hinzufügen'**
+  String get chronicleAddOptionalEvent;
+
+  /// No description provided for @chronicleRemoveEntry.
+  ///
+  /// In de, this message translates to:
+  /// **'Eintrag entfernen'**
+  String get chronicleRemoveEntry;
+
+  /// No description provided for @chronicleClearValue.
+  ///
+  /// In de, this message translates to:
+  /// **'Wert löschen'**
+  String get chronicleClearValue;
+
+  /// No description provided for @chronicleInvalidNumber.
+  ///
+  /// In de, this message translates to:
+  /// **'Gib eine Zahl im konfigurierten Bereich ein.'**
+  String get chronicleInvalidNumber;
+
+  /// No description provided for @chronicleSelect.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswählen'**
+  String get chronicleSelect;
+
+  /// No description provided for @chronicleSearch.
+  ///
+  /// In de, this message translates to:
+  /// **'Suchen'**
+  String get chronicleSearch;
+
+  /// No description provided for @chronicleIncomplete.
+  ///
+  /// In de, this message translates to:
+  /// **'Unvollständiger Eintrag'**
+  String get chronicleIncomplete;
+
+  /// No description provided for @chronicleExactCount.
+  ///
+  /// In de, this message translates to:
+  /// **'Konfigurierte Auswahl: {count}'**
+  String chronicleExactCount(int count);
+
+  /// No description provided for @chronicleCountRange.
+  ///
+  /// In de, this message translates to:
+  /// **'Konfigurierte Auswahl: {min}–{max}'**
+  String chronicleCountRange(int min, String max);
+
+  /// No description provided for @chronicleNightActionVisited.
+  ///
+  /// In de, this message translates to:
+  /// **'Nachtaktion von {role} besucht.'**
+  String chronicleNightActionVisited(String role);
 }
 
 class _AppLocalizationsDelegate

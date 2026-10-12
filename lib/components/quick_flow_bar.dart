@@ -8,20 +8,26 @@ import 'package:blood_on_the_clocktower/screens/quick_flow_selected_character_sc
 import 'package:blood_on_the_clocktower/screens/this-character-slected-you/this_character_selected_you_screen.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math' as math;
+
+enum _QuickFlowInfoDecision { cancel, skip, show }
 
 class QuickFlowBar extends StatefulWidget {
   final List<Character> gameCharacters;
   final List<Character> allCharacters;
   final GameStateService gameState;
+  final bool readOnly;
 
   const QuickFlowBar({
     super.key,
     required this.gameCharacters,
     required this.allCharacters,
     required this.gameState,
+    this.readOnly = false,
   });
 
   @override
@@ -62,6 +68,9 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
   Widget build(BuildContext context) {
     final entries = widget.gameState.quickFlowEntries(widget.gameCharacters);
     if (entries.isEmpty) return const SizedBox.shrink();
+    final settingsService = Provider.of<SettingsService>(context);
+    final reminderBarHeight =
+        math.max(76.0, settingsService.selectedReminderTokenSize * 1.15);
     final activeKey = entries
         .where((entry) => widget.gameState
             .isQuickFlowEntryActive(entry, widget.gameCharacters))
@@ -71,7 +80,7 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
     return SizedBox(
       key: const ValueKey('quick-flow-bar'),
       width: MediaQuery.of(context).size.width - 48,
-      height: 76,
+      height: reminderBarHeight,
       child: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
           key: const ValueKey('quick-flow-scroll-view'),
@@ -122,30 +131,41 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
     bool complete = false,
   }) {
     final supported = gameState.isQuickFlowEntrySupported(entry);
+    final settingsService = Provider.of<SettingsService>(context);
+    final isActive =
+        active || gameState.isQuickFlowEntryActive(entry, gameCharacters);
+    final cardWidth = isActive
+        ? settingsService.selectedReminderTokenSize
+        : settingsService.unselectedReminderTokenSize;
+    final cardHeight = cardWidth * 1.15;
     return Tooltip(
       message: entry.step.note ?? entry.step.id,
       child: Opacity(
         opacity: supported ? 1 : 0.55,
         child: GestureDetector(
           key: ValueKey('quick-flow-step-${entry.owner.id}-${entry.step.id}'),
-          onTap: supported ? onTap : null,
+          onTap: !widget.readOnly && supported ? onTap : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 66,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            width: cardWidth,
+            height: cardHeight,
+            padding: EdgeInsets.zero,
             decoration: BoxDecoration(
               color: const Color(0xFF493131).withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: active
+                color: isActive
                     ? Colors.amberAccent
                     : complete
                         ? Colors.greenAccent
                         : const Color(0xFF6f678a),
-                width: active ? 3 : 1.5,
+                width: isActive ? 3 : 1.5,
               ),
             ),
-            child: child,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(width: 66, height: 76, child: child),
+            ),
           ),
         ),
       ),
@@ -155,13 +175,14 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
   Widget _buildReminder(BuildContext context, QuickFlowEntry entry) {
     final token = gameState.quickFlowToken(entry);
     final targets = gameState.quickFlowTargets(entry, gameCharacters);
-    final complete = targets.isNotEmpty;
     final active = gameState.isQuickFlowEntryActive(entry, gameCharacters);
     return _frame(
       entry: entry,
       active: active,
-      complete: complete,
-      onTap: () => gameState.activateQuickFlowEntry(entry, gameCharacters),
+      complete: gameState.isQuickFlowEntryCompleted(entry, gameCharacters),
+      onTap: widget.readOnly
+          ? null
+          : () => gameState.activateQuickFlowEntry(entry, gameCharacters),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -199,12 +220,17 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
       gameCharacters,
       allCharacters,
     );
-    final canSelect = entry.step.selection?.type == 'manual' ||
-        entry.step.allowManualOverride;
+    final canSelect = entry.step.selection != null;
     return _frame(
       entry: entry,
-      complete: selected != null,
-      onTap: canSelect ? () => _openCharacterSelection(context, entry) : null,
+      complete: gameState.isQuickFlowEntryCompleted(entry, gameCharacters),
+      onTap: !widget.readOnly && canSelect
+          ? () async {
+              await gameState.activateQuickFlowEntry(entry, gameCharacters);
+              if (!context.mounted) return;
+              _openCharacterSelection(context, entry);
+            }
+          : null,
       child: selected == null
           ? const Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -249,8 +275,13 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
               gameState.quickFlowCharacterChoices(entry, scriptCharacters),
           allCharactersToChooseFrom:
               gameState.quickFlowCharacterChoices(entry, allCharacters),
-          onConfirm: (character) =>
-              gameState.setQuickFlowSelectedCharacter(entry, character),
+          onConfirm: (character) async {
+            final selected =
+                await gameState.setQuickFlowSelectedCharacter(entry, character);
+            if (selected) {
+              await gameState.completeQuickFlowEntry(entry, gameCharacters);
+            }
+          },
           onSelectionConfirmed: (selectionContext, character) async {
             final approved = await Navigator.of(selectionContext).push<bool>(
               MaterialPageRoute(
@@ -274,26 +305,38 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
   Widget _buildInfo(BuildContext context, QuickFlowEntry entry) {
     final ready =
         gameState.isQuickFlowInfoReady(entry, gameCharacters, allCharacters);
+    final skipped = gameState.isQuickFlowInfoSkipped(entry);
+    final recipient = gameState.quickFlowInfoRecipient(entry, gameCharacters);
     return _frame(
       entry: entry,
-      complete: ready,
-      onTap: ready ? () => _openInfo(context, entry) : null,
+      complete: gameState.isQuickFlowEntryCompleted(entry, gameCharacters),
+      onTap: !widget.readOnly && ready && !skipped
+          ? () async {
+              await gameState.activateQuickFlowEntry(entry, gameCharacters);
+              if (!context.mounted) return;
+              await _openInfo(context, entry);
+            }
+          : null,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            gameState.quickFlowInfoNeedsConfirmation(entry)
-                ? Icons.visibility_outlined
-                : Icons.visibility,
-            color: ready ? Colors.white : Colors.white38,
+            skipped
+                ? Icons.visibility_off_outlined
+                : gameState.quickFlowInfoNeedsConfirmation(entry)
+                    ? Icons.visibility_outlined
+                    : Icons.visibility,
+            color: ready || skipped ? Colors.white : Colors.white38,
             size: 38,
           ),
           Text(
-            entry.owner.name,
+            recipient?.playerName.isNotEmpty == true
+                ? recipient!.playerName
+                : recipient?.name ?? entry.owner.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: ready ? Colors.white : Colors.white38,
+              color: ready || skipped ? Colors.white : Colors.white38,
               fontSize: 9,
             ),
           ),
@@ -305,36 +348,53 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
   Future<void> _openInfo(BuildContext context, QuickFlowEntry entry) async {
     final localized = AppLocalizations.of(context)!;
     if (gameState.quickFlowInfoNeedsConfirmation(entry)) {
-      final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              backgroundColor: const Color(0xFF4a3b5e).withValues(alpha: 0.95),
-              title: Text(localized.wantToContinue,
-                  style: const TextStyle(color: Colors.white)),
-              content: Text(
-                entry.step.showOnlyWhen?.reason ?? localized.reallyContinue,
-                style: const TextStyle(color: Colors.white),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(localized.cancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: Text(localized.yesContinue),
-                ),
-              ],
+      final decision = await showDialog<_QuickFlowInfoDecision>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: const Color(0xFF4a3b5e).withValues(alpha: 0.95),
+          title: Text(localized.wantToContinue,
+              style: const TextStyle(color: Colors.white)),
+          content: Text(
+            entry.step.showOnlyWhen?.reason ?? localized.reallyContinue,
+            style: const TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, _QuickFlowInfoDecision.cancel),
+              child: Text(localized.cancel),
             ),
-          ) ??
-          false;
-      if (!confirmed) return;
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, _QuickFlowInfoDecision.skip),
+              child: Text(localized.skipQuickFlowAction),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, _QuickFlowInfoDecision.show),
+              child: Text(localized.yesContinue),
+            ),
+          ],
+        ),
+      );
+      if (decision == _QuickFlowInfoDecision.skip) {
+        await gameState.skipQuickFlowInfo(entry);
+        await gameState.completeQuickFlowEntry(entry, gameCharacters);
+        return;
+      }
+      if (decision != _QuickFlowInfoDecision.show) return;
       await gameState.confirmQuickFlowInfo(entry);
       if (!context.mounted) return;
     }
     final info =
         gameState.buildQuickFlowInfo(entry, gameCharacters, allCharacters);
     if (info == null || !context.mounted) return;
+    // The info event is recorded only when the prepared screen is actually
+    // opened. The service de-duplicates already confirmed showInfo steps.
+    await gameState.confirmQuickFlowInfo(entry);
+    if (!context.mounted) return;
+    await gameState.completeQuickFlowEntry(entry, gameCharacters);
+    if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(

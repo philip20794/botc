@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
@@ -27,13 +28,8 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   void generateRandomCharacter(BuildContext context) {
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    final gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
     randomCharacters =
         characterService.getRandomCharacter(numberOfCharacters.toInt());
-    gameStateService.initUnusedGameTokens(randomCharacters);
-    gameStateService.addRandomUnusedTokensToRandomCharacters(randomCharacters);
-    gameStateService.setIsLocked(false);
   }
 
   void updateNumberOfCharacters(double newValue) {
@@ -44,38 +40,68 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   @override
   Widget build(BuildContext context) {
     final settingsService = Provider.of<SettingsService>(context);
+    final characterService = Provider.of<CharacterService>(context);
+    final gameStateService = Provider.of<GameStateService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
 
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(localizedStrings.layoutSettings,
-              style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
         body: Stack(
           children: [
+            if (gameStateService
+                .quickFlowEntries(characterService.gameCharacters)
+                .isNotEmpty)
+              Align(
+                alignment: Alignment.center,
+                child: Transform.translate(
+                  offset: const Offset(0, -78),
+                  child: QuickFlowBar(
+                    gameCharacters: characterService.gameCharacters,
+                    allCharacters: characterService.allCharacters,
+                    gameState: gameStateService,
+                    readOnly: true,
+                  ),
+                ),
+              ),
             // Character Circle Component
             if (randomCharacters.isNotEmpty) ...[
-              CharacterCircleComponent(
-                key: const ValueKey('layout-settings-character-circle'),
-                settingsView: true,
-                characters: randomCharacters,
-                charactersForToken: randomCharacters,
+              Positioned.fill(
+                child: CharacterCircleComponent(
+                  key: const ValueKey('layout-settings-character-circle'),
+                  settingsView: true,
+                  characters: randomCharacters,
+                  charactersForToken: randomCharacters,
+                ),
               ),
             ],
-            // Immer sichtbarer Dialog
-            Padding(
-              padding:
-                  const EdgeInsets.only(top: 0, left: 0, right: 0, bottom: 64),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                    Text(
+                      localizedStrings.layoutSettings,
+                      style: const TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
               child: Center(
-                child: Container(
-                  width: 300,
-                  height: 750,
-                  child: _buildSettingsDialog(context, settingsService),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 56, bottom: 16),
+                  child: SizedBox(
+                    width: 300,
+                    height: 750,
+                    child: _buildSettingsDialog(context, settingsService),
+                  ),
                 ),
               ),
             ),
@@ -188,6 +214,28 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                   settingsService.setTokenOffsetY(newValue, persist: false);
                 },
                 helpText: 'Adjust the size of the token knob.',
+              ),
+              Text(
+                localizedStrings.reminderTokenSettings,
+                style: const TextStyle(fontSize: 20),
+              ),
+              _buildSliderWithHelp(
+                title: localizedStrings.selectedReminderSize,
+                value: settingsService.selectedReminderTokenSize,
+                min: 24,
+                max: 80,
+                onChanged: (newValue) => settingsService
+                    .setSelectedReminderTokenSize(newValue, persist: false),
+                helpText: 'Adjust the selected reminder token size.',
+              ),
+              _buildSliderWithHelp(
+                title: localizedStrings.unselectedReminderSize,
+                value: settingsService.unselectedReminderTokenSize,
+                min: 12,
+                max: 48,
+                onChanged: (newValue) => settingsService
+                    .setUnselectedReminderTokenSize(newValue, persist: false),
+                helpText: 'Adjust the unselected reminder token size.',
               ),
               Text(
                 localizedStrings.containerSettings,

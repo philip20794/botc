@@ -33,6 +33,9 @@ class CharacterWidget extends StatefulWidget {
   final int menuId;
   final bool settingsView;
   final bool characterSelectionView;
+  final bool selectionMode;
+  final bool selectionIsSelected;
+  final VoidCallback? onCharacterTap;
   final Function(Character) onSelect;
 
   CharacterWidget({
@@ -50,6 +53,9 @@ class CharacterWidget extends StatefulWidget {
     this.showDeadOverlay = false,
     this.settingsView = false,
     this.characterSelectionView = false,
+    this.selectionMode = false,
+    this.selectionIsSelected = false,
+    this.onCharacterTap,
     required this.menuId,
     required this.onSelect,
   });
@@ -153,9 +159,11 @@ class _CharacterWidgetState extends State<CharacterWidget> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setPlayerName(context);
-    });
+    if (!widget.selectionMode && !widget.settingsView) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setPlayerName(context);
+      });
+    }
   }
 
   @override
@@ -175,7 +183,20 @@ class _CharacterWidgetState extends State<CharacterWidget> {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        if (widget.showAddToken &&
+        if (widget.selectionMode)
+          GestureDetector(
+            key: ValueKey('player-${widget.character.id}'),
+            onTap: widget.onCharacterTap,
+            child: CharacterAvatar(
+              character: widget.character,
+              showIsSelected: true,
+              forSelectCharacter: true,
+              isSelected: widget.selectionIsSelected,
+              showName: true,
+              size: settingsService.characterKnobSize,
+            ),
+          )
+        else if (widget.showAddToken &&
             !widget.settingsView &&
             !widget.characterSelectionView)
           PlayerInteractionTarget(
@@ -270,7 +291,8 @@ class _CharacterWidgetState extends State<CharacterWidget> {
         ],
 
         // Halbkreis-Menü
-        if (gameStateService.openMenuId == widget.menuId &&
+        if (!widget.selectionMode &&
+            gameStateService.openMenuId == widget.menuId &&
             !widget.settingsView) ...[
           Positioned(
             top: 0,
@@ -345,75 +367,78 @@ class _CharacterWidgetState extends State<CharacterWidget> {
 
     for (int i = 1; i <= tokenCount; i++) {
       final double angle = 0.5 * pi * i / tokenCount;
+      final token = tokens[i - 1];
+      final tokenID = widget.character.id + token.name;
+      final visibleSize = settingsService.tokenKnobSize;
       final double xOffset = radius * cos(angle);
       final double yOffset = radius * sin(angle);
 
-      var tokenID = widget.character.id + tokens[i - 1].name;
-
       tokenWidgets.add(Positioned(
-        left: settingsService.tokenOffsetX +
-            xOffset -
-            20, // 20 ist die halbe Breite der Tokens
-        top: settingsService.tokenOffsetY +
-            yOffset -
-            20, // 20 ist die halbe Höhe der Tokens
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              if (gameStateService.openTokenMenuId == tokenID) {
-                gameStateService.removeTokenFromCharacter(
-                    widget.character, tokens[i - 1]);
-                gameStateService.closeMenu();
-                return;
-              } else {
-                gameStateService.openTokenMenu(tokenID);
-              }
-            });
-          },
-          child: Container(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF493131),
-            ),
-            child: Padding(
-                padding: EdgeInsets.all(settingsService.tokenKnobSize * 0.11),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: settingsService.tokenKnobSize,
-                      height: settingsService.tokenKnobSize * 0.6,
-                      alignment: Alignment.center,
-                      child: gameStateService.openTokenMenuId == tokenID
-                          ? Icon(Icons.close, color: Colors.white)
-                          : CircleAvatar(
-                              radius: settingsService.tokenKnobSize,
-                              backgroundImage: AssetImage(
-                                  roleImageAssetPath(tokens[i - 1].image)),
-                              backgroundColor: const Color(0xFF493131),
-                            ),
-                    ),
-                    SizedBox(
-                      width: settingsService.tokenKnobSize * 0.8,
-                      child: AutoSizeText(
-                        tokens[i - 1].name,
-                        textAlign: TextAlign.center,
-                        minFontSize: 4,
-                        maxFontSize: 12,
-                        maxLines: 1,
-                        style: const TextStyle(
-                          color: Colors.white,
+          left: settingsService.tokenOffsetX +
+              xOffset -
+              20, // 20 ist die halbe Breite der Tokens
+          top: settingsService.tokenOffsetY +
+              yOffset -
+              20, // 20 ist die halbe Höhe der Tokens
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.selectionMode
+                ? () {}
+                : () {
+                    setState(() {
+                      if (gameStateService.openTokenMenuId == tokenID) {
+                        gameStateService.removeTokenFromCharacter(
+                            widget.character, token);
+                        gameStateService.closeMenu();
+                        return;
+                      } else {
+                        gameStateService.openTokenMenu(tokenID);
+                      }
+                    });
+                  },
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF493131),
+              ),
+              child: Padding(
+                  padding: EdgeInsets.all(visibleSize * 0.11),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: visibleSize,
+                        height: visibleSize * 0.6,
+                        alignment: Alignment.center,
+                        child: gameStateService.openTokenMenuId == tokenID
+                            ? Icon(Icons.close, color: Colors.white)
+                            : CircleAvatar(
+                                radius: settingsService.tokenKnobSize,
+                                backgroundImage:
+                                    AssetImage(roleImageAssetPath(token.image)),
+                                backgroundColor: const Color(0xFF493131),
+                              ),
+                      ),
+                      SizedBox(
+                        width: visibleSize * 0.8,
+                        child: AutoSizeText(
+                          tokens[i - 1].name,
+                          textAlign: TextAlign.center,
+                          minFontSize: 4,
+                          maxFontSize: 12,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                    // Ein kleiner Abstand zwischen Bild und Text
+                      // Ein kleiner Abstand zwischen Bild und Text
 
-                    const SizedBox(height: 2),
-                  ],
-                )),
-          ),
-        ),
-      ));
+                      const SizedBox(height: 2),
+                    ],
+                  )),
+            ),
+          )));
     }
 
     return tokenWidgets;

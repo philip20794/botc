@@ -14,12 +14,18 @@ class CharacterCircleComponent extends StatefulWidget {
   final List<Character> charactersForToken;
   final bool settingsView;
   final bool playerView;
+  final bool selectionMode;
+  final Set<String> selectedCharacterIds;
+  final ValueChanged<Character>? onCharacterTap;
 
   CharacterCircleComponent(
       {required Key key,
       required this.characters,
       this.settingsView = false,
       this.playerView = false,
+      this.selectionMode = false,
+      this.selectedCharacterIds = const {},
+      this.onCharacterTap,
       required this.charactersForToken});
 
   @override
@@ -38,6 +44,10 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
   }
 
   void initializeCharacterPositions() {
+    // A selection view must use the board's already persisted positions. It
+    // must never recalculate or persist a second layout.
+    if (widget.selectionMode) return;
+
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
     final gameStateService =
@@ -173,7 +183,9 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
         Positioned(
           left: position.dx,
           top: position.dy,
-          child: gameStateService.isLocked || widget.settingsView
+          child: widget.selectionMode ||
+                  gameStateService.isLocked ||
+                  widget.settingsView
               ? _buildCharacterWidget(context, character, i, isDragging: false)
               : Draggable<Character>(
                   data: character,
@@ -216,7 +228,7 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
         Provider.of<SettingsService>(context, listen: false);
     return character.fraction == Fraction.fabled ||
             character.fraction == Fraction.loric
-        ? FabledToken(character: character)
+        ? FabledToken(character: character, readOnly: widget.selectionMode)
         : Container(
             width: settingsService.characterKnobSize * 1.5,
             height: settingsService.characterKnobSize * 1.5,
@@ -234,6 +246,12 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
               showToggleAlive: true,
               settingsView: widget.settingsView,
               showAddToken: true,
+              selectionMode: widget.selectionMode,
+              selectionIsSelected:
+                  widget.selectedCharacterIds.contains(character.id),
+              onCharacterTap: widget.selectionMode
+                  ? () => widget.onCharacterTap?.call(character)
+                  : null,
               menuId: i,
               onSelect: (selectedCharacter) {
                 // Handle select if needed

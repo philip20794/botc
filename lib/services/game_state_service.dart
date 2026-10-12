@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/chronicle.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/night_order_service.dart';
+import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
 import 'package:blood_on_the_clocktower/services/quick_flow_interpreter.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:collection/collection.dart';
@@ -19,12 +21,15 @@ class GameStateService extends ChangeNotifier {
   static const _quickFlowInterpreter = QuickFlowInterpreter();
   final ScriptService _scriptService;
   final NightOrderService _nightOrderService;
+  final ChronicleService? _chronicleService;
   late final Future<void> ready;
   bool _isLocked = false;
   bool _forceUpdateLayout = false;
   final String _storageIsLockedKey = 'is_locked';
   Map<String, List<Token>> _characterTokens = {};
   Map<String, bool> _characterAliveState = {};
+  final Set<String> _apparentlyDeadCharacterIds = {};
+  int? _lastReportedDeathDay;
   List<Token> unsedGameTokens = [];
   List<String> playerNames = [];
   int _nightCount = -1;
@@ -36,6 +41,10 @@ class GameStateService extends ChangeNotifier {
   bool charactersWhereShownToPlayers = false;
   final String _storageCharacterTokensKey = 'character_tokens';
   final String _storageCharacterAliveStateKey = 'character_alive_state';
+  static const String _storageApparentDeathStateKey =
+      'character_apparent_death_state';
+  static const String _storageLastReportedDeathDayKey =
+      'last_reported_death_day';
   final String _storagePlayerNamesKey = 'player_names';
   final String _storageGamesetKey = 'gameset';
   final String _storageNightCountKey = 'night_count';
@@ -51,6 +60,8 @@ class GameStateService extends ChangeNotifier {
   final Map<String, List<String>> _quickFlowStepTargets = {};
   final Set<String> _quickFlowManualOverrides = {};
   final Set<String> _quickFlowConfirmedInfo = {};
+  final Set<String> _quickFlowSkippedInfo = {};
+  final Set<String> _quickFlowCompletedSteps = {};
   final Map<String, _QuickFlowNightBaseline> _quickFlowNightBaselines = {};
   String? _activeQuickFlowContextKey;
   String? _activeQuickFlowStepKey;
@@ -60,8 +71,10 @@ class GameStateService extends ChangeNotifier {
   GameStateService({
     ScriptService? scriptService,
     NightOrderService? nightOrderService,
+    ChronicleService? chronicleService,
   })  : _scriptService = scriptService ?? ScriptService(),
-        _nightOrderService = nightOrderService ?? NightOrderService() {
+        _nightOrderService = nightOrderService ?? NightOrderService(),
+        _chronicleService = chronicleService {
     _scriptService.addListener(_onScriptSelectionChanged);
     ready = init();
   }
@@ -74,6 +87,7 @@ class GameStateService extends ChangeNotifier {
     _loadIsLocked(prefs);
     _loadCharacterTokens(prefs);
     _loadCharacterAliveState(prefs);
+    _loadApparentDeathState(prefs);
     _loadPlayerNames(prefs);
     _loadNightCount(prefs);
     _currentNightStepId = prefs.getString(_storageNightStepIdKey);
@@ -90,6 +104,8 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageIsLockedKey);
     prefs.remove(_storageCharacterTokensKey);
     prefs.remove(_storageCharacterAliveStateKey);
+    prefs.remove(_storageApparentDeathStateKey);
+    prefs.remove(_storageLastReportedDeathDayKey);
     prefs.remove(_storagePlayerNamesKey);
     prefs.remove(_storageGamesetKey);
     prefs.remove(_storageNightCountKey);
@@ -99,6 +115,7 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_chracterSelectionDoneKey);
     prefs.remove(_storageDemonBluffRoleIdsKey);
     prefs.remove(_storageQuickFlowStateKey);
+    await _chronicleService?.factoryReset();
     init();
   }
 
@@ -212,6 +229,14 @@ class GameStateService extends ChangeNotifier {
       if (confirmations is List) {
         _quickFlowConfirmedInfo.addAll(confirmations.whereType<String>());
       }
+      final skippedInfo = json['skippedInfo'];
+      if (skippedInfo is List) {
+        _quickFlowSkippedInfo.addAll(skippedInfo.whereType<String>());
+      }
+      final completedSteps = json['completedSteps'];
+      if (completedSteps is List) {
+        _quickFlowCompletedSteps.addAll(completedSteps.whereType<String>());
+      }
       final baselines = json['nightBaselines'];
       if (baselines is Map) {
         for (final entry in baselines.entries) {
@@ -241,6 +266,8 @@ class GameStateService extends ChangeNotifier {
         'stepTargets': _quickFlowStepTargets,
         'manualOverrides': _quickFlowManualOverrides.toList(),
         'confirmedInfo': _quickFlowConfirmedInfo.toList(),
+        'skippedInfo': _quickFlowSkippedInfo.toList(),
+        'completedSteps': _quickFlowCompletedSteps.toList(),
         'nightBaselines': _quickFlowNightBaselines.map(
           (key, value) => MapEntry(key, value.toJson()),
         ),
@@ -255,6 +282,8 @@ class GameStateService extends ChangeNotifier {
     _quickFlowStepTargets.clear();
     _quickFlowManualOverrides.clear();
     _quickFlowConfirmedInfo.clear();
+    _quickFlowSkippedInfo.clear();
+    _quickFlowCompletedSteps.clear();
     _quickFlowNightBaselines.clear();
     _activeQuickFlowContextKey = null;
     _activeQuickFlowStepKey = null;
@@ -318,6 +347,20 @@ class GameStateService extends ChangeNotifier {
         _storageCharacterAliveStateKey, jsonEncode(_characterAliveState));
   }
 
+  Future<void> _saveApparentDeathState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _storageApparentDeathStateKey,
+      _apparentlyDeadCharacterIds.toList(),
+    );
+    if (_lastReportedDeathDay == null) {
+      await prefs.remove(_storageLastReportedDeathDayKey);
+    } else {
+      await prefs.setInt(
+          _storageLastReportedDeathDayKey, _lastReportedDeathDay!);
+    }
+  }
+
   Future<void> resetCharacterTokens(List<Character> gameCharacters) async {
     _characterTokens.clear();
     unsedGameTokens.clear();
@@ -341,9 +384,13 @@ class GameStateService extends ChangeNotifier {
     if (_characterAliveState.containsKey(characterA.id)) {
       _characterAliveState[eid] = _characterAliveState.remove(characterA.id)!;
     }
+    if (_apparentlyDeadCharacterIds.remove(characterA.id)) {
+      _apparentlyDeadCharacterIds.add(eid);
+    }
     await Future.wait([
       _saveCharacterTokens(),
       _saveCharacterAliveState(),
+      _saveApparentDeathState(),
     ]);
     notifyListeners();
   }
@@ -453,16 +500,11 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  List<Token> getUnassignedSetupTokens(List<Character> gameCharacters) {
-    List<Token> unassignedSetupTokens = [];
-    for (var character in gameCharacters) {
-      for (var token in character.tokens) {
-        if (!isTokenUsed(token) && token.needsSetup) {
-          unassignedSetupTokens.add(token);
-        }
-      }
-    }
-    return unassignedSetupTokens;
+  void _loadApparentDeathState(SharedPreferences prefs) {
+    _apparentlyDeadCharacterIds
+      ..clear()
+      ..addAll(prefs.getStringList(_storageApparentDeathStateKey) ?? const []);
+    _lastReportedDeathDay = prefs.getInt(_storageLastReportedDeathDayKey);
   }
 
   Future<void> setGameset(
@@ -606,6 +648,7 @@ class GameStateService extends ChangeNotifier {
       });
 
   Future<void> endGame() async {
+    await _chronicleService?.archiveCurrent();
     final resetFuture = Future.wait([
       resetCharacterTokens([]),
       resetCharacterAliveState(),
@@ -626,9 +669,13 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> startNewGame(List<Character> gameCharacters) async {
     await _nightOrderService.ready;
+    await _chronicleService?.startNewGame(gameCharacters);
     _nightCount = 1;
     final steps = _stepsFor(gameCharacters);
-    await _setNightStep(steps.isEmpty ? 'day' : steps.first.id);
+    await _setNightStep(
+      steps.isEmpty ? 'day' : steps.first.id,
+      gameCharacters: gameCharacters,
+    );
   }
 
   bool isCharacterAwake(Character character) {
@@ -710,20 +757,28 @@ class GameStateService extends ChangeNotifier {
     _ensureCurrentNightStep(characters);
     if (_currentNightStepId == 'day') {
       final steps = _stepsFor(characters);
-      if (steps.isNotEmpty) await _setNightStep(steps.last.id);
+      if (steps.isNotEmpty) {
+        await _setNightStep(steps.last.id, gameCharacters: characters);
+      }
       return;
     }
     var steps = _stepsFor(characters);
     final currentIndex =
         steps.indexWhere((step) => step.id == _currentNightStepId);
     if (currentIndex > 0) {
-      await _setNightStep(steps[currentIndex - 1].id);
+      await _setNightStep(
+        steps[currentIndex - 1].id,
+        gameCharacters: characters,
+      );
       return;
     }
     if (_nightCount <= 1) return;
     _nightCount--;
     steps = _stepsFor(characters);
-    await _setNightStep(steps.isEmpty ? 'day' : steps.last.id);
+    await _setNightStep(
+      steps.isEmpty ? 'day' : steps.last.id,
+      gameCharacters: characters,
+    );
   }
 
   Future<void> nextNightState(List<Character> gameCharacters) async {
@@ -738,7 +793,11 @@ class GameStateService extends ChangeNotifier {
     final currentIndex =
         steps.indexWhere((step) => step.id == _currentNightStepId);
     if (currentIndex >= 0 && currentIndex + 1 < steps.length) {
-      await _setNightStep(steps[currentIndex + 1].id);
+      await _recordCurrentNightReminderSnapshot(gameCharacters);
+      await _setNightStep(
+        steps[currentIndex + 1].id,
+        gameCharacters: gameCharacters,
+      );
       return;
     }
     if (currentIndex < 0 && _currentNightStepId != null) {
@@ -750,22 +809,27 @@ class GameStateService extends ChangeNotifier {
           _nightOrderService.orderIndexForStep(step.id, _nightCount) >
           currentOrderIndex);
       if (next != null) {
-        await _setNightStep(next.id);
+        await _recordCurrentNightReminderSnapshot(gameCharacters);
+        await _setNightStep(next.id, gameCharacters: gameCharacters);
         return;
       }
     }
-    await startDay();
+    await startDay(gameCharacters);
   }
 
-  Future<void> startDay() async {
-    await _setNightStep('day');
+  Future<void> startDay([List<Character> gameCharacters = const []]) async {
+    await _recordCurrentNightReminderSnapshot(gameCharacters);
+    await _setNightStep('day', gameCharacters: gameCharacters);
   }
 
   Future<void> nextNight([List<Character> gameCharacters = const []]) async {
     await _nightOrderService.ready;
     _nightCount++;
     final steps = _stepsFor(gameCharacters);
-    await _setNightStep(steps.isEmpty ? 'day' : steps.first.id);
+    await _setNightStep(
+      steps.isEmpty ? 'day' : steps.first.id,
+      gameCharacters: gameCharacters,
+    );
   }
 
   Future<void> previousNight(
@@ -776,7 +840,10 @@ class GameStateService extends ChangeNotifier {
     }
     _nightCount--;
     final steps = _stepsFor(gameCharacters);
-    await _setNightStep(steps.isEmpty ? 'day' : steps.last.id);
+    await _setNightStep(
+      steps.isEmpty ? 'day' : steps.last.id,
+      gameCharacters: gameCharacters,
+    );
   }
 
   List<NightStep> _stepsFor(List<Character> gameCharacters) {
@@ -784,12 +851,35 @@ class GameStateService extends ChangeNotifier {
         .where((character) => character.fraction.name == 'traveller')
         .length;
     final regularPlayerCount = max(0, playerNames.length - travellerCount);
-    return _nightOrderService.stepsFor(
-      nightCount: _nightCount,
-      gameCharacters: gameCharacters,
-      regularPlayerCount: regularPlayerCount,
-      isAlive: isCharacterAlive,
+    return _nightOrderService
+        .stepsFor(
+          nightCount: _nightCount,
+          gameCharacters: gameCharacters,
+          regularPlayerCount: regularPlayerCount,
+          isAlive: isCharacterAlive,
+        )
+        .where((step) => _shouldIncludeNightStep(step, gameCharacters))
+        .toList(growable: false);
+  }
+
+  bool _shouldIncludeNightStep(
+    NightStep step,
+    List<Character> gameCharacters,
+  ) {
+    final character = gameCharacters.firstWhereOrNull(
+      (candidate) => candidate.id == step.characterInstanceId,
     );
+    if (character == null) return true;
+    final wake = character.nightWake;
+    final apparentDeathAllowsWake = wake.allowWhenApparentDead &&
+        _apparentlyDeadCharacterIds.contains(character.id);
+    if (!isCharacterAlive(character) && !apparentDeathAllowsWake) return false;
+    if (_nightCount > 1 &&
+        wake.otherNightsRequireNoDeathsPreviousDay &&
+        _lastReportedDeathDay == _nightCount - 1) {
+      return false;
+    }
+    return true;
   }
 
   NightStep? currentNightStep(List<Character> gameCharacters) {
@@ -861,12 +951,58 @@ class GameStateService extends ChangeNotifier {
     return true;
   }
 
-  Future<void> _setNightStep(String stepId) async {
+  Future<void> _setNightStep(
+    String stepId, {
+    List<Character> gameCharacters = const [],
+  }) async {
     _currentNightStepId = stepId;
     _legacyNightStateNumber = null;
     _nightStateNumber = stepId == 'day' ? 0 : 1;
     await _persistNightPosition();
+    final phase = currentChroniclePhase;
+    await _chronicleService?.recordPhase(phase, _nightCount);
+    if (stepId.startsWith('role:')) {
+      final character = gameCharacters.firstWhereOrNull(
+        (candidate) => stepId == 'role:${candidate.roleId}:${candidate.id}',
+      );
+      if (character != null) {
+        await _chronicleService?.recordNightVisit(character, _nightCount);
+      }
+    }
     notifyListeners();
+  }
+
+  Future<void> _recordCurrentNightReminderSnapshot(
+    List<Character> gameCharacters,
+  ) async {
+    if (_nightCount < 1 ||
+        _currentNightStepId == null ||
+        !_currentNightStepId!.startsWith('role:')) {
+      return;
+    }
+    for (final entry in quickFlowEntries(gameCharacters)) {
+      if (entry.step.type != QuickFlowStepType.reminder ||
+          entry.step.operation == QuickFlowReminderOperation.setOnce) {
+        continue;
+      }
+      final token = quickFlowToken(entry);
+      if (token == null) continue;
+      final targets = quickFlowTargets(entry, gameCharacters);
+      await _chronicleService?.recordQuickFlowReminderSnapshot(
+        owner: entry.owner,
+        stepId: entry.step.id,
+        token: token,
+        targets: targets,
+        round: _nightCount,
+      );
+    }
+  }
+
+  ChroniclePhase get currentChroniclePhase {
+    if (_nightCount < 1) return ChroniclePhase.setup;
+    return _currentNightStepId == 'day'
+        ? ChroniclePhase.day
+        : ChroniclePhase.night;
   }
 
   Future<void> _persistNightPosition() async {
@@ -930,31 +1066,53 @@ class GameStateService extends ChangeNotifier {
     );
   }
 
-  QuickFlowEntry? activeQuickFlowReminder(List<Character> gameCharacters) {
+  String _quickFlowCompletionKey(
+    QuickFlowEntry entry,
+    List<Character> gameCharacters,
+  ) =>
+      '${_quickFlowContextKey(quickFlowEntries(gameCharacters))}:${entry.key}';
+
+  bool isQuickFlowEntryCompleted(
+    QuickFlowEntry entry,
+    List<Character> gameCharacters,
+  ) =>
+      _quickFlowCompletedSteps
+          .contains(_quickFlowCompletionKey(entry, gameCharacters));
+
+  QuickFlowEntry? activeQuickFlowEntry(List<Character> gameCharacters) {
     final entries = quickFlowEntries(gameCharacters);
     final contextKey = _quickFlowContextKey(entries);
     if (contextKey == null) return null;
-    if (_activeQuickFlowContextKey != contextKey) {
-      return entries.firstWhereOrNull((entry) =>
-          entry.step.type == QuickFlowStepType.reminder &&
-          isQuickFlowEntrySupported(entry));
+    if (_activeQuickFlowContextKey == contextKey) {
+      if (_activeQuickFlowStepKey == null) return null;
+      final active = entries.firstWhereOrNull(
+        (entry) =>
+            entry.key == _activeQuickFlowStepKey &&
+            isQuickFlowEntrySupported(entry) &&
+            !isQuickFlowEntryCompleted(entry, gameCharacters),
+      );
+      if (active != null) return active;
     }
+
     return entries.firstWhereOrNull((entry) =>
-        entry.key == _activeQuickFlowStepKey &&
-        entry.step.type == QuickFlowStepType.reminder &&
-        isQuickFlowEntrySupported(entry));
+        isQuickFlowEntrySupported(entry) &&
+        !isQuickFlowEntryCompleted(entry, gameCharacters));
+  }
+
+  QuickFlowEntry? activeQuickFlowReminder(List<Character> gameCharacters) {
+    final active = activeQuickFlowEntry(gameCharacters);
+    return active?.step.type == QuickFlowStepType.reminder ? active : null;
   }
 
   bool isQuickFlowEntryActive(
           QuickFlowEntry entry, List<Character> gameCharacters) =>
-      activeQuickFlowReminder(gameCharacters)?.key == entry.key;
+      activeQuickFlowEntry(gameCharacters)?.key == entry.key;
 
   Future<void> activateQuickFlowEntry(
     QuickFlowEntry entry,
     List<Character> gameCharacters,
   ) async {
-    if (!isQuickFlowEntrySupported(entry) ||
-        entry.step.type != QuickFlowStepType.reminder) {
+    if (!isQuickFlowEntrySupported(entry)) {
       return;
     }
     _activeQuickFlowContextKey =
@@ -1017,6 +1175,31 @@ class GameStateService extends ChangeNotifier {
     final targets =
         _quickFlowStepTargets.putIfAbsent(entry.key, () => <String>[]);
     if (!targets.contains(target.id)) targets.add(target.id);
+  }
+
+  /// Captures the role that an automatic character-token step resolved to at
+  /// the time its source player was chosen. This deliberately happens before
+  /// any later, storyteller-controlled role swap can change that player's
+  /// current role.
+  void _prefillQuickFlowCharacterSelections(
+    QuickFlowEntry source,
+    Character target,
+  ) {
+    for (final step in source.owner.quickFlow.stepsFor(source.phase)) {
+      if (step.type != QuickFlowStepType.reminderCharacterToken ||
+          step.selection?.type != 'fromReminderTarget' ||
+          step.selection?.stepId != source.step.id) {
+        continue;
+      }
+      final entry = QuickFlowEntry(
+        owner: source.owner,
+        phase: source.phase,
+        step: step,
+      );
+      if (!_quickFlowManualOverrides.contains(entry.key)) {
+        _quickFlowCharacterSelections[entry.key] = target.roleId;
+      }
+    }
   }
 
   Character? quickFlowTarget(
@@ -1144,6 +1327,7 @@ class GameStateService extends ChangeNotifier {
     final currentTargets = quickFlowTargets(entry, gameCharacters);
     if (currentTargets.any((character) => character.id == target.id)) {
       _recordQuickFlowStepTarget(entry, target);
+      _prefillQuickFlowCharacterSelections(entry, target);
       await _advanceQuickFlowAfter(entry, gameCharacters);
       return QuickFlowAssignmentResult.success(warning: warning);
     }
@@ -1156,11 +1340,20 @@ class GameStateService extends ChangeNotifier {
     if (entry.step.operation == QuickFlowReminderOperation.append &&
         tokensOfCharacter(target).contains(token)) {
       _recordQuickFlowStepTarget(entry, target);
+      _prefillQuickFlowCharacterSelections(entry, target);
       await _advanceQuickFlowAfter(entry, gameCharacters);
       return QuickFlowAssignmentResult.success(warning: warning);
     }
-    await addTokenToCharacter(gameCharacters, target, token);
+    await addTokenToCharacter(
+      gameCharacters,
+      target,
+      token,
+      source: 'quickFlow',
+      quickFlowStepId: entry.step.id,
+      quickFlowOwner: entry.owner,
+    );
     _recordQuickFlowStepTarget(entry, target);
+    _prefillQuickFlowCharacterSelections(entry, target);
     await _advanceQuickFlowAfter(entry, gameCharacters);
     return QuickFlowAssignmentResult.success(warning: warning);
   }
@@ -1170,6 +1363,10 @@ class GameStateService extends ChangeNotifier {
     List<Character> gameCharacters,
   ) async {
     final entries = quickFlowEntries(gameCharacters);
+    if (current.step.type != QuickFlowStepType.reminder) {
+      _quickFlowCompletedSteps
+          .add(_quickFlowCompletionKey(current, gameCharacters));
+    }
     _activeQuickFlowContextKey = _quickFlowContextKey(entries);
     final currentIndex =
         entries.indexWhere((entry) => entry.key == current.key);
@@ -1178,12 +1375,18 @@ class GameStateService extends ChangeNotifier {
         : entries
             .skip(currentIndex + 1)
             .firstWhereOrNull((entry) =>
-                entry.step.type == QuickFlowStepType.reminder &&
-                isQuickFlowEntrySupported(entry))
+                isQuickFlowEntrySupported(entry) &&
+                !isQuickFlowEntryCompleted(entry, gameCharacters))
             ?.key;
     await _saveQuickFlowState();
     notifyListeners();
   }
+
+  Future<void> completeQuickFlowEntry(
+    QuickFlowEntry entry,
+    List<Character> gameCharacters,
+  ) =>
+      _advanceQuickFlowAfter(entry, gameCharacters);
 
   Character? quickFlowSelectedCharacter(
     QuickFlowEntry entry,
@@ -1194,9 +1397,7 @@ class GameStateService extends ChangeNotifier {
       return null;
     }
     final storedRoleId = _quickFlowCharacterSelections[entry.key];
-    if (storedRoleId != null &&
-        (_quickFlowManualOverrides.contains(entry.key) ||
-            entry.step.selection?.type == 'manual')) {
+    if (storedRoleId != null) {
       final stored = allCharacters.firstWhereOrNull(
         (character) => character.roleId == storedRoleId,
       );
@@ -1242,14 +1443,23 @@ class GameStateService extends ChangeNotifier {
   ) async {
     if (entry.step.type != QuickFlowStepType.reminderCharacterToken ||
         entry.step.selection == null ||
-        !_isQuickFlowCharacterAllowed(entry, character) ||
-        (entry.step.selection!.type == 'fromReminderTarget' &&
-            !entry.step.allowManualOverride)) {
+        !_isQuickFlowCharacterAllowed(entry, character)) {
       return false;
+    }
+    if (_quickFlowCharacterSelections[entry.key] == character.roleId &&
+        _quickFlowManualOverrides.contains(entry.key)) {
+      return true;
     }
     _quickFlowCharacterSelections[entry.key] = character.roleId;
     _quickFlowManualOverrides.add(entry.key);
     await _saveQuickFlowState();
+    await _chronicleService?.recordQuickFlowCharacterSelection(
+      owner: entry.owner,
+      selected: character,
+      stepId: entry.step.id,
+      phase: currentChroniclePhase,
+      round: _nightCount,
+    );
     notifyListeners();
     return true;
   }
@@ -1287,6 +1497,26 @@ class GameStateService extends ChangeNotifier {
         isQuickFlowStepComplete(required, gameCharacters, allCharacters);
   }
 
+  Character? quickFlowInfoRecipient(
+    QuickFlowEntry entry,
+    List<Character> gameCharacters,
+  ) {
+    return switch (entry.step.recipient?.type) {
+      'abilityOwner' => entry.owner,
+      'reminderTarget' when entry.step.recipient?.stepId != null =>
+        quickFlowTarget(
+          _entryForStepId(
+                entry.owner,
+                entry.phase,
+                entry.step.recipient!.stepId!,
+              ) ??
+              entry,
+          gameCharacters,
+        ),
+      _ => null,
+    };
+  }
+
   bool isQuickFlowInfoReady(
     QuickFlowEntry entry,
     List<Character> gameCharacters,
@@ -1296,23 +1526,7 @@ class GameStateService extends ChangeNotifier {
         !isQuickFlowEntrySupported(entry)) {
       return false;
     }
-    final recipient = entry.step.recipient;
-    final recipientReady = switch (recipient?.type) {
-      'abilityOwner' => true,
-      'reminderTarget' => recipient?.stepId != null &&
-          quickFlowTarget(
-                _entryForStepId(
-                      entry.owner,
-                      entry.phase,
-                      recipient!.stepId!,
-                    ) ??
-                    entry,
-                gameCharacters,
-              ) !=
-              null,
-      _ => false,
-    };
-    return recipientReady &&
+    return quickFlowInfoRecipient(entry, gameCharacters) != null &&
         entry.step.requires.every((stepId) => _isQuickFlowRequiredStepComplete(
             entry, stepId, gameCharacters, allCharacters));
   }
@@ -1322,10 +1536,30 @@ class GameStateService extends ChangeNotifier {
 
   bool quickFlowInfoNeedsConfirmation(QuickFlowEntry entry) =>
       entry.step.showOnlyWhen?.type == 'storytellerConfirmed' &&
+      !isQuickFlowInfoSkipped(entry) &&
       !_quickFlowConfirmedInfo.contains(_quickFlowConfirmationKey(entry));
 
+  bool isQuickFlowInfoSkipped(QuickFlowEntry entry) =>
+      _quickFlowSkippedInfo.contains(_quickFlowConfirmationKey(entry));
+
   Future<void> confirmQuickFlowInfo(QuickFlowEntry entry) async {
-    _quickFlowConfirmedInfo.add(_quickFlowConfirmationKey(entry));
+    final confirmationKey = _quickFlowConfirmationKey(entry);
+    _quickFlowSkippedInfo.remove(confirmationKey);
+    if (!_quickFlowConfirmedInfo.add(confirmationKey)) return;
+    await _saveQuickFlowState();
+    await _chronicleService?.recordQuickFlowInfo(
+      owner: entry.owner,
+      stepId: entry.step.id,
+      phase: currentChroniclePhase,
+      round: _nightCount,
+    );
+    notifyListeners();
+  }
+
+  Future<void> skipQuickFlowInfo(QuickFlowEntry entry) async {
+    final confirmationKey = _quickFlowConfirmationKey(entry);
+    if (!_quickFlowSkippedInfo.add(confirmationKey)) return;
+    _quickFlowConfirmedInfo.remove(confirmationKey);
     await _saveQuickFlowState();
     notifyListeners();
   }
@@ -1336,10 +1570,13 @@ class GameStateService extends ChangeNotifier {
     List<Character> allCharacters,
   ) {
     if (!isQuickFlowInfoReady(entry, gameCharacters, allCharacters) ||
-        quickFlowInfoNeedsConfirmation(entry)) {
+        quickFlowInfoNeedsConfirmation(entry) ||
+        isQuickFlowInfoSkipped(entry)) {
       return null;
     }
     final presentation = entry.step.presentation!;
+    final recipient = quickFlowInfoRecipient(entry, gameCharacters);
+    if (recipient == null) return null;
     final playerStepIds = <String>[
       ...presentation.playerSteps,
       if (presentation.playerStep != null) presentation.playerStep!,
@@ -1347,11 +1584,13 @@ class GameStateService extends ChangeNotifier {
     final players = <Character>[];
     for (final stepId in playerStepIds) {
       final playerEntry = _entryForStepId(entry.owner, entry.phase, stepId);
-      final target = playerEntry == null
-          ? null
-          : quickFlowTarget(playerEntry, gameCharacters);
-      if (target != null && !players.any((item) => item.id == target.id)) {
-        players.add(target);
+      final targets = playerEntry == null
+          ? const <Character>[]
+          : quickFlowTargets(playerEntry, gameCharacters);
+      for (final target in targets) {
+        if (!players.any((item) => item.id == target.id)) {
+          players.add(target);
+        }
       }
     }
     final pointToRolePlayer = presentation.pointToRolePlayer;
@@ -1363,19 +1602,28 @@ class GameStateService extends ChangeNotifier {
         players.add(target);
       }
     }
-    Character? selectedCharacter;
-    if (presentation.characterStep != null) {
+    final selectedCharacters = <Character>[];
+    final characterStepIds = <String>[
+      ...presentation.characterSteps,
+      if (presentation.characterStep != null) presentation.characterStep!,
+    ];
+    for (final characterStepId in characterStepIds) {
       final characterEntry = _entryForStepId(
         entry.owner,
         entry.phase,
-        presentation.characterStep!,
+        characterStepId,
       );
       if (characterEntry != null) {
-        selectedCharacter = quickFlowSelectedCharacter(
+        final selectedCharacter = quickFlowSelectedCharacter(
           characterEntry,
           gameCharacters,
           allCharacters,
         );
+        if (selectedCharacter != null &&
+            !selectedCharacters
+                .any((item) => item.roleId == selectedCharacter.roleId)) {
+          selectedCharacters.add(selectedCharacter);
+        }
       }
     }
     final sourceRoleId = presentation.sourceRoleId;
@@ -1388,9 +1636,12 @@ class GameStateService extends ChangeNotifier {
     return QuickFlowInfo(
       kind: presentation.kind,
       owner: entry.owner,
+      recipient: recipient,
       sourceCharacter: sourceCharacter,
-      selectedCharacter: selectedCharacter,
+      selectedCharacter: selectedCharacters.firstOrNull,
+      selectedCharacters: selectedCharacters,
       players: players,
+      infoToken: presentation.infoToken,
     );
   }
 
@@ -1426,17 +1677,44 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> resetCharacterAliveState() async {
     _characterAliveState.clear();
-    await _saveCharacterAliveState();
+    _apparentlyDeadCharacterIds.clear();
+    _lastReportedDeathDay = null;
+    await Future.wait([_saveCharacterAliveState(), _saveApparentDeathState()]);
     notifyListeners();
   }
 
   Future<void> toggleCharacterAlive(Character character) async {
-    if (_characterAliveState.containsKey(character.id)) {
-      _characterAliveState[character.id] = !_characterAliveState[character.id]!;
-    } else {
+    final wasAlive = isCharacterAlive(character);
+    final wasApparentlyDead =
+        _apparentlyDeadCharacterIds.contains(character.id);
+    bool? recordedLifeStatus;
+    if (wasAlive) {
       _characterAliveState[character.id] = false;
+      if (character.nightWake.allowWhenApparentDead) {
+        _apparentlyDeadCharacterIds.add(character.id);
+      } else {
+        recordedLifeStatus = false;
+      }
+      if (isDay()) _lastReportedDeathDay = _nightCount;
+    } else if (wasApparentlyDead) {
+      // A second death marking finalizes an apparent death without reviving.
+      _apparentlyDeadCharacterIds.remove(character.id);
+      _characterAliveState[character.id] = false;
+      recordedLifeStatus = false;
+      if (isDay()) _lastReportedDeathDay = _nightCount;
+    } else {
+      _characterAliveState[character.id] = true;
+      recordedLifeStatus = true;
     }
-    await _saveCharacterAliveState();
+    await Future.wait([_saveCharacterAliveState(), _saveApparentDeathState()]);
+    if (recordedLifeStatus != null) {
+      await _chronicleService?.recordLifeStatus(
+        character: character,
+        alive: recordedLifeStatus,
+        phase: currentChroniclePhase,
+        round: _nightCount,
+      );
+    }
     notifyListeners();
   }
 
@@ -1481,7 +1759,20 @@ class GameStateService extends ChangeNotifier {
   }
 
   Future<void> addTokenToCharacter(
-      List<Character> allCharacters, Character character, Token token) async {
+    List<Character> allCharacters,
+    Character character,
+    Token token, {
+    String source = 'manual',
+    String? quickFlowStepId,
+    Character? quickFlowOwner,
+  }) async {
+    if (tokensOfCharacter(character).contains(token)) return;
+    final previousTarget = token.unlimited
+        ? null
+        : allCharacters.firstWhereOrNull(
+            (candidate) => tokensOfCharacter(candidate).contains(token),
+          );
+    if (previousTarget?.id == character.id) return;
     if (!_characterTokens.containsKey(character.id)) {
       _characterTokens[character.id] = [];
     }
@@ -1492,15 +1783,32 @@ class GameStateService extends ChangeNotifier {
     _characterTokens[character.id]!.add(token);
     unsedGameTokens.remove(token);
     await _saveCharacterTokens();
+    await _chronicleService?.recordReminderAssignment(
+      target: character,
+      previousTarget: previousTarget,
+      token: token,
+      phase: currentChroniclePhase,
+      round: _nightCount,
+      source: source,
+      quickFlowStepId: quickFlowStepId,
+      quickFlowOwner: quickFlowOwner,
+    );
     notifyListeners();
   }
 
   Future<void> removeTokenFromCharacter(
       Character character, Token token) async {
     if (_characterTokens.containsKey(character.id)) {
-      _characterTokens[character.id]!.remove(token);
+      final removed = _characterTokens[character.id]!.remove(token);
+      if (!removed) return;
       unsedGameTokens.add(token);
       await _saveCharacterTokens();
+      await _chronicleService?.recordReminderRemoval(
+        target: character,
+        token: token,
+        phase: currentChroniclePhase,
+        round: _nightCount,
+      );
       notifyListeners();
     }
   }
