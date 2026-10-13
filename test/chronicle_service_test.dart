@@ -462,6 +462,21 @@ void main() {
     expect(state.demonBluffRoleIds, ['chef', 'empath', 'monk']);
   });
 
+  test('ending a game keeps the optional winning team in the archive',
+      () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    final chef = catalogRole('chef');
+    await state.startNewGame([chef]);
+
+    await state.endGame(winningTeam: 'good');
+
+    expect(chronicle.lastChronicle?.winningTeam, 'good');
+    final restored = ChronicleService();
+    await restored.ready;
+    expect(restored.lastChronicle?.winningTeam, 'good');
+  });
+
   test('day timer starts at day and resets when night begins', () async {
     final chronicle = ChronicleService();
     final state = await gameState(chronicle);

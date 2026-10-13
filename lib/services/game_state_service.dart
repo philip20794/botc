@@ -680,8 +680,8 @@ class GameStateService extends ChangeNotifier {
         'needsSetup': token.needsSetup,
       });
 
-  Future<void> endGame() async {
-    await _chronicleService?.archiveCurrent();
+  Future<void> endGame({String? winningTeam}) async {
+    await _chronicleService?.archiveCurrent(winningTeam: winningTeam);
     final resetFuture = Future.wait([
       resetCharacterTokens([]),
       resetCharacterAliveState(),

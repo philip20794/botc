@@ -293,6 +293,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yesEndGame => 'Yes, end game';
 
   @override
+  String get winningTeamOptional => 'Winning team (optional)';
+
+  @override
+  String get goodTeam => 'Good';
+
+  @override
+  String get evilTeam => 'Evil';
+
+  @override
   String get layoutReset => 'Layout reset?';
 
   @override

@@ -137,10 +137,13 @@ class ChronicleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> archiveCurrent() async {
+  Future<void> archiveCurrent({String? winningTeam}) async {
     await ready;
     if (_active == null) return;
-    _last = _active!.copyWith(endedAt: DateTime.now());
+    _last = _active!.copyWith(
+      endedAt: DateTime.now(),
+      winningTeam: winningTeam,
+    );
     _active = null;
     final prefs = await SharedPreferences.getInstance();
     await Future.wait([

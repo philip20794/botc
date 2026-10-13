@@ -632,6 +632,24 @@ abstract class AppLocalizations {
   /// **'Ja, Spiel beenden'**
   String get yesEndGame;
 
+  /// No description provided for @winningTeamOptional.
+  ///
+  /// In de, this message translates to:
+  /// **'Gewinnerteam (optional)'**
+  String get winningTeamOptional;
+
+  /// No description provided for @goodTeam.
+  ///
+  /// In de, this message translates to:
+  /// **'Gut'**
+  String get goodTeam;
+
+  /// No description provided for @evilTeam.
+  ///
+  /// In de, this message translates to:
+  /// **'Böse'**
+  String get evilTeam;
+
   /// No description provided for @layoutReset.
   ///
   /// In de, this message translates to:

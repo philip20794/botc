@@ -166,6 +166,7 @@ class ChronicleLog {
   final String gameId;
   final DateTime startedAt;
   final DateTime? endedAt;
+  final String? winningTeam;
   final List<ChronicleEvent> events;
   final List<String> hiddenSummaryIds;
 
@@ -174,12 +175,14 @@ class ChronicleLog {
     required this.startedAt,
     required List<ChronicleEvent> events,
     this.endedAt,
+    this.winningTeam,
     List<String> hiddenSummaryIds = const [],
   })  : events = List<ChronicleEvent>.from(events),
         hiddenSummaryIds = List<String>.from(hiddenSummaryIds);
 
   ChronicleLog copyWith({
     DateTime? endedAt,
+    String? winningTeam,
     List<ChronicleEvent>? events,
     List<String>? hiddenSummaryIds,
   }) =>
@@ -187,6 +190,7 @@ class ChronicleLog {
         gameId: gameId,
         startedAt: startedAt,
         endedAt: endedAt ?? this.endedAt,
+        winningTeam: winningTeam ?? this.winningTeam,
         events: events ?? this.events,
         hiddenSummaryIds: hiddenSummaryIds ?? this.hiddenSummaryIds,
       );
@@ -196,6 +200,7 @@ class ChronicleLog {
         startedAt: DateTime.tryParse(json['startedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
         endedAt: DateTime.tryParse(json['endedAt'] as String? ?? ''),
+        winningTeam: json['winningTeam'] as String?,
         events: (json['events'] as List<dynamic>? ?? const [])
             .whereType<Map>()
             .map((event) => ChronicleEvent.fromJson(
@@ -212,6 +217,7 @@ class ChronicleLog {
         'gameId': gameId,
         'startedAt': startedAt.toIso8601String(),
         if (endedAt != null) 'endedAt': endedAt!.toIso8601String(),
+        if (winningTeam != null) 'winningTeam': winningTeam,
         'events': events.map((event) => event.toJson()).toList(),
         if (hiddenSummaryIds.isNotEmpty) 'hiddenSummaryIds': hiddenSummaryIds,
       };

@@ -167,35 +167,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
     );
 
     return WillPopScope(
-      onWillPop: () async {
-        // Bestätigungsdialog bevor man zurück navigiert
-        return await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
-            title: Text(localizedStrings.toHomeScreen,
-                style: TextStyle(color: Colors.white)),
-            content: Text(localizedStrings.backToHomeScreenText),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(localizedStrings.cancel,
-                    style: TextStyle(color: Colors.white)),
-              ),
-              TextButton(
-                onPressed: () => {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                    (Route<dynamic> route) => false,
-                  )
-                },
-                child: Text(localizedStrings.backToHomeScreen,
-                    style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-      },
+      onWillPop: () => _confirmGoToHome(context, localizedStrings),
       child: AppBackground(
         type: AppBackgroundType.playground,
         child: Scaffold(
@@ -399,16 +371,24 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                   _resetOrderOfLayout();
                   _toggleMenu();
                 }, const Offset(46, 68), false, true, context),
-                _buildMenuButton(Icons.close, () async {
-                  await gameStateService.endGame();
-                  characterService.endGame();
-                  if (!context.mounted) return;
-                  _toggleMenu();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                    (Route<dynamic> route) => false,
-                  );
-                }, const Offset(-46, 68), false, true, context),
+                _buildMenuButton(
+                  Icons.close,
+                  () {},
+                  const Offset(-46, 68),
+                  false,
+                  false,
+                  context,
+                  onEndGame: (winningTeam) async {
+                    await gameStateService.endGame(winningTeam: winningTeam);
+                    characterService.endGame();
+                    if (!context.mounted) return;
+                    _toggleMenu();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                      (Route<dynamic> route) => false,
+                    );
+                  },
+                ),
                 _buildMenuButton(CustomIcons.law, () {
                   Navigator.push(
                     context,
@@ -531,7 +511,8 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
   }
 
   Widget _buildMenuButton(IconData icon, VoidCallback onPressed, Offset offset,
-      bool disabled, bool showConfirmDialog, BuildContext context) {
+      bool disabled, bool showConfirmDialog, BuildContext context,
+      {Future<void> Function(String? winningTeam)? onEndGame}) {
     var closeDialog = icon == Icons.close;
     var localizedStrings = AppLocalizations.of(context)!;
     return _buildAnchoredMenuControl(
@@ -541,6 +522,10 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
         child: InkWell(
           onTap: () {
             if (!disabled) {
+              if (onEndGame != null) {
+                _showEndGameDialog(context, onEndGame);
+                return;
+              }
               if (showConfirmDialog) {
                 // Zeige den Bestätigungsdialog an
                 showDialog(
@@ -600,4 +585,158 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
       ),
     );
   }
+
+  Future<bool> _confirmGoToHome(
+    BuildContext screenContext,
+    AppLocalizations localizedStrings,
+  ) async {
+    final shouldLeave = await showDialog<bool>(
+      context: screenContext,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
+        title: Text(
+          localizedStrings.toHomeScreen,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(localizedStrings.backToHomeScreenText),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              localizedStrings.cancel,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              localizedStrings.backToHomeScreen,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (shouldLeave == true && mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+    // Navigation above replaces this route, so the original pop must not run.
+    return false;
+  }
+
+  void _showEndGameDialog(
+    BuildContext screenContext,
+    Future<void> Function(String? winningTeam) onConfirm,
+  ) {
+    final localizedStrings = AppLocalizations.of(screenContext)!;
+    String? winningTeam;
+    showDialog<void>(
+      context: screenContext,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.94),
+          title: Text(
+            localizedStrings.endGame,
+            style: const TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                localizedStrings.reallyEndGame,
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                localizedStrings.winningTeamOptional,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildWinningTeamOption(
+                      icon: Icons.shield_rounded,
+                      label: localizedStrings.goodTeam,
+                      color: const Color(0xFF4CA8FF),
+                      isSelected: winningTeam == 'good',
+                      onTap: () => setDialogState(() {
+                        winningTeam = winningTeam == 'good' ? null : 'good';
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildWinningTeamOption(
+                      icon: Icons.local_fire_department_rounded,
+                      label: localizedStrings.evilTeam,
+                      color: const Color(0xFFFF5A5F),
+                      isSelected: winningTeam == 'evil',
+                      onTap: () => setDialogState(() {
+                        winningTeam = winningTeam == 'evil' ? null : 'evil';
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                localizedStrings.cancel,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                unawaited(onConfirm(winningTeam));
+              },
+              child: Text(
+                localizedStrings.yesEndGame,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWinningTeamOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.30) : Colors.black26,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? color : Colors.white24,
+              width: isSelected ? 2.5 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 36),
+              const SizedBox(height: 4),
+              Text(label, style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      );
 }
