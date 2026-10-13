@@ -349,6 +349,7 @@ void main() {
       characters,
       'fortuneReading',
     );
+    expect(state.isNightChroniclePlayerSelectionActive(characters), isTrue);
     await state.toggleNightChroniclePlayer(input, first);
     input = state.activeNightChronicleInput(characters)!;
     await state.toggleNightChroniclePlayer(input, second);
@@ -386,6 +387,44 @@ void main() {
       (item) => item.id == event.id,
     );
     expect(preserved.informationEntries.single['values']['answer'], isTrue);
+  });
+
+  test('QuickFlow reminder assignment takes priority over Chronicle players',
+      () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    final sailor = catalogRole('sailor', id: 'sailor');
+    final selected = player('selected', 'Selected');
+    final characters = [sailor, selected];
+    await state.startNewGame(characters);
+    state.initUnusedGameTokens(characters);
+
+    final input = await advanceToChronicleInput(
+      state,
+      characters,
+      'chosenPlayer',
+    );
+
+    expect(input.owner.id, sailor.id);
+    expect(state.activeQuickFlowReminder(characters), isNotNull);
+    expect(state.isNightChroniclePlayerSelectionActive(characters), isFalse);
+
+    final result = await state.assignActiveQuickFlowReminder(
+      characters,
+      selected,
+    );
+
+    expect(result.success, isTrue);
+    expect(
+      state.tokensOfCharacter(selected).map((token) => token.quickId),
+      contains('is_drunk'),
+    );
+    expect(state.isNightChroniclePlayerSelectionActive(characters), isTrue);
+
+    final chronicleInput = state.activeNightChronicleInput(characters)!;
+    await state.toggleNightChroniclePlayer(chronicleInput, selected);
+    final savedInput = state.activeNightChronicleInput(characters)!;
+    expect(savedInput.selectedPlayerIdsForAllFields, {selected.id});
   });
 
   test('playground Chronicle number input can be selected and cleared',

@@ -161,7 +161,10 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
     }
     final chronicleInput = gameStateService
         .activeNightChronicleInput(characterService.gameCharacters);
-    final hasChroniclePlayerField = chronicleInput?.hasPlayerField ?? false;
+    final hasChroniclePlayerField =
+        gameStateService.isNightChroniclePlayerSelectionActive(
+      characterService.gameCharacters,
+    );
 
     return WillPopScope(
       onWillPop: () async {

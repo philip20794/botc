@@ -1102,6 +1102,17 @@ class GameStateService extends ChangeNotifier {
     );
   }
 
+  /// Chronicle player input is an additional playground interaction. It must
+  /// never replace an active QuickFlow reminder assignment: character taps
+  /// need to keep reaching the established reminder-token handler first.
+  /// Once that assignment has advanced, a separate Chronicle player field can
+  /// use the normal token taps for its optional input.
+  bool isNightChroniclePlayerSelectionActive(
+    List<Character> gameCharacters,
+  ) =>
+      activeNightChronicleInput(gameCharacters)?.hasPlayerField == true &&
+      activeQuickFlowReminder(gameCharacters) == null;
+
   Future<void> toggleNightChroniclePlayer(
     ActiveNightChronicleInput input,
     Character player,
