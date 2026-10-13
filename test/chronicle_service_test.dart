@@ -499,6 +499,26 @@ void main() {
     expect(state.dayElapsed.inSeconds, lessThanOrEqualTo(1));
   });
 
+  test('game timer persists from its start time and clears when the game ends',
+      () async {
+    final startedAt = DateTime.now().subtract(const Duration(minutes: 2));
+    SharedPreferences.setMockInitialValues({
+      'night_count': 1,
+      'night_step_id': 'phase:dawn',
+      'game_started_at': startedAt.toIso8601String(),
+    });
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+
+    expect(state.gameElapsed.inSeconds, greaterThanOrEqualTo(120));
+
+    await state.endGame();
+
+    expect(state.gameElapsed, Duration.zero);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('game_started_at'), isNull);
+  });
+
   test('restored Chronicle accepts replacement reminder snapshots', () async {
     final owner = catalogRole('poisoner', id: 'poisoner');
     final target = player('target', 'Target');

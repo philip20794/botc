@@ -35,6 +35,7 @@ class GameStateService extends ChangeNotifier {
   List<Token> unsedGameTokens = [];
   List<String> playerNames = [];
   int _nightCount = -1;
+  DateTime? _gameStartedAt;
   DateTime? _dayStartedAt;
   bool initIsDone = false;
   bool _chracterSelectionDone = false;
@@ -53,6 +54,7 @@ class GameStateService extends ChangeNotifier {
   final String _storageNightCountKey = 'night_count';
   final String _storageNightStateNumberKey = 'night_state_number';
   static const String _storageNightStepIdKey = 'night_step_id';
+  static const String _storageGameStartedAtKey = 'game_started_at';
   static const String _storageDayStartedAtKey = 'day_started_at';
   final String _storageShowCharactersToPlayersKey =
       'show_characters_to_players';
@@ -95,6 +97,10 @@ class GameStateService extends ChangeNotifier {
     _loadPlayerNames(prefs);
     _loadNightCount(prefs);
     _currentNightStepId = prefs.getString(_storageNightStepIdKey);
+    _loadGameStartedAt(prefs);
+    if (gameIsRunning() && _gameStartedAt == null) {
+      await _startGameTimer();
+    }
     _loadDayStartedAt(prefs);
     if (_currentNightStepId == 'day' && _dayStartedAt == null) {
       await _startDayTimer();
@@ -119,6 +125,7 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
     prefs.remove(_storageNightStepIdKey);
+    prefs.remove(_storageGameStartedAtKey);
     prefs.remove(_storageDayStartedAtKey);
     prefs.remove(_storageShowCharactersToPlayersKey);
     prefs.remove(_chracterSelectionDoneKey);
@@ -434,6 +441,30 @@ class GameStateService extends ChangeNotifier {
     _dayStartedAt = rawValue == null ? null : DateTime.tryParse(rawValue);
   }
 
+  void _loadGameStartedAt(SharedPreferences prefs) {
+    if (!gameIsRunning()) {
+      _gameStartedAt = null;
+      return;
+    }
+    final rawValue = prefs.getString(_storageGameStartedAtKey);
+    _gameStartedAt = rawValue == null ? null : DateTime.tryParse(rawValue);
+  }
+
+  Future<void> _startGameTimer() async {
+    _gameStartedAt = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageGameStartedAtKey,
+      _gameStartedAt!.toIso8601String(),
+    );
+  }
+
+  Future<void> _clearGameTimer() async {
+    _gameStartedAt = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageGameStartedAtKey);
+  }
+
   Future<void> _startDayTimer() async {
     _dayStartedAt = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
@@ -686,6 +717,7 @@ class GameStateService extends ChangeNotifier {
       resetCharacterTokens([]),
       resetCharacterAliveState(),
       _resetQuickFlowRuntime(),
+      _clearGameTimer(),
       _clearDayTimer(),
     ]);
     _nightCount = -1;
@@ -697,6 +729,7 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightCountKey);
     prefs.remove(_storageNightStateNumberKey);
     prefs.remove(_storageNightStepIdKey);
+    prefs.remove(_storageGameStartedAtKey);
     prefs.remove(_storageDayStartedAtKey);
     notifyListeners();
   }
@@ -705,6 +738,7 @@ class GameStateService extends ChangeNotifier {
     await _nightOrderService.ready;
     await _chronicleService?.startNewGame(gameCharacters);
     await _clearDayTimer();
+    await _startGameTimer();
     _nightCount = 1;
     final steps = _stepsFor(gameCharacters);
     if (steps.isEmpty) {
@@ -782,6 +816,13 @@ class GameStateService extends ChangeNotifier {
 
   bool gameIsRunning() {
     return _nightCount > 0;
+  }
+
+  Duration get gameElapsed {
+    final startedAt = _gameStartedAt;
+    if (!gameIsRunning() || startedAt == null) return Duration.zero;
+    final elapsed = DateTime.now().difference(startedAt);
+    return elapsed.isNegative ? Duration.zero : elapsed;
   }
 
   bool isDawn() => _currentNightStepId == 'phase:dawn';

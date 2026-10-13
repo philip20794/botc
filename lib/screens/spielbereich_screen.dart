@@ -58,6 +58,44 @@ class _DayTimerDisplay extends StatelessWidget {
   }
 }
 
+class _GameTimerDisplay extends StatelessWidget {
+  const _GameTimerDisplay({required this.elapsed});
+
+  final Duration elapsed;
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = elapsed.inMinutes.toString().padLeft(2, '0');
+    final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return IgnorePointer(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4A3B5E).withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white54),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.timer_outlined, color: Colors.white70, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              '$minutes:$seconds',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SpielbereichScreenState extends State<SpielbereichScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<CharacterCircleComponentState> _characterCircleKey2 =
@@ -65,7 +103,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
   bool _isMenuVisible = false;
   late AnimationController _controller;
   late Animation<double> _animation;
-  late final Timer _dayTimer;
+  late final Timer _gameTimer;
   String? _characterLayoutSignature;
 
   @override
@@ -76,8 +114,8 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
-    _dayTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || !context.read<GameStateService>().isDay()) {
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !context.read<GameStateService>().gameIsRunning()) {
         return;
       }
       setState(() {});
@@ -113,7 +151,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
 
   @override
   void dispose() {
-    _dayTimer.cancel();
+    _gameTimer.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -174,6 +212,18 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
           backgroundColor: Colors.transparent,
           body: Stack(
             children: [
+              if (gameStateService.gameIsRunning())
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8, right: 10),
+                      child: _GameTimerDisplay(
+                        elapsed: gameStateService.gameElapsed,
+                      ),
+                    ),
+                  ),
+                ),
               // The bar stays below character tokens in the Stack. A token can
               // therefore still start a drag when it overlaps a reminder chip.
               if (!_isMenuVisible &&
