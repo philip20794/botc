@@ -98,6 +98,8 @@
   "winningTeamOptional": "Winning team (optional)",
   "goodTeam": "Good",
   "evilTeam": "Evil",
+  "gameInProgress": "Game still in progress",
+  "endRunningGameToContinue": "To select players or characters again, you must end the running game first.",
   "layoutReset": "Layout reset?",
   "reallyResetLayout": "Do you really want to reset the layout?",
   "yesResetLayout": "Yes, reset layout",

@@ -132,14 +132,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildArrowDown(gameIsRunning),
                     _buildCard(localizedStrings.players, Icons.groups,
-                        PlayernameScreen(), gameIsRunning, null),
+                        PlayernameScreen(), gameIsRunning, null,
+                        onDisabledTap:
+                            gameIsRunning ? _showRunningGameDialog : null),
                     _buildArrowDown(!playerDone || gameIsRunning),
                     _buildCard(
                         localizedStrings.characterSelection,
                         Icons.dashboard,
                         CharacterAuswahlScreen(),
                         gameIsRunning,
-                        null),
+                        null,
+                        onDisabledTap:
+                            gameIsRunning ? _showRunningGameDialog : null),
                     _buildArrowDown(false),
                     _buildCard(
                         localizedStrings.showCharactersToPlayers,
@@ -209,7 +213,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCard(String title, IconData icon, Widget onTap, bool disabled,
-      Function? function) {
+      Function? function,
+      {VoidCallback? onDisabledTap}) {
     return Card(
       color: const Color(0xFF6f678a).withOpacity(0.9),
       margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
@@ -221,6 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     TextStyle(color: disabled ? Colors.grey : Colors.white))),
         onTap: () {
           if (disabled) {
+            onDisabledTap?.call();
             return;
           }
           if (function != null) {
@@ -234,4 +240,124 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  void _showRunningGameDialog() {
+    final localizedStrings = AppLocalizations.of(context)!;
+    String? winningTeam;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.94),
+          title: Text(
+            localizedStrings.gameInProgress,
+            style: const TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                localizedStrings.endRunningGameToContinue,
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                localizedStrings.winningTeamOptional,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildWinningTeamOption(
+                      icon: Icons.shield_rounded,
+                      label: localizedStrings.goodTeam,
+                      color: const Color(0xFF4CA8FF),
+                      isSelected: winningTeam == 'good',
+                      onTap: () => setDialogState(() {
+                        winningTeam = winningTeam == 'good' ? null : 'good';
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildWinningTeamOption(
+                      icon: Icons.local_fire_department_rounded,
+                      label: localizedStrings.evilTeam,
+                      color: const Color(0xFFFF5A5F),
+                      isSelected: winningTeam == 'evil',
+                      onTap: () => setDialogState(() {
+                        winningTeam = winningTeam == 'evil' ? null : 'evil';
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                localizedStrings.cancel,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await _endRunningGame(winningTeam);
+              },
+              child: Text(
+                localizedStrings.yesEndGame,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _endRunningGame(String? winningTeam) async {
+    final gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
+    final characterService =
+        Provider.of<CharacterService>(context, listen: false);
+    await gameStateService.endGame(winningTeam: winningTeam);
+    characterService.endGame();
+    if (mounted) setState(() {});
+  }
+
+  Widget _buildWinningTeamOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.30) : Colors.black26,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? color : Colors.white24,
+              width: isSelected ? 2.5 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 36),
+              const SizedBox(height: 4),
+              Text(label, style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      );
 }

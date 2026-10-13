@@ -302,6 +302,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get evilTeam => 'Böse';
 
   @override
+  String get gameInProgress => 'Spiel läuft noch';
+
+  @override
+  String get endRunningGameToContinue =>
+      'Um Spieler oder Charaktere neu auszuwählen, musst du zuerst das laufende Spiel beenden.';
+
+  @override
   String get layoutReset => 'Layout zurücksetzen?';
 
   @override

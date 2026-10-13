@@ -650,6 +650,18 @@ abstract class AppLocalizations {
   /// **'Böse'**
   String get evilTeam;
 
+  /// No description provided for @gameInProgress.
+  ///
+  /// In de, this message translates to:
+  /// **'Spiel läuft noch'**
+  String get gameInProgress;
+
+  /// No description provided for @endRunningGameToContinue.
+  ///
+  /// In de, this message translates to:
+  /// **'Um Spieler oder Charaktere neu auszuwählen, musst du zuerst das laufende Spiel beenden.'**
+  String get endRunningGameToContinue;
+
   /// No description provided for @layoutReset.
   ///
   /// In de, this message translates to:
