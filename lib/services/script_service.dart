@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:blood_on_the_clocktower/models/botc_script.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
+import 'package:blood_on_the_clocktower/models/game_record.dart';
 import 'package:blood_on_the_clocktower/models/script_import.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:flutter/foundation.dart';
@@ -149,6 +150,26 @@ class ScriptService extends ChangeNotifier {
   String get selectedScriptId => _selectedScriptId;
   BotcScript get selectedScript =>
       scripts.firstWhere((script) => script.id == _selectedScriptId);
+
+  /// Immutable script data used by a game record. Experimental scripts are
+  /// resolved from the supplied catalog because their stored role list is
+  /// intentionally empty.
+  GameRecordScript gameRecordSnapshot(List<Character> catalog) {
+    final script = selectedScript;
+    final roleIds = _selectedScriptId == experimentalId
+        ? resolveCharacters(catalog)
+            .map((character) => character.roleId)
+            .toSet()
+            .toList(growable: false)
+        : List<String>.from(script.roleIds);
+    return GameRecordScript(
+      scriptId: script.id,
+      name: script.name,
+      isCustom: _customScripts.any((custom) => custom.id == script.id),
+      roleIds: roleIds,
+      contentHash: GameRecordScript.contentHashForRoleIds(roleIds),
+    );
+  }
 
   double? storytellerComplexityFor(String scriptId) {
     final custom = _customScripts.cast<BotcScript?>().firstWhere(

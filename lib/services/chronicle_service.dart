@@ -104,14 +104,18 @@ class ChronicleService extends ChangeNotifier {
     return changed;
   }
 
-  Future<void> startNewGame(List<Character> characters) async {
+  Future<void> startNewGame(
+    List<Character> characters, {
+    String? gameId,
+    DateTime? startedAt,
+  }) async {
     await ready;
     if (_active?.events.isNotEmpty == true) {
       await archiveCurrent();
     }
-    final now = DateTime.now();
+    final now = startedAt ?? DateTime.now();
     _active = ChronicleLog(
-      gameId: _newGameId(now),
+      gameId: gameId ?? _newGameId(now),
       startedAt: now,
       events: [
         ChronicleEvent(
@@ -137,11 +141,15 @@ class ChronicleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> archiveCurrent({String? winningTeam}) async {
+  Future<ChronicleLog?> archiveCurrent({
+    String? winningTeam,
+    DateTime? endedAt,
+  }) async {
     await ready;
-    if (_active == null) return;
-    _last = _active!.copyWith(
-      endedAt: DateTime.now(),
+    if (_active == null) return null;
+    final immutableSnapshot = ChronicleLog.fromJson(_active!.toJson());
+    _last = immutableSnapshot.copyWith(
+      endedAt: endedAt ?? DateTime.now(),
       winningTeam: winningTeam,
     );
     _active = null;
@@ -151,6 +159,7 @@ class ChronicleService extends ChangeNotifier {
       prefs.setString(_lastKey, jsonEncode(_last!.toJson())),
     ]);
     notifyListeners();
+    return ChronicleLog.fromJson(_last!.toJson());
   }
 
   Future<void> factoryReset() async {
@@ -592,12 +601,13 @@ class ChronicleService extends ChangeNotifier {
   Future<void> recordCharacterChange({
     required Character oldCharacter,
     required Character newCharacter,
+    DateTime? occurredAt,
   }) async {
     if (_active == null) return;
     final latest = _active!.events.lastOrNull;
     await _append(ChronicleEvent(
       id: _uniqueId('character-change:${oldCharacter.id}'),
-      timestamp: DateTime.now(),
+      timestamp: occurredAt ?? DateTime.now(),
       type: ChronicleEventType.characterChanged,
       phase: latest?.phase ?? ChroniclePhase.setup,
       round: latest?.round ?? 0,

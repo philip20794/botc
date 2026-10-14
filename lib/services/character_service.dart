@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -19,6 +18,7 @@ class CharacterService extends ChangeNotifier {
   String? _allCharactersLocaleCode;
   String? _loadingAllCharactersLocaleCode;
   Future<void>? _allCharactersLoadFuture;
+  Future<void> _pendingGameWrites = Future<void>.value();
   final String _storageKey = 'character_list';
   final String _storageKeyBackup = 'character_list_backup';
   final String _storageKeyPositions = 'character_positions_2';
@@ -436,13 +436,17 @@ class CharacterService extends ChangeNotifier {
       _gameCharacters[index] = newCharacter.copyWith(id: replacementId);
       _gameCharacters[index].playerName = oldCharacter.playerName;
       final replacement = _gameCharacters[index];
-      _saveGameCharacters();
-      if (_chronicleService != null) {
-        unawaited(_chronicleService.recordCharacterChange(
-          oldCharacter: oldCharacter,
-          newCharacter: replacement,
-        ));
-      }
+      final oldSnapshot = oldCharacter.copyWith();
+      final replacementSnapshot = replacement.copyWith();
+      final occurredAt = DateTime.now();
+      _pendingGameWrites = _pendingGameWrites.then((_) async {
+        await _saveGameCharacters();
+        await _chronicleService?.recordCharacterChange(
+          oldCharacter: oldSnapshot,
+          newCharacter: replacementSnapshot,
+          occurredAt: occurredAt,
+        );
+      });
       notifyListeners();
       return replacement.id;
     }
@@ -486,10 +490,19 @@ class CharacterService extends ChangeNotifier {
     }
   }
 
-  void endGame() {
+  Future<void> flushPendingGameWrites() => _pendingGameWrites;
+
+  Future<void> endGame() async {
+    await flushPendingGameWrites();
     _clearPlayerNamesOnGameCards();
-    _saveGameCharactersBackup();
-    resetGameCharactersWithBackup();
+    await _saveGameCharactersBackup();
+    _gameCharacters
+      ..clear()
+      ..addAll(
+        _gameCharactersBackup.map((character) => character.copyWith()),
+      );
+    await _saveGameCharacters();
+    notifyListeners();
   }
 
   void _clearPlayerNamesOnGameCards() {

@@ -1,0 +1,119 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /games/{gameId} {
+      // Public game statistics are deliberately readable without an account.
+      allow read: if true;
+
+      // Public clients can only add a bounded, schema-shaped immutable record.
+      allow create: if validGameRecord(gameId, request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+
+  function validGameRecord(gameId, data) {
+    return data is map
+      && data.keys().hasAll([
+        'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
+        'playerCount', 'winnerTeam', 'script', 'players', 'phases',
+        'chronicleEvents'
+      ])
+      && data.keys().hasOnly([
+        'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
+        'playerCount', 'winnerTeam', 'script', 'players', 'phases',
+        'chronicleEvents'
+      ])
+      && data.schemaVersion == 1
+      && data.gameId is string
+      && data.gameId == gameId
+      && data.gameId.size() >= 8 && data.gameId.size() <= 128
+      && validTimestampText(data.startedAt)
+      && validTimestampText(data.endedAt)
+      && data.totalDurationMs is int && data.totalDurationMs > 0
+      && data.playerCount is int && data.playerCount >= 1 && data.playerCount <= 20
+      && data.winnerTeam in ['good', 'evil']
+      && validScript(data.script)
+      && validPlayers(data.players, data.playerCount)
+      && data.phases is list && data.phases.size() >= 1 && data.phases.size() <= 512
+      && data.chronicleEvents is list && data.chronicleEvents.size() <= 4096;
+  }
+
+  function validTimestampText(value) {
+    // The app validates ISO-8601 syntax and chronological consistency before
+    // upload. Rules can enforce the public wire type and a safe bound only.
+    return value is string && value.size() >= 20 && value.size() <= 40;
+  }
+
+  function validScript(script) {
+    return script is map
+      && script.keys().hasAll([
+        'scriptId', 'name', 'isCustom', 'roleIds', 'contentHash'
+      ])
+      && script.keys().hasOnly([
+        'scriptId', 'name', 'isCustom', 'roleIds', 'contentHash'
+      ])
+      && script.scriptId is string && script.scriptId.size() >= 3
+      && script.scriptId.size() <= 128
+      && script.name is string && script.name.size() >= 1
+      && script.name.size() <= 128
+      && script.isCustom is bool
+      && script.roleIds is list && script.roleIds.size() >= 1
+      && script.roleIds.size() <= 512
+      && script.contentHash is string && script.contentHash.size() == 64;
+  }
+
+  function validPlayer(player) {
+    return player is map
+      && player.keys().hasAll([
+        'anonymizedPlayerId', 'position', 'actualStartRoleId',
+        'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
+      ])
+      && player.keys().hasOnly([
+        'anonymizedPlayerId', 'position', 'actualStartRoleId',
+        'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
+      ])
+      && player.anonymizedPlayerId is string
+      && player.anonymizedPlayerId.size() >= 8
+      && player.anonymizedPlayerId.size() <= 128
+      && player.position is int && player.position >= 0 && player.position < 20
+      && player.actualStartRoleId is string && player.actualStartRoleId.size() >= 1
+      && player.actualStartRoleId.size() <= 128
+      && player.displayedStartRoleId is string
+      && player.displayedStartRoleId.size() >= 1
+      && player.displayedStartRoleId.size() <= 128
+      && player.startTeam in ['good', 'evil']
+      && player.endRoleId is string && player.endRoleId.size() >= 1
+      && player.endRoleId.size() <= 128
+      && player.endTeam in ['good', 'evil'];
+  }
+
+  // Firestore Rules has no list iteration. BotC has at most 20 player seats,
+  // so each player record can still be checked completely without trusting a
+  // client-supplied nested map.
+  function validPlayers(players, playerCount) {
+    return players is list
+      && players.size() == playerCount
+      && playerCount >= 1 && playerCount <= 20
+      && validPlayer(players[0])
+      && (playerCount < 2 || validPlayer(players[1]))
+      && (playerCount < 3 || validPlayer(players[2]))
+      && (playerCount < 4 || validPlayer(players[3]))
+      && (playerCount < 5 || validPlayer(players[4]))
+      && (playerCount < 6 || validPlayer(players[5]))
+      && (playerCount < 7 || validPlayer(players[6]))
+      && (playerCount < 8 || validPlayer(players[7]))
+      && (playerCount < 9 || validPlayer(players[8]))
+      && (playerCount < 10 || validPlayer(players[9]))
+      && (playerCount < 11 || validPlayer(players[10]))
+      && (playerCount < 12 || validPlayer(players[11]))
+      && (playerCount < 13 || validPlayer(players[12]))
+      && (playerCount < 14 || validPlayer(players[13]))
+      && (playerCount < 15 || validPlayer(players[14]))
+      && (playerCount < 16 || validPlayer(players[15]))
+      && (playerCount < 17 || validPlayer(players[16]))
+      && (playerCount < 18 || validPlayer(players[17]))
+      && (playerCount < 19 || validPlayer(players[18]))
+      && (playerCount < 20 || validPlayer(players[19]));
+  }
+}

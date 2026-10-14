@@ -154,18 +154,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (!gameIsRunning) {_shuffleCharacters()}
                             }),
                     _buildArrowDown(!allDone),
-                    _buildCard(
-                        localizedStrings.playground,
-                        Icons.play_arrow,
-                        SpielbereichScreen(),
-                        false,
-                        () => {
-                              if (!gameIsRunning)
-                                {
-                                  gameStateService.startNewGame(characterService
-                                      .gameCharactersWithoutDrunk)
-                                }
-                            }),
+                    _buildCard(localizedStrings.playground, Icons.play_arrow,
+                        SpielbereichScreen(), false, () async {
+                      if (!gameIsRunning) {
+                        await gameStateService.startNewGame(
+                          characterService.gameCharactersWithoutDrunkAndFabled,
+                          completeSetupCharacters:
+                              characterService.gameCharacters,
+                          scriptCatalog: characterService.allCharacters,
+                        );
+                      }
+                    }),
                     SizedBox(height: 40),
                   ],
                 ),
@@ -224,14 +223,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(title,
                 style:
                     TextStyle(color: disabled ? Colors.grey : Colors.white))),
-        onTap: () {
+        onTap: () async {
           if (disabled) {
             onDisabledTap?.call();
             return;
           }
           if (function != null) {
-            function();
+            await function();
           }
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => onTap),
@@ -324,8 +324,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Provider.of<GameStateService>(context, listen: false);
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    await gameStateService.endGame(winningTeam: winningTeam);
-    characterService.endGame();
+    await gameStateService.endGame(
+      winningTeam: winningTeam,
+      characterService: characterService,
+    );
     if (mounted) setState(() {});
   }
 

@@ -429,8 +429,10 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                   false,
                   context,
                   onEndGame: (winningTeam) async {
-                    await gameStateService.endGame(winningTeam: winningTeam);
-                    characterService.endGame();
+                    await gameStateService.endGame(
+                      winningTeam: winningTeam,
+                      characterService: characterService,
+                    );
                     if (!context.mounted) return;
                     _toggleMenu();
                     Navigator.of(context).pushAndRemoveUntil(
@@ -743,9 +745,9 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                unawaited(onConfirm(winningTeam));
+                await onConfirm(winningTeam);
               },
               child: Text(
                 localizedStrings.yesEndGame,

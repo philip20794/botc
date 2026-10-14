@@ -4,7 +4,7 @@
 
 - Flutter/Dart-Anwendung (Dart SDK `>=3.4.4 <4.0.0`) für den Spielablauf von Blood on the Clocktower.
 - Die UI ist Material-basiert, überwiegend für Portrait-Nutzung ausgelegt und verwendet Provider.
-- Firebase initialisiert die App; `firebase_auth`, Google Sign-In und Firestore verwalten Anmeldung und die Firestore-Berechtigung `users/{uid}.canEdit`.
+- Firebase Core und Cloud Firestore werden einmalig in `main.dart` ohne sichtbare Anmeldung initialisiert. Öffentliche, anonymisierte GameRecords werden ausschließlich als unveränderliche `games/{gameId}`-Dokumente veröffentlicht; die lokale Upload-Warteschlange bleibt bei Netzwerkfehlern erhalten.
 - Persistenten lokalen Spiel- und Layoutzustand über `shared_preferences` in den jeweiligen Services halten; keine parallelen Speicherpfade einführen.
 
 ## Architektur und Zuständigkeiten

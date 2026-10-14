@@ -188,11 +188,15 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
               ),
               const SizedBox(height: 20),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   if (gameService.nightCount < 0) {
-                    gameService.startNewGame(
-                        characterService.gameCharactersWithoutDrunkAndFabled);
+                    await gameService.startNewGame(
+                      characterService.gameCharactersWithoutDrunkAndFabled,
+                      completeSetupCharacters: characterService.gameCharacters,
+                      scriptCatalog: characterService.allCharacters,
+                    );
                   }
+                  if (!context.mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(

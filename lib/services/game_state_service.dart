@@ -8,14 +8,20 @@ import 'package:blood_on_the_clocktower/models/chronicle.dart';
 import 'package:blood_on_the_clocktower/models/chronicle_schema.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
+import 'package:blood_on_the_clocktower/models/game_record.dart';
+import 'package:blood_on_the_clocktower/models/game_record_capture.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/night_order_service.dart';
+import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
+import 'package:blood_on_the_clocktower/services/game_record_upload_queue.dart';
+import 'package:blood_on_the_clocktower/services/game_record_validator.dart';
 import 'package:blood_on_the_clocktower/services/quick_flow_interpreter.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,12 +30,15 @@ class GameStateService extends ChangeNotifier {
   final ScriptService _scriptService;
   final NightOrderService _nightOrderService;
   final ChronicleService? _chronicleService;
+  final GameRecordUploadQueue _gameRecordUploadQueue;
+  final DateTime Function() _now;
+  Future<void>? _endGameOperation;
   late final Future<void> ready;
   bool _isLocked = false;
   bool _forceUpdateLayout = false;
   final String _storageIsLockedKey = 'is_locked';
-  Map<String, List<Token>> _characterTokens = {};
-  Map<String, bool> _characterAliveState = {};
+  final Map<String, List<Token>> _characterTokens = {};
+  final Map<String, bool> _characterAliveState = {};
   final Set<String> _apparentlyDeadCharacterIds = {};
   int? _lastReportedDeathDay;
   List<Token> unsedGameTokens = [];
@@ -37,6 +46,9 @@ class GameStateService extends ChangeNotifier {
   int _nightCount = -1;
   DateTime? _gameStartedAt;
   DateTime? _dayStartedAt;
+  GameRecordCapture? _activeGameRecordCapture;
+  GameRecordCapture? _lastGameRecordCapture;
+  GameRecord? _lastCompletedGameRecord;
   bool initIsDone = false;
   bool _chracterSelectionDone = false;
   double _nightStateNumber = 0;
@@ -56,6 +68,10 @@ class GameStateService extends ChangeNotifier {
   static const String _storageNightStepIdKey = 'night_step_id';
   static const String _storageGameStartedAtKey = 'game_started_at';
   static const String _storageDayStartedAtKey = 'day_started_at';
+  static const String _storageGameRecordCaptureKey = 'game_record_capture_v1';
+  static const String _storageLastGameRecordKey = 'game_record_last_v1';
+  static const String _storageLastGameRecordCaptureKey =
+      'game_record_last_capture_v1';
   final String _storageShowCharactersToPlayersKey =
       'show_characters_to_players';
   final String _chracterSelectionDoneKey = 'character_selection_done';
@@ -78,9 +94,14 @@ class GameStateService extends ChangeNotifier {
     ScriptService? scriptService,
     NightOrderService? nightOrderService,
     ChronicleService? chronicleService,
+    GameRecordUploadQueue? gameRecordUploadQueue,
+    DateTime Function()? now,
   })  : _scriptService = scriptService ?? ScriptService(),
         _nightOrderService = nightOrderService ?? NightOrderService(),
-        _chronicleService = chronicleService {
+        _chronicleService = chronicleService,
+        _gameRecordUploadQueue =
+            gameRecordUploadQueue ?? GameRecordUploadQueue(),
+        _now = now ?? DateTime.now {
     _scriptService.addListener(_onScriptSelectionChanged);
     ready = init();
   }
@@ -89,6 +110,7 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> init() async {
     await _scriptService.ready;
+    await _gameRecordUploadQueue.ready;
     final prefs = await SharedPreferences.getInstance();
     _loadIsLocked(prefs);
     _loadCharacterTokens(prefs);
@@ -98,12 +120,17 @@ class GameStateService extends ChangeNotifier {
     _loadNightCount(prefs);
     _currentNightStepId = prefs.getString(_storageNightStepIdKey);
     _loadGameStartedAt(prefs);
+    _loadGameRecordState(prefs);
     if (gameIsRunning() && _gameStartedAt == null) {
-      await _startGameTimer();
+      await _startGameTimer(startedAt: _activeGameRecordCapture?.startedAt);
     }
     _loadDayStartedAt(prefs);
     if (_currentNightStepId == 'day' && _dayStartedAt == null) {
-      await _startDayTimer();
+      final capturedDayStart = _activeGameRecordCapture?.phases
+          .lastWhereOrNull(
+              (phase) => phase.isOpen && phase.type == GameRecordPhaseType.day)
+          ?.startedAt;
+      await _startDayTimer(startedAt: capturedDayStart);
     }
     _loadNightStateNumber(prefs);
     _loadShowCharactersToPlayers(prefs);
@@ -127,6 +154,9 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightStepIdKey);
     prefs.remove(_storageGameStartedAtKey);
     prefs.remove(_storageDayStartedAtKey);
+    prefs.remove(_storageGameRecordCaptureKey);
+    prefs.remove(_storageLastGameRecordKey);
+    prefs.remove(_storageLastGameRecordCaptureKey);
     prefs.remove(_storageShowCharactersToPlayersKey);
     prefs.remove(_chracterSelectionDoneKey);
     prefs.remove(_storageDemonBluffRoleIdsKey);
@@ -403,10 +433,23 @@ class GameStateService extends ChangeNotifier {
     if (_apparentlyDeadCharacterIds.remove(characterA.id)) {
       _apparentlyDeadCharacterIds.add(eid);
     }
+    final capture = _activeGameRecordCapture;
+    if (capture != null) {
+      final players = List<GameRecordCapturePlayer>.from(capture.players);
+      final playerIndex = players.indexWhere(
+          (player) => player.currentCharacterInstanceId == characterA.id);
+      if (playerIndex >= 0) {
+        players[playerIndex] = players[playerIndex].copyWith(
+          currentCharacterInstanceId: eid,
+        );
+        _activeGameRecordCapture = capture.copyWith(players: players);
+      }
+    }
     await Future.wait([
       _saveCharacterTokens(),
       _saveCharacterAliveState(),
       _saveApparentDeathState(),
+      if (_activeGameRecordCapture != null) _saveActiveGameRecordCapture(),
     ]);
     notifyListeners();
   }
@@ -450,8 +493,8 @@ class GameStateService extends ChangeNotifier {
     _gameStartedAt = rawValue == null ? null : DateTime.tryParse(rawValue);
   }
 
-  Future<void> _startGameTimer() async {
-    _gameStartedAt = DateTime.now();
+  Future<void> _startGameTimer({DateTime? startedAt}) async {
+    _gameStartedAt = startedAt ?? _now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _storageGameStartedAtKey,
@@ -465,8 +508,8 @@ class GameStateService extends ChangeNotifier {
     await prefs.remove(_storageGameStartedAtKey);
   }
 
-  Future<void> _startDayTimer() async {
-    _dayStartedAt = DateTime.now();
+  Future<void> _startDayTimer({DateTime? startedAt}) async {
+    _dayStartedAt = startedAt ?? _now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _storageDayStartedAtKey,
@@ -478,6 +521,449 @@ class GameStateService extends ChangeNotifier {
     _dayStartedAt = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageDayStartedAtKey);
+  }
+
+  void _loadGameRecordState(SharedPreferences prefs) {
+    GameRecordCapture? decodeCapture(String? raw) {
+      if (raw == null) return null;
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is! Map) return null;
+        final capture = GameRecordCapture.fromJson(
+          Map<String, dynamic>.from(decoded),
+        );
+        return capture.schemaVersion == GameRecordCapture.currentSchemaVersion
+            ? capture
+            : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    _activeGameRecordCapture =
+        decodeCapture(prefs.getString(_storageGameRecordCaptureKey));
+    _lastGameRecordCapture =
+        decodeCapture(prefs.getString(_storageLastGameRecordCaptureKey));
+    final rawRecord = prefs.getString(_storageLastGameRecordKey);
+    if (rawRecord == null) return;
+    try {
+      final decoded = jsonDecode(rawRecord);
+      if (decoded is Map) {
+        final record = GameRecord.fromJson(Map<String, dynamic>.from(decoded));
+        if (const GameRecordValidator().validate(record).isValid) {
+          _lastCompletedGameRecord = record;
+        }
+      }
+    } catch (_) {
+      _lastCompletedGameRecord = null;
+    }
+  }
+
+  Future<void> _saveActiveGameRecordCapture() async {
+    final capture = _activeGameRecordCapture;
+    if (capture == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageGameRecordCaptureKey,
+      jsonEncode(capture.toJson()),
+    );
+  }
+
+  String _createGameRecordId(DateTime startedAt) {
+    final source =
+        '${startedAt.microsecondsSinceEpoch}:${_now().microsecondsSinceEpoch}';
+    return 'game_${sha256.convert(utf8.encode(source)).toString().substring(0, 24)}';
+  }
+
+  String _opaqueId(String prefix, String source) =>
+      '${prefix}_${sha256.convert(utf8.encode(source)).toString().substring(0, 24)}';
+
+  GameTeam? _teamForFraction(Fraction fraction) => switch (fraction) {
+        Fraction.townsfolk || Fraction.outsider => GameTeam.good,
+        Fraction.minion || Fraction.demon => GameTeam.evil,
+        Fraction.traveller || Fraction.fabled || Fraction.loric => null,
+      };
+
+  Future<void> _beginGameRecordCapture({
+    required String gameId,
+    required DateTime startedAt,
+    required List<Character> visiblePlayers,
+    required List<Character> setupCharacters,
+    required List<Character> scriptCatalog,
+    required GameRecordPhaseType initialPhase,
+  }) async {
+    final roster = visiblePlayers
+        .where((character) =>
+            character.fraction != Fraction.fabled &&
+            character.fraction != Fraction.loric &&
+            character.roleId != 'drunk')
+        .toList(growable: false);
+    var players = <GameRecordCapturePlayer>[
+      for (var position = 0; position < roster.length; position++)
+        GameRecordCapturePlayer(
+          anonymizedPlayerId: _opaqueId(
+            'player',
+            '$gameId:$position:${roster[position].id}',
+          ),
+          position: position,
+          initialCharacterInstanceId: roster[position].id,
+          currentCharacterInstanceId: roster[position].id,
+          actualStartRoleId: roster[position].roleId,
+          displayedStartRoleId: roster[position].roleId,
+          startTeam: _teamForFraction(roster[position].fraction),
+          currentRoleId: roster[position].roleId,
+          currentTeam: _teamForFraction(roster[position].fraction),
+        ),
+    ];
+    final phase = GameRecordCapturedPhase(
+      phaseId: _opaqueId('phase', '$gameId:${initialPhase.name}:1'),
+      type: initialPhase,
+      round: 1,
+      startedAt: startedAt,
+    );
+    _activeGameRecordCapture = GameRecordCapture(
+      gameId: gameId,
+      startedAt: startedAt,
+      script: _scriptService.gameRecordSnapshot(scriptCatalog),
+      players: players,
+      phases: [phase],
+    );
+
+    // Setup reminders can already be assigned before the actual game starts.
+    for (final entry in _characterTokens.entries) {
+      final target = setupCharacters.firstWhereOrNull(
+        (character) => character.id == entry.key,
+      );
+      if (target == null) continue;
+      for (final token in entry.value) {
+        players = await _applyActualStartRoleMarker(
+          allCharacters: setupCharacters,
+          target: target,
+          token: token,
+          persist: false,
+        );
+      }
+    }
+    if (players.isNotEmpty &&
+        !identical(players, _activeGameRecordCapture!.players)) {
+      _activeGameRecordCapture = _activeGameRecordCapture!.copyWith(
+        players: players,
+      );
+    }
+    await _saveActiveGameRecordCapture();
+  }
+
+  Future<List<GameRecordCapturePlayer>> _applyActualStartRoleMarker({
+    required List<Character> allCharacters,
+    required Character target,
+    required Token token,
+    bool persist = true,
+  }) async {
+    final capture = _activeGameRecordCapture;
+    if (capture == null ||
+        !token.needsSetup ||
+        token.quickId != 'is_the_drunk') {
+      return capture?.players ?? const [];
+    }
+    final owner = allCharacters.firstWhereOrNull(
+      (character) => character.id == token.ownerRoleInstanceId,
+    );
+    if (owner != null && owner.roleId != 'drunk') return capture.players;
+    final index = capture.players.indexWhere((player) =>
+        player.currentCharacterInstanceId == target.id ||
+        player.initialCharacterInstanceId == target.id);
+    if (index < 0) return capture.players;
+    final players = capture.players.map((player) {
+      if (player.actualStartRoleId != 'drunk') return player;
+      final displayedRole = allCharacters.firstWhereOrNull(
+        (character) => character.roleId == player.displayedStartRoleId,
+      );
+      return player.copyWith(
+        actualStartRoleId: player.displayedStartRoleId,
+        startTeam: displayedRole == null
+            ? GameTeam.good
+            : _teamForFraction(displayedRole.fraction),
+      );
+    }).toList(growable: false);
+    players[index] = players[index].copyWith(
+      actualStartRoleId: owner?.roleId ?? 'drunk',
+      startTeam:
+          owner == null ? GameTeam.good : _teamForFraction(owner.fraction),
+    );
+    _activeGameRecordCapture = capture.copyWith(players: players);
+    if (persist) await _saveActiveGameRecordCapture();
+    return players;
+  }
+
+  Future<bool> _transitionGameRecordPhase(
+    GameRecordPhaseType type,
+    int round,
+    DateTime transitionAt,
+  ) async {
+    final capture = _activeGameRecordCapture;
+    if (capture == null || capture.endedAt != null || capture.phases.isEmpty) {
+      return false;
+    }
+    final phases = List<GameRecordCapturedPhase>.from(capture.phases);
+    final active = phases.last;
+    if (!active.isOpen || (active.type == type && active.round == round)) {
+      return false;
+    }
+    final validForwardTransition = active.type == GameRecordPhaseType.night &&
+            type == GameRecordPhaseType.day &&
+            round == active.round ||
+        active.type == GameRecordPhaseType.day &&
+            type == GameRecordPhaseType.night &&
+            round == active.round + 1;
+    if (!validForwardTransition || transitionAt.isBefore(active.startedAt)) {
+      return false;
+    }
+    phases[phases.length - 1] = active.close(transitionAt);
+    phases.add(GameRecordCapturedPhase(
+      phaseId: _opaqueId('phase', '${capture.gameId}:${type.name}:$round'),
+      type: type,
+      round: round,
+      startedAt: transitionAt,
+    ));
+    _activeGameRecordCapture = capture.copyWith(phases: phases);
+    await _saveActiveGameRecordCapture();
+    return true;
+  }
+
+  GameRecordCapture? _finalGameRecordCapture({
+    required DateTime endedAt,
+    required String? winningTeam,
+    required List<Character> gameCharacters,
+  }) {
+    final capture = _activeGameRecordCapture;
+    if (capture == null) return null;
+    final phases = List<GameRecordCapturedPhase>.from(capture.phases);
+    if (phases.isNotEmpty && phases.last.isOpen) {
+      phases[phases.length - 1] = phases.last.close(endedAt);
+    }
+    final roster = gameCharacters
+        .where((character) =>
+            character.fraction != Fraction.fabled &&
+            character.fraction != Fraction.loric &&
+            character.roleId != 'drunk')
+        .toList(growable: false);
+    final players = <GameRecordCapturePlayer>[
+      for (final player in capture.players)
+        if (player.position < roster.length)
+          player.copyWith(
+            currentCharacterInstanceId: roster[player.position].id,
+            currentRoleId: roster[player.position].roleId,
+            currentTeam: _teamForFraction(roster[player.position].fraction),
+          )
+        else
+          player,
+    ];
+    final winner = GameTeam.values.firstWhereOrNull(
+      (team) => team.name == winningTeam,
+    );
+    return capture.copyWith(
+      phases: phases,
+      players: players,
+      endedAt:
+          endedAt.isBefore(capture.startedAt) ? capture.startedAt : endedAt,
+      winnerTeam: winner,
+    );
+  }
+
+  GameRecord? _completeGameRecordFromChronicle(
+    GameRecordCapture? capture,
+    ChronicleLog? chronicle,
+  ) {
+    final endedAt = capture?.endedAt;
+    final winner = capture?.winnerTeam;
+    if (capture == null || endedAt == null || winner == null) return null;
+    final players = <GameRecordPlayer>[];
+    for (final player in capture.players) {
+      final actualStartRoleId = player.actualStartRoleId;
+      final startTeam = player.startTeam;
+      final endTeam = player.currentTeam;
+      if (actualStartRoleId == null || startTeam == null || endTeam == null) {
+        return null;
+      }
+      players.add(GameRecordPlayer(
+        anonymizedPlayerId: player.anonymizedPlayerId,
+        position: player.position,
+        actualStartRoleId: actualStartRoleId,
+        displayedStartRoleId: player.displayedStartRoleId,
+        startTeam: startTeam,
+        endRoleId: player.currentRoleId,
+        endTeam: endTeam,
+      ));
+    }
+    final phases = capture.phases
+        .map((phase) => phase.toGameRecordPhase())
+        .whereType<GameRecordPhase>()
+        .toList(growable: false);
+    final record = GameRecord(
+      gameId: capture.gameId,
+      startedAt: capture.startedAt,
+      endedAt: endedAt,
+      totalDuration: endedAt.difference(capture.startedAt),
+      playerCount: players.length,
+      winnerTeam: winner,
+      script: capture.script,
+      players: players,
+      phases: phases,
+      chronicleEvents: _gameRecordChronicleEvents(
+        chronicle,
+        capture,
+      ),
+    );
+    if (!const GameRecordValidator().validate(record).isValid) return null;
+    return record;
+  }
+
+  List<GameRecordChronicleEvent> _gameRecordChronicleEvents(
+    ChronicleLog? chronicle,
+    GameRecordCapture capture,
+  ) {
+    final endedAt = capture.endedAt;
+    if (chronicle == null || endedAt == null) return const [];
+    final playerByCharacterId = <String, String>{
+      for (final player in capture.players)
+        player.initialCharacterInstanceId: player.anonymizedPlayerId,
+    };
+    final validPhaseKeys = capture.phases
+        .where((phase) => phase.endedAt != null)
+        .map((phase) => '${phase.type.name}:${phase.round}')
+        .toSet();
+    final result = <GameRecordChronicleEvent>[];
+    for (final event in chronicle.events) {
+      if (event.timestamp.isBefore(capture.startedAt) ||
+          event.timestamp.isAfter(endedAt)) {
+        continue;
+      }
+      final actorId = event.character == null
+          ? null
+          : playerByCharacterId[event.character!.characterId];
+      if (event.type == ChronicleEventType.characterChanged &&
+          actorId != null &&
+          event.targets.isNotEmpty) {
+        playerByCharacterId[event.targets.first.characterId] = actorId;
+      }
+      final phase = switch (event.phase) {
+        ChroniclePhase.setup => GameRecordEventPhase.setup,
+        ChroniclePhase.night => GameRecordEventPhase.night,
+        ChroniclePhase.day => GameRecordEventPhase.day,
+      };
+      if (phase != GameRecordEventPhase.setup &&
+          !validPhaseKeys.contains('${phase.name}:${event.round}')) {
+        continue;
+      }
+      final targets = event.targets
+          .map((target) => playerByCharacterId[target.characterId])
+          .whereType<String>()
+          .toSet()
+          .toList(growable: false);
+      result.add(GameRecordChronicleEvent(
+        eventId: _opaqueId('event', '${capture.gameId}:${event.id}'),
+        occurredAt: event.timestamp,
+        type: GameRecordChronicleEventType.values.firstWhere(
+          (type) => type.name == event.type.name,
+        ),
+        phase: phase,
+        round: phase == GameRecordEventPhase.setup ? 0 : event.round,
+        actorPlayerId: actorId,
+        targetPlayerIds: targets,
+        data: _structuredEventData(event, playerByCharacterId),
+      ));
+    }
+    return result;
+  }
+
+  GameRecordEventData _structuredEventData(
+    ChronicleEvent event,
+    Map<String, String> playerByCharacterId,
+  ) {
+    final flags = <String, bool>{};
+    final numbers = <String, int>{};
+    final playerIds = <String, List<String>>{};
+    final roleIds = <String, List<String>>{};
+    final tokenIds = <String, List<String>>{};
+    final alive = event.details['alive'];
+    if (alive is bool) flags['alive'] = alive;
+    if (event.character != null && event.character!.roleId.isNotEmpty) {
+      roleIds['actorRoles'] = [event.character!.roleId];
+    }
+    final targetRoles = event.targets
+        .map((target) => target.roleId)
+        .where((roleId) => roleId.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (targetRoles.isNotEmpty) roleIds['targetRoles'] = targetRoles;
+    final quickId = event.details['quickId'];
+    if (quickId is String &&
+        RegExp(r'^[a-z0-9][a-z0-9_-]{0,127}$').hasMatch(quickId)) {
+      tokenIds['reminders'] = [quickId];
+    }
+
+    void absorbValues(Map<dynamic, dynamic> values) {
+      for (final entry in values.entries) {
+        final key = _safeEventDataKey(entry.key.toString());
+        if (key == null) continue;
+        final value = entry.value;
+        if (value is bool) {
+          flags[key] = value;
+        } else if (value is int) {
+          numbers[key] = value;
+        } else if (value is num && value == value.roundToDouble()) {
+          numbers[key] = value.toInt();
+        } else {
+          final ids = _playerIdsFromValue(value, playerByCharacterId);
+          if (ids.isNotEmpty) playerIds[key] = ids;
+        }
+      }
+    }
+
+    absorbValues(event.details);
+    for (final entry in event.informationEntries) {
+      final values = entry['values'];
+      if (values is Map) absorbValues(values);
+    }
+    return GameRecordEventData(
+      flags: flags,
+      numbers: numbers,
+      roleIds: roleIds,
+      playerIds: playerIds,
+      tokenIds: tokenIds,
+    );
+  }
+
+  String? _safeEventDataKey(String source) {
+    final cleaned = source.replaceAll(RegExp('[^A-Za-z0-9_]'), '_');
+    if (cleaned.isEmpty) return null;
+    final prefixed =
+        RegExp(r'^[A-Za-z]').hasMatch(cleaned) ? cleaned : 'value_$cleaned';
+    final result = '${prefixed[0].toLowerCase()}${prefixed.substring(1)}';
+    return result.length > 64 ? result.substring(0, 64) : result;
+  }
+
+  List<String> _playerIdsFromValue(
+    dynamic value,
+    Map<String, String> playerByCharacterId,
+  ) {
+    final ids = <String>{};
+    void visit(dynamic item) {
+      if (item is Map) {
+        final characterId = item['characterId'];
+        if (characterId is String) {
+          final playerId = playerByCharacterId[characterId];
+          if (playerId != null) ids.add(playerId);
+        }
+      } else if (item is List) {
+        for (final child in item) {
+          visit(child);
+        }
+      }
+    }
+
+    visit(value);
+    return ids.toList(growable: false);
   }
 
   void _loadChracterSelectionDone(SharedPreferences prefs) {
@@ -711,8 +1197,99 @@ class GameStateService extends ChangeNotifier {
         'needsSetup': token.needsSetup,
       });
 
-  Future<void> endGame({String? winningTeam}) async {
-    await _chronicleService?.archiveCurrent(winningTeam: winningTeam);
+  Future<void> endGame({
+    String? winningTeam,
+    List<Character> gameCharacters = const [],
+    CharacterService? characterService,
+  }) {
+    final activeOperation = _endGameOperation;
+    if (activeOperation != null) return activeOperation;
+    final operation = _guardedEndGame(
+      winningTeam: winningTeam,
+      gameCharacters: gameCharacters,
+      characterService: characterService,
+    );
+    _endGameOperation = operation;
+    return operation;
+  }
+
+  Future<void> _guardedEndGame({
+    required String? winningTeam,
+    required List<Character> gameCharacters,
+    required CharacterService? characterService,
+  }) async {
+    try {
+      await _endGameOnce(
+        winningTeam: winningTeam,
+        gameCharacters: gameCharacters,
+        characterService: characterService,
+      );
+    } finally {
+      _endGameOperation = null;
+    }
+  }
+
+  Future<void> _endGameOnce({
+    required String? winningTeam,
+    required List<Character> gameCharacters,
+    required CharacterService? characterService,
+  }) async {
+    if (!gameIsRunning() &&
+        _activeGameRecordCapture == null &&
+        _chronicleService?.activeChronicle == null) {
+      return;
+    }
+    final endedAt = _activeGameRecordCapture?.endedAt ?? _now();
+    await _gameRecordUploadQueue.ready;
+    await characterService?.flushPendingGameWrites();
+
+    final sourceCharacters = characterService == null
+        ? gameCharacters
+        : characterService.gameCharactersWithoutDrunkAndFabled;
+    final characterSnapshot = List<Character>.unmodifiable(
+      sourceCharacters.map((character) => character.copyWith()),
+    );
+    final captureSnapshot = _finalGameRecordCapture(
+      endedAt: endedAt,
+      winningTeam: winningTeam,
+      gameCharacters: characterSnapshot,
+    );
+    if (captureSnapshot != null) {
+      _activeGameRecordCapture = captureSnapshot;
+      await _saveActiveGameRecordCapture();
+    }
+    var chronicleSnapshot = await _chronicleService?.archiveCurrent(
+      winningTeam: winningTeam,
+      endedAt: endedAt,
+    );
+    if (chronicleSnapshot == null &&
+        captureSnapshot != null &&
+        _chronicleService?.lastChronicle?.gameId == captureSnapshot.gameId) {
+      chronicleSnapshot = _chronicleService?.lastChronicle;
+    }
+    final record = _completeGameRecordFromChronicle(
+      captureSnapshot,
+      chronicleSnapshot,
+    );
+    if (record != null) {
+      final queued = await _gameRecordUploadQueue.enqueue(record);
+      final wasAlreadyQueued = _gameRecordUploadQueue.records
+          .any((queuedRecord) => queuedRecord.gameId == record.gameId);
+      if (!queued && !wasAlreadyQueued) {
+        throw StateError('Completed GameRecord could not be persisted.');
+      }
+      if (queued || wasAlreadyQueued) {
+        _lastCompletedGameRecord = record;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          _storageLastGameRecordKey,
+          jsonEncode(record.toJson()),
+        );
+      }
+    }
+
+    // Only after every snapshot has been validated and, if complete, durably
+    // queued may mutable game and character state be reset.
     final resetFuture = Future.wait([
       resetCharacterTokens([]),
       resetCharacterAliveState(),
@@ -726,23 +1303,52 @@ class GameStateService extends ChangeNotifier {
     _legacyNightStateNumber = null;
     await resetFuture;
     final prefs = await SharedPreferences.getInstance();
-    prefs.remove(_storageNightCountKey);
-    prefs.remove(_storageNightStateNumberKey);
-    prefs.remove(_storageNightStepIdKey);
-    prefs.remove(_storageGameStartedAtKey);
-    prefs.remove(_storageDayStartedAtKey);
+    await Future.wait([
+      prefs.remove(_storageNightCountKey),
+      prefs.remove(_storageNightStateNumberKey),
+      prefs.remove(_storageNightStepIdKey),
+      prefs.remove(_storageGameStartedAtKey),
+      prefs.remove(_storageDayStartedAtKey),
+      prefs.remove(_storageGameRecordCaptureKey),
+      prefs.remove(_storageLastGameRecordCaptureKey),
+    ]);
+    _activeGameRecordCapture = null;
+    _lastGameRecordCapture = null;
+    await characterService?.endGame();
     notifyListeners();
   }
 
-  Future<void> startNewGame(List<Character> gameCharacters) async {
+  Future<void> startNewGame(
+    List<Character> gameCharacters, {
+    List<Character>? completeSetupCharacters,
+    List<Character>? scriptCatalog,
+  }) async {
     await _nightOrderService.ready;
-    await _chronicleService?.startNewGame(gameCharacters);
+    await _scriptService.ready;
+    await _chronicleService?.ready;
+    final startedAt = _now();
+    final gameId = _createGameRecordId(startedAt);
+    final setupCharacters = completeSetupCharacters ?? gameCharacters;
+    await _chronicleService?.startNewGame(
+      gameCharacters,
+      gameId: gameId,
+      startedAt: startedAt,
+    );
     await _clearDayTimer();
-    await _startGameTimer();
+    await _startGameTimer(startedAt: startedAt);
     _nightCount = 1;
     final steps = _stepsFor(gameCharacters);
+    await _beginGameRecordCapture(
+      gameId: gameId,
+      startedAt: startedAt,
+      visiblePlayers: gameCharacters,
+      setupCharacters: setupCharacters,
+      scriptCatalog: scriptCatalog ?? setupCharacters,
+      initialPhase:
+          steps.isEmpty ? GameRecordPhaseType.day : GameRecordPhaseType.night,
+    );
     if (steps.isEmpty) {
-      await _startDayTimer();
+      await _startDayTimer(startedAt: startedAt);
     }
     await _setNightStep(
       steps.isEmpty ? 'day' : steps.first.id,
@@ -844,7 +1450,6 @@ class GameStateService extends ChangeNotifier {
     if (_currentNightStepId == 'day') {
       final steps = _stepsFor(characters);
       if (steps.isNotEmpty) {
-        await _clearDayTimer();
         await _setNightStep(steps.last.id, gameCharacters: characters);
       }
       return;
@@ -906,17 +1511,37 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> startDay([List<Character> gameCharacters = const []]) async {
     await _recordCurrentNightReminderSnapshot(gameCharacters);
-    await _startDayTimer();
+    final transitionAt = _now();
+    final changed = await _transitionGameRecordPhase(
+      GameRecordPhaseType.day,
+      _nightCount,
+      transitionAt,
+    );
+    if (changed || _dayStartedAt == null) {
+      final capturedStart = _activeGameRecordCapture?.phases
+          .lastWhereOrNull(
+              (phase) => phase.isOpen && phase.type == GameRecordPhaseType.day)
+          ?.startedAt;
+      await _startDayTimer(
+        startedAt: changed ? transitionAt : capturedStart ?? transitionAt,
+      );
+    }
     await _setNightStep('day', gameCharacters: gameCharacters);
   }
 
   Future<void> nextNight([List<Character> gameCharacters = const []]) async {
     await _nightOrderService.ready;
+    final transitionAt = _now();
     await _clearDayTimer();
     _nightCount++;
     final steps = _stepsFor(gameCharacters);
+    await _transitionGameRecordPhase(
+      steps.isEmpty ? GameRecordPhaseType.day : GameRecordPhaseType.night,
+      _nightCount,
+      transitionAt,
+    );
     if (steps.isEmpty) {
-      await _startDayTimer();
+      await _startDayTimer(startedAt: transitionAt);
     }
     await _setNightStep(
       steps.isEmpty ? 'day' : steps.first.id,
@@ -2070,6 +2695,11 @@ class GameStateService extends ChangeNotifier {
     _characterTokens[character.id]!.add(token);
     unsedGameTokens.remove(token);
     await _saveCharacterTokens();
+    await _applyActualStartRoleMarker(
+      allCharacters: allCharacters,
+      target: character,
+      token: token,
+    );
     await _chronicleService?.recordReminderAssignment(
       target: character,
       previousTarget: previousTarget,
@@ -2123,6 +2753,11 @@ class GameStateService extends ChangeNotifier {
   get nightCount => _nightCount;
   get nightStateNumber => _nightStateNumber;
   String? get currentNightStepId => _currentNightStepId;
+  DateTime? get gameStartedAt => _gameStartedAt;
+  GameRecordCapture? get activeGameRecordCapture => _activeGameRecordCapture;
+  GameRecordCapture? get lastGameRecordCapture => _lastGameRecordCapture;
+  GameRecord? get lastCompletedGameRecord => _lastCompletedGameRecord;
+  List<GameRecord> get pendingGameRecords => _gameRecordUploadQueue.records;
   get showCharactersToPlayers => charactersWhereShownToPlayers;
   get characterSelectionDone => _chracterSelectionDone;
 
