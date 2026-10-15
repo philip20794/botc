@@ -142,27 +142,45 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> factoryReset() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.remove(_storageIsLockedKey);
-    prefs.remove(_storageCharacterTokensKey);
-    prefs.remove(_storageCharacterAliveStateKey);
-    prefs.remove(_storageApparentDeathStateKey);
-    prefs.remove(_storageLastReportedDeathDayKey);
-    prefs.remove(_storagePlayerNamesKey);
-    prefs.remove(_storageGamesetKey);
-    prefs.remove(_storageNightCountKey);
-    prefs.remove(_storageNightStateNumberKey);
-    prefs.remove(_storageNightStepIdKey);
-    prefs.remove(_storageGameStartedAtKey);
-    prefs.remove(_storageDayStartedAtKey);
-    prefs.remove(_storageGameRecordCaptureKey);
-    prefs.remove(_storageLastGameRecordKey);
-    prefs.remove(_storageLastGameRecordCaptureKey);
-    prefs.remove(_storageShowCharactersToPlayersKey);
-    prefs.remove(_chracterSelectionDoneKey);
-    prefs.remove(_storageDemonBluffRoleIdsKey);
-    prefs.remove(_storageQuickFlowStateKey);
+    await Future.wait([
+      prefs.remove(_storageIsLockedKey),
+      prefs.remove(_storageCharacterTokensKey),
+      prefs.remove(_storageCharacterAliveStateKey),
+      prefs.remove(_storageApparentDeathStateKey),
+      prefs.remove(_storageLastReportedDeathDayKey),
+      prefs.remove(_storagePlayerNamesKey),
+      prefs.remove(_storageGamesetKey),
+      prefs.remove(_storageNightCountKey),
+      prefs.remove(_storageNightStateNumberKey),
+      prefs.remove(_storageNightStepIdKey),
+      prefs.remove(_storageGameStartedAtKey),
+      prefs.remove(_storageDayStartedAtKey),
+      prefs.remove(_storageGameRecordCaptureKey),
+      prefs.remove(_storageLastGameRecordKey),
+      prefs.remove(_storageLastGameRecordCaptureKey),
+      prefs.remove(_storageShowCharactersToPlayersKey),
+      prefs.remove(_chracterSelectionDoneKey),
+      prefs.remove(_storageDemonBluffRoleIdsKey),
+      prefs.remove(_storageQuickFlowStateKey),
+    ]);
+    _isLocked = false;
+    _characterTokens.clear();
+    _characterAliveState.clear();
+    _apparentlyDeadCharacterIds.clear();
+    _lastReportedDeathDay = null;
+    playerNames.clear();
+    _nightCount = -1;
+    _nightStateNumber = 0;
+    _currentNightStepId = null;
+    _gameStartedAt = null;
+    _dayStartedAt = null;
+    _activeGameRecordCapture = null;
+    _lastGameRecordCapture = null;
+    _lastCompletedGameRecord = null;
+    _demonBluffRoleIds = [];
+    _clearQuickFlowRuntime();
     await _chronicleService?.factoryReset();
-    init();
+    await init();
   }
 
   /// Demon bluffs belong to the game setup, but are role identities rather
@@ -1102,7 +1120,7 @@ class GameStateService extends ChangeNotifier {
     return true;
   }
 
-  void addPlayerName(String playerName) async {
+  Future<void> addPlayerName(String playerName) async {
     if (playerName.isEmpty) {
       return;
     }
@@ -1110,11 +1128,11 @@ class GameStateService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final String data =
         jsonEncode(playerNames); // Liste von Strings wird gespeichert
-    prefs.setString(_storagePlayerNamesKey, data);
+    await prefs.setString(_storagePlayerNamesKey, data);
     notifyListeners();
   }
 
-  void removePlayerName(String playerName) async {
+  Future<void> removePlayerName(String playerName) async {
     if (!playerNames.contains(playerName)) {
       return;
     }
@@ -1122,18 +1140,18 @@ class GameStateService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final String data =
         jsonEncode(playerNames); // JSON enthält Liste von Strings
-    prefs.setString(_storagePlayerNamesKey, data);
+    await prefs.setString(_storagePlayerNamesKey, data);
     notifyListeners();
   }
 
-  void clearAllPlayerNames() async {
+  Future<void> clearAllPlayerNames() async {
     if (playerNames.isEmpty) {
       return;
     }
     playerNames.clear();
     final prefs = await SharedPreferences.getInstance();
     final String data = jsonEncode(playerNames);
-    prefs.setString(_storagePlayerNamesKey, data);
+    await prefs.setString(_storagePlayerNamesKey, data);
     notifyListeners();
   }
 
@@ -2647,7 +2665,7 @@ class GameStateService extends ChangeNotifier {
     }
   }
 
-  void reorderPlayerNames(int oldIndex, int newIndex) async {
+  Future<void> reorderPlayerNames(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) {
       newIndex -= 1;
     }
@@ -2655,7 +2673,7 @@ class GameStateService extends ChangeNotifier {
     playerNames.insert(newIndex, playerName);
     final prefs = await SharedPreferences.getInstance();
     final String data = jsonEncode(playerNames);
-    prefs.setString(_storagePlayerNamesKey, data);
+    await prefs.setString(_storagePlayerNamesKey, data);
     notifyListeners();
   }
 

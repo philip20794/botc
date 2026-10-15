@@ -125,7 +125,7 @@ class _PlayernameScreenState extends State<PlayernameScreen> {
                                           child: SizedBox(
                                             height: 50,
                                             key: ValueKey(player),
-                                            child: Container(
+                                            child: Material(
                                               key: ValueKey(player),
                                               color: Color(0xFF4a3b5e)
                                                   .withOpacity(0.5),

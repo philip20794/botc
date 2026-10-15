@@ -15,7 +15,7 @@ class SavantGenerator extends StatefulWidget {
 }
 
 class _SavantGeneratorState extends State<SavantGenerator> {
-  String test = '';
+  String test = 'No Savant statement available.';
 
   List<String> onlineList = [
     "[Character] was selected by the [Minion] last night.",
@@ -95,6 +95,9 @@ class _SavantGeneratorState extends State<SavantGenerator> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) getRandomText();
+    });
   }
 
   void getRandomText() {
@@ -121,6 +124,13 @@ class _SavantGeneratorState extends State<SavantGenerator> {
     List<Character> minions = allCharactersOfGameset
         .where((chracter) => chracter.fraction == Fraction.minion)
         .toList();
+    if (allButTrevelors.isEmpty ||
+        demons.isEmpty ||
+        minions.isEmpty ||
+        gameStateService.playerNames.isEmpty) {
+      setState(() => test = 'No Savant statement available.');
+      return;
+    }
     setState(() {
       String text = onlineList[Random().nextInt(onlineList.length)];
 
@@ -165,7 +175,6 @@ class _SavantGeneratorState extends State<SavantGenerator> {
 
   @override
   Widget build(BuildContext context) {
-    getRandomText();
     return GestureDetector(
       onTap: () {
         getRandomText();

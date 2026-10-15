@@ -7,16 +7,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LanguageService extends ChangeNotifier {
   Locale _locale = const Locale('en');
   bool _loading = true;
+  late final Future<void> initialized;
   final String storageKey = 'locale';
   final String onBoardingKey = 'onBoarding';
 
   LanguageService() {
-    _init();
+    initialized = _init();
   }
 
-  void _init() async {
+  Future<void> _init() async {
     await _loadLocale();
     _loading = false;
+    notifyListeners();
   }
 
   Future<void> _loadLocale() async {
@@ -36,11 +38,11 @@ class LanguageService extends ChangeNotifier {
   Locale get locale => _locale;
   bool get loading => _loading;
 
-  void setLocale(Locale locale) {
+  Future<void> setLocale(Locale locale) async {
     if (!L10n.all.contains(locale)) return; // Check if the locale is supported
     if (_locale == locale) return;
     _locale = locale;
-    _saveLocale();
+    await _saveLocale();
     notifyListeners();
   }
 

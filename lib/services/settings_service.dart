@@ -233,7 +233,7 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resetSettings() {
+  Future<void> resetSettings() async {
     _characterKnobSize = 100;
     _tokenKnobSize = 50;
     _radiusX = 0.35;
@@ -241,9 +241,11 @@ class SettingsService extends ChangeNotifier {
     _startAngleDiv = 4;
     _offsetX = 80;
     _offsetY = 90;
+    _tokenOffsetY = 30;
+    _tokenOffsetX = 45;
     _selectedReminderTokenSize = 48;
     _unselectedReminderTokenSize = 24;
-    saveSettings();
+    await saveSettings();
     notifyListeners();
   }
 }
