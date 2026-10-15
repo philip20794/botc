@@ -12,21 +12,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SelectCharacterComponent extends StatefulWidget {
-  List<Character> charactersToChooseFrom;
-  bool travellersAreSelectable = false;
-  bool fabledAreSelectable = false;
-  int numberOfCharactersToSelect = 1;
-  bool isForSetupGame = false;
-  bool forSetupIsDone = false;
-  bool needToConfirm = true;
-  String title;
-  String confirmButtonText;
-  Function() onConfirm;
-  Function(List<Character> characters)? onResult;
-  IconData confirmButtonIcon = Icons.remove_red_eye;
-  List<String> validationMessages;
-  bool blockConfirmWhenDisabled;
-  bool demonBluffsEnabled;
+  final List<Character> charactersToChooseFrom;
+  final bool travellersAreSelectable;
+  final bool fabledAreSelectable;
+  final int numberOfCharactersToSelect;
+  final bool isForSetupGame;
+  final bool forSetupIsDone;
+  final bool needToConfirm;
+  final String title;
+  final String confirmButtonText;
+  final Function() onConfirm;
+  final Function(List<Character> characters)? onResult;
+  final IconData confirmButtonIcon;
+  final List<String> validationMessages;
+  final bool blockConfirmWhenDisabled;
+  final bool demonBluffsEnabled;
   final bool showBackground;
 
   SelectCharacterComponent({

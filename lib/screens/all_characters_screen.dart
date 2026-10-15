@@ -12,13 +12,22 @@ import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class AllCharactersScreen extends StatefulWidget {
-  bool hideTravellers = true;
-  AllCharactersScreen({Key? key}) : super(key: key);
+  final bool hideTravellers;
+
+  AllCharactersScreen({Key? key, this.hideTravellers = true}) : super(key: key);
 
   _AllCharactersScreenState createState() => _AllCharactersScreenState();
 }
 
 class _AllCharactersScreenState extends State<AllCharactersScreen> {
+  late bool _hideTravellers;
+
+  @override
+  void initState() {
+    super.initState();
+    _hideTravellers = widget.hideTravellers;
+  }
+
   @override
   Widget build(BuildContext context) {
     CharacterService characterService = Provider.of<CharacterService>(context);
@@ -131,7 +140,7 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
               onTap: () {
                 if (travellers) {
                   setState(() {
-                    widget.hideTravellers = !widget.hideTravellers;
+                    _hideTravellers = !_hideTravellers;
                   });
                 }
               },
@@ -139,7 +148,7 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                 children: [
                   if (travellers) ...[
                     Icon(
-                        widget.hideTravellers
+                        _hideTravellers
                             ? Icons.arrow_drop_down
                             : Icons.arrow_drop_up,
                         color: Colors.white),
@@ -155,7 +164,7 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                 ],
               )),
           SizedBox(height: 8), // Abstand zwischen Titel und Karten
-          if (!travellers || !widget.hideTravellers) ...[
+          if (!travellers || !_hideTravellers) ...[
             ListView.builder(
               shrinkWrap:
                   true, // Wichtig, damit der ListView in der Column funktioniert

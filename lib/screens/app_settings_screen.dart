@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:universal_html/html.dart' as html;
 
 import '../custom_icons.dart';
@@ -24,7 +23,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       if (kIsWeb) {
         const String apkUrl =
             'https://github.com/philip20794/botc/releases/download/android-latest/b-o-t-c.apk';
-        final html.AnchorElement anchor = html.AnchorElement(href: apkUrl)
+        html.AnchorElement(href: apkUrl)
           ..setAttribute("download", "b-o-t-c.apk")
           ..click();
       }

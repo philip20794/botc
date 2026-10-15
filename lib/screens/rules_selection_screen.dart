@@ -1,7 +1,4 @@
-import 'package:blood_on_the_clocktower/components/select_gameset.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
-import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
-import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/screens/pdf_viewer_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

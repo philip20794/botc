@@ -13,10 +13,14 @@ import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 
 class CharacterAuswahlScreen extends StatefulWidget {
-  bool hideTravellers = true;
-  bool hideFabled = true;
+  final bool hideTravellers;
+  final bool hideFabled;
 
-  CharacterAuswahlScreen({Key? key}) : super(key: key);
+  CharacterAuswahlScreen({
+    Key? key,
+    this.hideTravellers = true,
+    this.hideFabled = true,
+  }) : super(key: key);
 
   _CharacterAuswahlScreenState createState() => _CharacterAuswahlScreenState();
 }
@@ -107,7 +111,7 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
           .where((element) => element.fraction == Fraction.traveller)
           .toList();
 
-      for (var traveller in travelersInGame) {
+      for (var index = 0; index < travelersInGame.length; index++) {
         var fractionWithMaxDistance = getFractionWithMaxDistanceToMaxCount();
         counts[fractionWithMaxDistance] =
             (counts[fractionWithMaxDistance] ?? 0) + 1;
@@ -288,10 +292,10 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
   }
 
   int changeNumberOfFraction(Fraction fraction, int currentValue) {
-    GameStateService gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
     final CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
+    final GameStateService gameStateService =
+        Provider.of<GameStateService>(context, listen: false);
     if (characterService.gameCharacters
         .any((character) => character.image == 'Icon_baron')) {
       switch (fraction) {
@@ -721,8 +725,6 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
   void _addRandomCharacterOfFraction(Fraction fraction) {
     CharacterService characterService =
         Provider.of<CharacterService>(context, listen: false);
-    GameStateService gameStateService =
-        Provider.of<GameStateService>(context, listen: false);
     final scriptService = Provider.of<ScriptService>(context, listen: false);
     final allCharactersOfGameset =
         scriptService.resolveCharacters(characterService.allCharacters);

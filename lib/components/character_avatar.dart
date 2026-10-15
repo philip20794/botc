@@ -12,10 +12,10 @@ class CharacterAvatar extends StatefulWidget {
   final double size;
   final bool showName;
   final Color? selectionBorderColor;
-  bool forSelectCharacter = false;
-  bool isSelected = false;
+  final bool forSelectCharacter;
+  final bool isSelected;
   final bool isBluff;
-  bool showExemplare = false;
+  final bool showExemplare;
 
   CharacterAvatar({
     required this.character,

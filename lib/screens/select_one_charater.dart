@@ -9,13 +9,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class SelectOneCharater extends StatefulWidget {
-  List<Character> charactersToChooseFrom;
-  bool travellersAreSelectable = false;
-  bool fabledAreSelectable = false;
-  FutureOr<void> Function(Character) onConfirm;
-  String title;
-  String confirmButtonText;
-  bool needToConfirm = true;
+  final List<Character> charactersToChooseFrom;
+  final bool travellersAreSelectable;
+  final bool fabledAreSelectable;
+  final FutureOr<void> Function(Character) onConfirm;
+  final String title;
+  final String confirmButtonText;
+  final bool needToConfirm;
   final List<Character>? allCharactersToChooseFrom;
   final Future<void> Function(BuildContext context, Character character)?
       onSelectionConfirmed;

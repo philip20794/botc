@@ -16,18 +16,6 @@ class ArcTextPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black;
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          color: Colors.black,
-          fontSize: fontSize,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
     double angle = -arcAngle * 1.85; // Startwinkel für den Bogen
 
     for (int i = 0; i < text.length; i++) {
