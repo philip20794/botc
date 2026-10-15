@@ -1,8 +1,10 @@
 import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Character _quickFlowOwner() => Character.fromJson({
@@ -48,38 +50,41 @@ void main() {
     var overlappingDragEnded = false;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: LayoutBuilder(
-            builder: (context, constraints) => Stack(
-              children: [
-                // This is the same paint order as the Playground: the bar is
-                // below character tokens, so an overlapping token wins.
-                Align(
-                  alignment: Alignment.center,
-                  child: QuickFlowBar(
-                    gameCharacters: [owner],
-                    allCharacters: [owner],
-                    gameState: gameState,
+      ChangeNotifierProvider(
+        create: (_) => SettingsService(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: LayoutBuilder(
+              builder: (context, constraints) => Stack(
+                children: [
+                  // This is the same paint order as the Playground: the bar is
+                  // below character tokens, so an overlapping token wins.
+                  Align(
+                    alignment: Alignment.center,
+                    child: QuickFlowBar(
+                      gameCharacters: [owner],
+                      allCharacters: [owner],
+                      gameState: gameState,
+                    ),
                   ),
-                ),
-                Positioned(
-                  left: 8,
-                  top: constraints.maxHeight / 2 - 25,
-                  child: _draggableToken(
-                    key: const ValueKey('draggable-character-token-empty'),
-                    onDragEnd: () => emptySpaceDragEnded = true,
+                  Positioned(
+                    left: 8,
+                    top: constraints.maxHeight / 2 - 25,
+                    child: _draggableToken(
+                      key: const ValueKey('draggable-character-token-empty'),
+                      onDragEnd: () => emptySpaceDragEnded = true,
+                    ),
                   ),
-                ),
-                Positioned(
-                  left: constraints.maxWidth / 2 - 25,
-                  top: constraints.maxHeight / 2 - 25,
-                  child: _draggableToken(
-                    key: const ValueKey('draggable-character-token-overlap'),
-                    onDragEnd: () => overlappingDragEnded = true,
+                  Positioned(
+                    left: constraints.maxWidth / 2 - 25,
+                    top: constraints.maxHeight / 2 - 25,
+                    child: _draggableToken(
+                      key: const ValueKey('draggable-character-token-overlap'),
+                      onDragEnd: () => overlappingDragEnded = true,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

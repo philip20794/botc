@@ -66,8 +66,7 @@ void main() {
         isTrue);
   });
 
-  test('Traveller night slots retain their deliberate internal suffix',
-      () async {
+  test('Traveller night slots retain their deliberate night order', () async {
     final english = await Future.wait([
       loadEnglishRole('Barista'),
       loadEnglishRole('Bone Collector'),
@@ -83,17 +82,21 @@ void main() {
       loadGermanRole('Thief'),
     ]);
 
-    for (final role in english) {
+    const expectedSlots = <String, List<double>>{
+      'Barista': [22.2],
+      'Bone Collector': [20.2],
+      'Bureaucrat': [14.1, 14.1],
+      'Harlot': [21.2],
+      'Thief': [15.1, 15.1],
+    };
+    for (final role in [...english, ...german]) {
       expect(role['wakeUpEveryNight'], isTrue);
-    }
-    for (final role in german) {
       final slots = [
         ...(role['nightStateNumbersFirstNight'] as List<dynamic>),
         ...(role['nightStateNumbersOtherNights'] as List<dynamic>),
-      ];
-      expect(slots, isNotEmpty);
-      expect(slots.every((slot) => (slot as num).toString().endsWith('.3')),
-          isTrue);
+      ].cast<num>().map((slot) => slot.toDouble()).toList();
+      expect(slots, expectedSlots[role['name']],
+          reason: role['name'] as String);
     }
   });
 

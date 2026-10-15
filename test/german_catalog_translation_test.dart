@@ -36,11 +36,29 @@ Map<String, dynamic> technicalRoleData(Map<String, dynamic> role) {
     'wakeUpAtFirstNight': role['wakeUpAtFirstNight'],
     'nightStateNumbersFirstNight': role['nightStateNumbersFirstNight'],
     'nightStateNumbersOtherNights': role['nightStateNumbersOtherNights'],
+    'chronicle': technicalChronicleData(role['chronicle']),
     'tokens': (role['tokens'] as List<dynamic>).map((token) {
       final value = token as Map<String, dynamic>;
       return Map<String, dynamic>.from(value)..remove('name');
     }).toList(),
   };
+}
+
+dynamic technicalChronicleData(dynamic value) {
+  if (value is List) {
+    return value.map(technicalChronicleData).toList();
+  }
+  if (value is Map) {
+    return Map<String, dynamic>.fromEntries(
+      value.entries.where((entry) => entry.key != 'label').map(
+            (entry) => MapEntry(
+              entry.key.toString(),
+              technicalChronicleData(entry.value),
+            ),
+          ),
+    );
+  }
+  return value;
 }
 
 void main() {
@@ -69,8 +87,7 @@ void main() {
     for (final id in translatedInThisPass) {
       final english = englishById[id]!;
       final german = germanById[id]!;
-      final expectedLocalizedKeys = english.keys.toSet()..remove('chronicle');
-      expect(german.keys.toSet(), equals(expectedLocalizedKeys));
+      expect(german.keys.toSet(), equals(english.keys.toSet()));
       expect(technicalRoleData(german), equals(technicalRoleData(english)));
       expect(german['descriptionShort'],
           isNot(equals(english['descriptionShort'])));

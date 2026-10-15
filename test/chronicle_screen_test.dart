@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blood_on_the_clocktower/components/chronicle_visual_tiles.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/chronicle_screen.dart';
@@ -117,6 +118,7 @@ void main() {
       isNull,
     );
     await tester.tap(find.byKey(const ValueKey('player-anna')));
+    await tester.pump();
     expect(
       tester
           .widget<FilledButton>(
@@ -126,6 +128,7 @@ void main() {
       isNull,
     );
     await tester.tap(find.byKey(const ValueKey('player-markus')));
+    await tester.pump();
     expect(
       tester
           .widget<FilledButton>(
@@ -139,11 +142,18 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('chronicle-answer-no')));
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Anna + Markus → No'), findsOneWidget);
-    await tester.tap(find.text('Anna + Markus → No'));
+    expect(find.byType(ChronicleTokenTile), findsAtLeastNWidgets(2));
+    expect(find.byType(ChronicleYesNoTile), findsOneWidget);
+    await tester.tap(
+      find.ancestor(
+        of: find.byType(ChronicleYesNoTile),
+        matching: find.byType(InkWell),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(InputChip, 'Anna · Chef'), findsOneWidget);

@@ -258,6 +258,7 @@ void main() {
     final current = characters.gameCharacters.single;
 
     characters.changeCharacter(current, newCharacter);
+    await characters.flushPendingGameWrites();
 
     final event = chronicle.activeChronicle!.events.singleWhere(
       (event) => event.type == ChronicleEventType.characterChanged,

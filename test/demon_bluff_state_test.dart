@@ -128,7 +128,8 @@ void main() {
     await service.setDemonBluffRoleIds(['washerwoman', 'librarian', 'chef']);
     expect(service.hasRequiredDemonBluffs(7), isTrue);
     await service.endGame();
-    expect(service.demonBluffRoleIds, isEmpty);
+    expect(service.demonBluffRoleIds,
+        orderedEquals(['washerwoman', 'librarian', 'chef']));
   });
 
   testWidgets(
