@@ -118,4 +118,33 @@ void main() {
     await tester.pump();
     expect(characters.gameCharacters, isEmpty);
   });
+
+  testWidgets('layout settings previews both reminder token sizes',
+      (tester) async {
+    final game = GameStateService();
+    await game.ready;
+    final characters = CharacterService();
+    await characters.init();
+    final settings = SettingsService();
+    await settings.initialized;
+
+    await tester.pumpWidget(app(SettingsCharacterCircle(),
+        game: game, characters: characters, settings: settings));
+
+    final selectedPreview = find.byKey(
+        const ValueKey('layout-settings-selected-reminder-preview'));
+    final unselectedPreview = find.byKey(
+        const ValueKey('layout-settings-unselected-reminder-preview'));
+    expect(selectedPreview, findsOneWidget);
+    expect(unselectedPreview, findsOneWidget);
+    expect(tester.getSize(selectedPreview).width, 48);
+    expect(tester.getSize(unselectedPreview).width, 24);
+
+    await settings.setSelectedReminderTokenSize(72, persist: false);
+    await settings.setUnselectedReminderTokenSize(36, persist: false);
+    await tester.pumpAndSettle();
+
+    expect(tester.getSize(selectedPreview).width, 72);
+    expect(tester.getSize(unselectedPreview).width, 36);
+  });
 }

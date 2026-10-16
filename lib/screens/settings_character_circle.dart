@@ -1,10 +1,8 @@
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
-import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
-import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,7 +40,6 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   Widget build(BuildContext context) {
     final settingsService = Provider.of<SettingsService>(context);
     final characterService = Provider.of<CharacterService>(context);
-    final gameStateService = Provider.of<GameStateService>(context);
     var localizedStrings = AppLocalizations.of(context)!;
     final previewTokens = _previewTokens(characterService);
 
@@ -51,21 +48,18 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            if (gameStateService
-                .quickFlowEntries(characterService.gameCharacters)
-                .isNotEmpty)
-              Align(
-                alignment: Alignment.center,
-                child: Transform.translate(
-                  offset: const Offset(0, -78),
-                  child: QuickFlowBar(
-                    gameCharacters: characterService.gameCharacters,
-                    allCharacters: characterService.allCharacters,
-                    gameState: gameStateService,
-                    readOnly: true,
-                  ),
+            Align(
+              alignment: Alignment.center,
+              child: Transform.translate(
+                offset: const Offset(0, -78),
+                child: _ReminderTokenSizePreview(
+                  selectedSize: settingsService.selectedReminderTokenSize,
+                  unselectedSize: settingsService.unselectedReminderTokenSize,
+                  selectedLabel: localizedStrings.selectedReminderSize,
+                  unselectedLabel: localizedStrings.unselectedReminderSize,
                 ),
               ),
+            ),
             // Character Circle Component
             if (randomCharacters.isNotEmpty) ...[
               Positioned.fill(
@@ -336,6 +330,81 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReminderTokenSizePreview extends StatelessWidget {
+  const _ReminderTokenSizePreview({
+    required this.selectedSize,
+    required this.unselectedSize,
+    required this.selectedLabel,
+    required this.unselectedLabel,
+  });
+
+  final double selectedSize;
+  final double unselectedSize;
+  final String selectedLabel;
+  final String unselectedLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Semantics(
+        label: '$selectedLabel / $unselectedLabel',
+        child: Row(
+          key: const ValueKey('layout-settings-reminder-token-preview'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _ReminderTokenPreviewCard(
+              key: const ValueKey('layout-settings-selected-reminder-preview'),
+              size: selectedSize,
+              selected: true,
+            ),
+            const SizedBox(width: 8),
+            _ReminderTokenPreviewCard(
+              key:
+                  const ValueKey('layout-settings-unselected-reminder-preview'),
+              size: unselectedSize,
+              selected: false,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReminderTokenPreviewCard extends StatelessWidget {
+  const _ReminderTokenPreviewCard({
+    super.key,
+    required this.size,
+    required this.selected,
+  });
+
+  final double size;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: size,
+      height: size * 1.15,
+      decoration: BoxDecoration(
+        color: const Color(0xFF493131).withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? Colors.amberAccent : const Color(0xFF6f678a),
+          width: selected ? 3 : 1.5,
+        ),
+      ),
+      child: Icon(
+        selected ? Icons.check : Icons.more_horiz,
+        color: Colors.white,
+        size: size * 0.55,
       ),
     );
   }
