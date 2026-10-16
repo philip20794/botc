@@ -170,6 +170,59 @@ class ChronicleService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Saves an independently editable Savant statement in the current game.
+  Future<String?> upsertSavantStatement({
+    String? eventId,
+    required int round,
+    required ChronicleCharacterSnapshot actor,
+    required Map<String, dynamic> statement,
+  }) async {
+    await ready;
+    final active = _active;
+    if (active == null || round < 1) return null;
+    final events = List<ChronicleEvent>.from(active.events);
+    final index = eventId == null
+        ? -1
+        : events.indexWhere((event) =>
+            event.id == eventId &&
+            event.type == ChronicleEventType.savantStatement &&
+            event.round == round);
+    final id = index >= 0 ? events[index].id : _uniqueId('savant:$round');
+    final event = index >= 0
+        ? events[index].copyWith(details: {'statement': statement})
+        : ChronicleEvent(
+            id: id,
+            timestamp: DateTime.now(),
+            type: ChronicleEventType.savantStatement,
+            phase: ChroniclePhase.day,
+            round: round,
+            character: actor,
+            details: {'statement': statement},
+          );
+    if (index >= 0) {
+      events[index] = event;
+    } else {
+      events.add(event);
+    }
+    _active = active.copyWith(events: events);
+    await _persistActive();
+    notifyListeners();
+    return id;
+  }
+
+  Future<void> removeSavantStatement(String eventId) async {
+    await ready;
+    final active = _active;
+    if (active == null) return;
+    final events = active.events.where((event) =>
+        event.id != eventId ||
+        event.type != ChronicleEventType.savantStatement).toList();
+    if (events.length == active.events.length) return;
+    _active = active.copyWith(events: events);
+    await _persistActive();
+    notifyListeners();
+  }
+
   Future<void> recordPhase(ChroniclePhase phase, int round) async {
     if (!await _ensureActive()) return;
     final id = 'phase:${phase.name}:$round';

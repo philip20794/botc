@@ -540,10 +540,10 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
             height: 40, // Höhe des Bildes
           ),
           onPressed: () {
-            // Popup-Fenster öffnen
-            showDialog(
-              context: context,
-              builder: (BuildContext context) => const SavantGenerator(),
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const SavantGenerator(),
+              ),
             );
           },
         ),

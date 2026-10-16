@@ -165,6 +165,26 @@ class ChronicleScreen extends StatelessWidget {
     if (lifeEvent != null) {
       return _buildLifeStatusCard(context, summary, lifeEvent);
     }
+    final savantEvent = summary.events.length == 1 &&
+            summary.events.single.type == ChronicleEventType.savantStatement
+        ? summary.events.single
+        : null;
+    if (savantEvent != null) {
+      final statement = savantEvent.details['statement'];
+      final text = statement is Map
+          ? (statement['rendered'] as String? ?? statement['template'] as String? ?? '')
+          : '';
+      return Card(
+        key: ValueKey('savant-chronicle-${savantEvent.id}'),
+        margin: const EdgeInsets.only(bottom: 10),
+        color: const Color(0xFF21192F).withValues(alpha: 0.9),
+        child: ListTile(
+          leading: const Icon(Icons.auto_stories, color: Color(0xFFD4AF67)),
+          title: const Text('Savant'),
+          subtitle: Text(text, style: const TextStyle(color: Colors.white70)),
+        ),
+      );
+    }
     final resultGroups = _resultGroups(context, summary, log);
     final pending = summary.events
         .where((event) => event.type == ChronicleEventType.nightInformation)
