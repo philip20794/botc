@@ -87,9 +87,13 @@ class _PlayernameScreenState extends State<PlayernameScreen> {
                   top: 16, left: 16, right: 16, bottom: 64),
               child: Column(
                 children: [
+                  // The TextField already has its own filled border. An
+                  // additional horizontal panel inset made it visibly
+                  // narrower than the rows and the surrounding panel.
                   GrimoirePanel(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: EdgeInsets.zero,
                     child: TextField(
+                      key: const ValueKey('player-name-input'),
                       controller: _nameController,
                       cursorColor: GrimoireColors.antiqueGold,
                       style: const TextStyle(color: GrimoireColors.ivory),
