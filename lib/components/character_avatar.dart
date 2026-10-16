@@ -14,6 +14,7 @@ class CharacterAvatar extends StatefulWidget {
   final Color? selectionBorderColor;
   final bool forSelectCharacter;
   final bool isSelected;
+  final bool showNightHighlightDuringSelection;
   final bool isBluff;
   final bool showExemplare;
 
@@ -24,6 +25,7 @@ class CharacterAvatar extends StatefulWidget {
     required this.showName,
     this.selectionBorderColor,
     this.isSelected = false,
+    this.showNightHighlightDuringSelection = false,
     this.isBluff = false,
     this.forSelectCharacter = false,
     this.showExemplare = false,
@@ -36,6 +38,15 @@ class CharacterAvatar extends StatefulWidget {
 class _CharacterAvatarState extends State<CharacterAvatar> {
   @override
   Widget build(BuildContext context) {
+    // Chronicle target selection uses a different selection color. Preserve
+    // the current night actor's white ring independently of those targets:
+    // the two indicators convey different information and can coexist.
+    final nightHighlightDuringSelection =
+        widget.showIsSelected && widget.showNightHighlightDuringSelection
+            ? context.select<GameStateService, bool>((service) =>
+                service.nightCount > 0 &&
+                service.isCharacterHighlighted(widget.character))
+            : false;
     final bool isSelected;
     if (!widget.showIsSelected) {
       isSelected = false;
@@ -100,14 +111,16 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                     if (widget.showIsSelected &&
                         (isSelected || widget.isBluff))
                       Positioned(
-                        left: 0,
-                        top: 0,
+                        left: nightHighlightDuringSelection ? 6 : 0,
+                        top: nightHighlightDuringSelection ? 6 : 0,
                         child: IgnorePointer(
                           child: Container(
                             key: const ValueKey(
                                 'character-avatar-highlight-outline'),
-                            width: widget.size,
-                            height: widget.size,
+                            width: widget.size -
+                                (nightHighlightDuringSelection ? 12 : 0),
+                            height: widget.size -
+                                (nightHighlightDuringSelection ? 12 : 0),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
@@ -117,6 +130,26 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                                         Colors.white,
                                 width: 4,
                               ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // White = actor currently awake. Gold = Chronicle target.
+                    // Draw white on the outside of the gold ring so selecting
+                    // the active actor as a target cannot mask its night ring.
+                    if (nightHighlightDuringSelection)
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        child: IgnorePointer(
+                          child: Container(
+                            key: const ValueKey(
+                                'character-avatar-night-highlight-outline'),
+                            width: widget.size,
+                            height: widget.size,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 4),
                             ),
                           ),
                         ),
