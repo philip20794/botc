@@ -116,7 +116,7 @@ void main() {
     expect(partialFill, greaterThan(0),
         reason: 'The button must start filling on first touch.');
     expect(partialFill, lessThan(fullWidth));
-    expect(chargePercent(tester), inInclusiveRange(12, 35));
+    expect(chargePercent(tester), inInclusiveRange(24, 42));
     await gesture.up();
     await tester.pump();
     expect(find.byType(CharacterAvatar), findsNothing);
@@ -138,7 +138,7 @@ void main() {
     // A single continuous touch controls both the visible fill and reveal.
     expect(chargePercent(tester), 0);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 200));
     final fillWidth = tester.getSize(
       find.byKey(const ValueKey('role-reveal-progress-fill')),
     ).width;
@@ -147,16 +147,16 @@ void main() {
     ).width;
     expect(fillWidth, greaterThan(0));
     expect(fillWidth, lessThan(buttonWidth));
-    expect(chargePercent(tester), inInclusiveRange(18, 35));
+    expect(chargePercent(tester), inInclusiveRange(18, 34));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 450));
-    expect(chargePercent(tester), inInclusiveRange(53, 73));
+    await tester.pump(const Duration(milliseconds: 280));
+    expect(chargePercent(tester), inInclusiveRange(52, 68));
     expect(find.byType(CharacterAvatar), findsNothing);
     expect(continueButton(tester).onPressed, isNull);
 
     // The role must appear at the SAME moment the percentage reaches 100.
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 350));
     expect(chargePercent(tester), 100);
     expect(find.byType(CharacterAvatar), findsOneWidget);
     expect(continueButton(tester).onPressed, isNull);
@@ -184,7 +184,7 @@ void main() {
     // A single continuous touch controls both the visible fill and reveal.
     expect(chargePercent(tester), 0);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 200));
     final fillWidth = tester.getSize(
       find.byKey(const ValueKey('role-reveal-progress-fill')),
     ).width;
@@ -193,16 +193,16 @@ void main() {
     ).width;
     expect(fillWidth, greaterThan(0));
     expect(fillWidth, lessThan(buttonWidth));
-    expect(chargePercent(tester), inInclusiveRange(18, 35));
+    expect(chargePercent(tester), inInclusiveRange(18, 34));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 450));
-    expect(chargePercent(tester), inInclusiveRange(53, 73));
+    await tester.pump(const Duration(milliseconds: 280));
+    expect(chargePercent(tester), inInclusiveRange(52, 68));
     expect(find.byType(CharacterAvatar), findsNothing);
     expect(continueButton(tester).onPressed, isNull);
 
     // The role must appear at the SAME moment the percentage reaches 100.
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 350));
     expect(chargePercent(tester), 100);
     expect(find.byType(CharacterAvatar), findsOneWidget);
     await hold.up();
@@ -265,17 +265,17 @@ void main() {
       final hold = await tester.startGesture(tester.getCenter(finder));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      expect(chargePercent(tester), inInclusiveRange(12, 35));
+      expect(chargePercent(tester), inInclusiveRange(24, 42));
 
       // Drag well beyond the original widget bounds. The active touch must
       // keep its charging progress even if the scroll view wins the drag.
       await hold.moveBy(Offset(0, originalBounds.height + 110));
-      await tester.pump(const Duration(milliseconds: 350));
-      expect(chargePercent(tester), inInclusiveRange(42, 60));
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(chargePercent(tester), inInclusiveRange(55, 70));
       expect(find.byType(CharacterAvatar), findsNothing);
       expect(continueButton(tester).onPressed, isNull);
 
-      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump(const Duration(milliseconds: 350));
       expect(chargePercent(tester), 100);
       expect(find.byType(CharacterAvatar), findsOneWidget);
 
@@ -310,14 +310,14 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 140));
-    expect(chargePercent(tester), inInclusiveRange(6, 20));
+    expect(chargePercent(tester), inInclusiveRange(11, 26));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 460));
-    expect(chargePercent(tester), inInclusiveRange(40, 60));
+    await tester.pump(const Duration(milliseconds: 260));
+    expect(chargePercent(tester), inInclusiveRange(42, 60));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 650));
+    await tester.pump(const Duration(milliseconds: 450));
     expect(chargePercent(tester), 100);
     expect(find.byType(CharacterAvatar), findsOneWidget);
 
@@ -351,7 +351,7 @@ void main() {
     expect(chargePercent(tester), greaterThan(0));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 850));
+    await tester.pump(const Duration(milliseconds: 450));
     expect(chargePercent(tester), 100);
     expect(find.byType(CharacterAvatar), findsOneWidget);
     await primary.up();
