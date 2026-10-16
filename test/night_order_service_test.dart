@@ -311,6 +311,28 @@ void main() {
     expect(prefs.getString('day_started_at'), isNotNull);
   });
 
+  test('legacy Dawn without post-dawn roles starts Day timer on restore',
+      () async {
+    final chef = role('chef');
+    final state = await createGameState(initialValues: {
+      'night_count': 2,
+      'night_step_id': 'phase:dawn',
+    });
+
+    await state.synchronizeNightStep([chef]);
+
+    expect(state.currentNightStepId, 'day');
+    expect(state.isDay(), isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('day_started_at'), isNotNull);
+    expect(state.dayElapsed.inSeconds, lessThan(3));
+
+    // The old saved Dawn must not require a second arrow tap to start Day.
+    await state.nextNightState([chef]);
+    expect(state.currentNightStepId, 'phase:dusk');
+    expect(state.nightCount, 3);
+  });
+
   test('last post-dawn role starts day timer on the next and only tap',
       () async {
     final leviathan = role('leviathan');
