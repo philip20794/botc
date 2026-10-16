@@ -8,6 +8,7 @@ on:
       - 'pubspec.yaml'
       - 'web/**'
       - '.github/workflows/flutter-pr-checks.yml'
+      - '.github/workflows/android-latest.yml'
 
 permissions:
   contents: read
@@ -28,5 +29,7 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Run all Flutter tests
         run: flutter test
+      - name: Verify Flutter Web production build
+        run: flutter build web --release
       - name: Test web installation choices
         run: node --test test/web_install_options_test.mjs

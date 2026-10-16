@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
+import 'package:blood_on_the_clocktower/components/playground_center_positions.dart';
 import 'package:blood_on_the_clocktower/components/night_chronicle_controls.dart';
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
 import 'package:blood_on_the_clocktower/components/quick_flow_bar.dart';
@@ -231,7 +232,7 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                       .quickFlowEntries(characterService.gameCharacters)
                       .isNotEmpty)
                 _buildAnchoredMenuControl(
-                  const Offset(0, -70),
+                  PlaygroundCenterPositions.reminders,
                   QuickFlowBar(
                     gameCharacters: characterService.gameCharacters,
                     allCharacters: characterService.allCharacters,
@@ -260,8 +261,11 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
 
               if (gameStateService.gameIsRunning())
                 _buildAnchoredMenuControl(
-                  const Offset(0, -154),
+                  PlaygroundCenterPositions.nextPhaseFor(
+                    menuVisible: _isMenuVisible,
+                  ),
                   IconButton(
+                    key: const ValueKey('playground-next-phase-button'),
                     onPressed: () => gameStateService
                         .nextNightState(characterService.gameCharacters),
                     icon: const Icon(Icons.arrow_forward,
