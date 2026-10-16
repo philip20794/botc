@@ -122,7 +122,6 @@ void main() {
         'poisoner',
         'washerwoman',
         'washerwoman',
-        'dawn',
         'leviathan',
       ]),
     );
@@ -152,9 +151,12 @@ void main() {
     );
     expect(steps.map((step) => step.orderId), contains('ravenkeeper'));
     expect(steps.map((step) => step.orderId), contains('professor'));
+    expect(steps.map((step) => step.orderId), isNot(contains('dawn')));
     expect(
       steps.indexWhere((step) => step.orderId == 'leviathan'),
-      greaterThan(steps.indexWhere((step) => step.orderId == 'dawn')),
+      greaterThan(steps.indexWhere((step) => step.orderId == 'professor')),
+      reason: 'Dawn remains an ordering boundary even though it no longer '
+          'creates a second untimed sun screen.',
     );
   });
 
@@ -290,7 +292,8 @@ void main() {
     );
   });
 
-  test('Dawn does not end a night before canonical post-dawn steps', () async {
+  test('legacy saved Dawn resumes after the boundary before post-dawn roles',
+      () async {
     final leviathan = role('leviathan');
     final state = await createGameState(initialValues: {
       'night_count': 2,
@@ -298,10 +301,57 @@ void main() {
     });
     await state.synchronizeNightStep([leviathan]);
 
-    await state.nextNightState([leviathan]);
     expect(state.currentNightStepId, 'role:leviathan:leviathan-instance');
+    expect(state.isDay(), isFalse);
+
     await state.nextNightState([leviathan]);
     expect(state.currentNightStepId, 'day');
+    expect(state.isDay(), isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('day_started_at'), isNotNull);
+  });
+
+  test('legacy Dawn without post-dawn roles starts Day timer on restore',
+      () async {
+    final chef = role('chef');
+    final state = await createGameState(initialValues: {
+      'night_count': 2,
+      'night_step_id': 'phase:dawn',
+    });
+
+    await state.synchronizeNightStep([chef]);
+
+    expect(state.currentNightStepId, 'day');
+    expect(state.isDay(), isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('day_started_at'), isNotNull);
+    expect(state.dayElapsed.inSeconds, lessThan(3));
+
+    // The old saved Dawn must not require a second arrow tap to start Day.
+    await state.nextNightState([chef]);
+    expect(state.currentNightStepId, 'phase:dusk');
+    expect(state.nightCount, 3);
+  });
+
+  test('last post-dawn role starts day timer on the next and only tap',
+      () async {
+    final leviathan = role('leviathan');
+    final state = await createGameState();
+    await state.startNewGame([leviathan]);
+
+    // The canonical list still places Leviathan after ordinary night roles,
+    // but does not expose an intermediate dawn/sun step.
+    while (state.currentNightStepId !=
+        'role:leviathan:leviathan-instance') {
+      expect(state.isDay(), isFalse);
+      expect(state.currentNightStepId, isNot('phase:dawn'));
+      await state.nextNightState([leviathan]);
+    }
+    await state.nextNightState([leviathan]);
+    expect(state.currentNightStepId, 'day');
+    expect(state.dayElapsed.inSeconds, lessThan(2));
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('day_started_at'), isNotNull);
   });
 
   test('stable step survives restart and localized help matches the outline',
@@ -378,8 +428,14 @@ void main() {
     expect(state.currentNightStepId, 'phase:dusk');
 
     await state.nextNightState(const []);
-    expect(state.currentNightStepId, 'phase:dawn');
-    await state.nextNightState(const []);
     expect(state.currentNightStepId, 'day');
+    expect(state.isDay(), isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('day_started_at'), isNotNull);
+    // The next tap starts the next night; it must not be needed to start
+    // the daytime stopwatch.
+    await state.nextNightState(const []);
+    expect(state.currentNightStepId, 'phase:dusk');
+    expect(state.nightCount, 3);
   });
 }

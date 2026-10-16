@@ -138,6 +138,11 @@ class NightOrderService extends ChangeNotifier {
     final showInitialTeamInfo = regularPlayerCount >= 7 && !livingPoppyGrower;
     final steps = <NightStep>[];
     for (final orderId in order) {
+      // 'dawn' is a canonical ordering boundary, not another screen.
+      // It keeps roles such as Leviathan/Vizier after all ordinary night
+      // roles, but must not add an extra sun-only tap before the real day
+      // (whose timer starts as soon as the last night step is advanced).
+      if (orderId == 'dawn') continue;
       if (_phaseInstructions.containsKey(orderId)) {
         if ((orderId == 'minioninfo' || orderId == 'demoninfo') &&
             !showInitialTeamInfo) {

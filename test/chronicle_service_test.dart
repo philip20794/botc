@@ -506,12 +506,16 @@ void main() {
     final state = await gameState(chronicle);
     final chef = catalogRole('chef');
     await state.startNewGame([chef]);
-    for (var i = 0; i < 30 && !state.isDawn(); i++) {
+    // Advance to the final role rather than stopping at a redundant
+    // Dawn screen: on the last role, the next tap must show Day+timer.
+    for (var i = 0; i < 30 &&
+        state.currentNightStepId != 'role:chef:chef-instance'; i++) {
+      expect(state.currentNightStepId, isNot('phase:dawn'));
       await state.nextNightState([chef]);
     }
-    expect(state.isDawn(), isTrue);
+    expect(state.currentNightStepId, 'role:chef:chef-instance');
 
-    // One tap on the arrow must both enter day and initialize the timer.
+    // One tap on the final role must both enter Day and initialize the timer.
     await state.nextNightState([chef]);
     expect(state.isDay(), isTrue);
     final prefs = await SharedPreferences.getInstance();
