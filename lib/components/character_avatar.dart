@@ -61,6 +61,7 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
               Padding(
                 padding: EdgeInsets.all(0),
                 child: Stack(
+                  key: const ValueKey('character-avatar-artwork-stack'),
                   children: [
                     Positioned(
                       child: Container(
@@ -68,15 +69,6 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                         height: widget.size,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: widget.showIsSelected && widget.isBluff
-                                ? Colors.redAccent
-                                : widget.showIsSelected && isSelected
-                                    ? widget.selectionBorderColor ??
-                                        Colors.white
-                                    : Colors.transparent,
-                            width: 4,
-                          ),
                           image: const DecorationImage(
                             image: AssetImage(
                                 'assets/images/backgrounds/token.png'),
@@ -99,8 +91,36 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                               fit: BoxFit.cover,
                             ),
                           ),
-                        ))
-                    // Oberstes Bild
+                        )),
+                    // The selection ring must be ABOVE the role artwork.
+                    // It used to be painted on the background token, then
+                    // partly obscured by some large/circular role icons.
+                    // This applies to every role (and bluff/selection views),
+                    // not just the Fortune Teller.
+                    if (widget.showIsSelected &&
+                        (isSelected || widget.isBluff))
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        child: IgnorePointer(
+                          child: Container(
+                            key: const ValueKey(
+                                'character-avatar-highlight-outline'),
+                            width: widget.size,
+                            height: widget.size,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: widget.isBluff
+                                    ? Colors.redAccent
+                                    : widget.selectionBorderColor ??
+                                        Colors.white,
+                                width: 4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
