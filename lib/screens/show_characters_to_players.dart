@@ -7,7 +7,6 @@ import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -29,12 +28,12 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   static const _ivory = GrimoireColors.ivory;
   static const _secondary = GrimoireColors.secondaryText;
   static const _violet = GrimoireColors.deepViolet;
-  static const _holdDuration = Duration(milliseconds: 750);
+  static const _holdDuration = Duration(milliseconds: 900);
 
   late final AnimationController _holdProgress;
   _PresentationStage _stage = _PresentationStage.handoff;
   int _currentCharacterIndex = 0;
-  int? _holdingPointer;
+  bool _isHolding = false;
   bool _roleVisible = false;
   bool _hasSeenRole = false;
   bool _startingGame = false;
@@ -47,7 +46,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
         if (status != AnimationStatus.completed ||
             !mounted ||
             _stage != _PresentationStage.reveal ||
-            _holdingPointer == null) {
+            !_isHolding) {
           return;
         }
         setState(() {
@@ -68,27 +67,31 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   String _tr(String german, String english) =>
       _isGerman ? german : english;
 
-  void _beginHold(PointerDownEvent event) {
-    if (_stage != _PresentationStage.reveal || _holdingPointer != null) return;
-    _holdingPointer = event.pointer;
+  // Do not start charging on a raw pointer-down: a tap must never reveal
+  // a role. Both surfaces wait for Flutter's actual long-press recognition,
+  // then show a visible 900ms charge before revealing anything private.
+  void _beginHold() {
+    if (_stage != _PresentationStage.reveal || _isHolding) return;
+    _isHolding = true;
     _holdProgress.forward(from: 0);
   }
 
-  void _endHold(PointerEvent event) {
-    if (_holdingPointer != event.pointer) return;
-    _holdingPointer = null;
-    // Immediately obscure the role. Do not animate the secret back out.
+  void _endHold() {
+    if (!_isHolding) return;
+    _isHolding = false;
+    // Cover the role immediately on release or gesture cancellation, even
+    // if the animation did not finish yet.
     if (_roleVisible) setState(() => _roleVisible = false);
     _holdProgress.reset();
   }
 
   Widget _holdArea({required Key key, required Widget child}) {
-    return Listener(
+    return GestureDetector(
       key: key,
       behavior: HitTestBehavior.opaque,
-      onPointerDown: _beginHold,
-      onPointerUp: _endHold,
-      onPointerCancel: _endHold,
+      onLongPressStart: (_) => _beginHold(),
+      onLongPressEnd: (_) => _endHold(),
+      onLongPressCancel: _endHold,
       child: Semantics(
         label: _tr('Zum Enthüllen gedrückt halten', 'Hold to reveal'),
         child: child,
@@ -102,12 +105,12 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _stage = _PresentationStage.reveal;
       _roleVisible = false;
       _hasSeenRole = false;
-      _holdingPointer = null;
+      _isHolding = false;
     });
   }
 
   void _nextPlayer() {
-    if (!_hasSeenRole || _roleVisible || _holdingPointer != null) return;
+    if (!_hasSeenRole || _roleVisible || _isHolding) return;
     _holdProgress.reset();
     setState(() {
       _currentCharacterIndex++;
@@ -416,65 +419,80 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
         const SizedBox(height: 30),
         _holdArea(
           key: const ValueKey('role-reveal-hold-button'),
-          child: AnimatedBuilder(
-            animation: _holdProgress,
-            builder: (context, _) => Container(
-              height: 56,
-              decoration: BoxDecoration(
-                color: _violet.withValues(alpha: 0.94),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _gold.withValues(alpha: 0.58),
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: _holdProgress.value,
-                      child: ColoredBox(
-                        color: _gold.withValues(alpha: 0.74),
-                      ),
+          child: LayoutBuilder(
+            builder: (context, constraints) => AnimatedBuilder(
+              animation: _holdProgress,
+              builder: (context, _) {
+                // FractionallySizedBox in a loosely constrained Align can
+                // end up with no visible width. Use the actual button width
+                // for a reliably painted gold fill on Android and web.
+                final chargedWidth =
+                    constraints.maxWidth * _holdProgress.value;
+                return Container(
+                  width: constraints.maxWidth,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: _violet.withValues(alpha: 0.94),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _gold.withValues(alpha: 0.75),
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      const Icon(Icons.visibility_rounded, color: _ivory),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Text(
-                          _tr('Charakter anzeigen', 'Reveal character'),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: _ivory,
-                            fontFamily: GrimoireTheme.headingFont,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: chargedWidth,
+                        child: DecoratedBox(
+                          key: const ValueKey('role-reveal-progress-fill'),
+                          decoration: BoxDecoration(
+                            color: _gold.withValues(alpha: 0.88),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 4,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: _holdProgress.value,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.visibility_rounded,
+                            color: _ivory,
+                            shadows: [
+                              Shadow(color: Colors.black54, blurRadius: 3),
+                            ],
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              _tr('Charakter anzeigen', 'Reveal character'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: _ivory,
+                                shadows: [
+                                  Shadow(color: Colors.black54, blurRadius: 3),
+                                ],
+                                fontFamily: GrimoireTheme.headingFont,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Positioned(
+                        left: 0,
+                        bottom: 0,
+                        height: 5,
+                        width: chargedWidth,
                         child: const ColoredBox(color: _gold),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -483,7 +501,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
           key: const ValueKey('role-reveal-continue'),
           icon: Icons.check_rounded,
           text: _tr('Fertig – weitergeben', 'Done – pass it on'),
-          onPressed: _hasSeenRole && !_roleVisible && _holdingPointer == null
+          onPressed: _hasSeenRole && !_roleVisible && !_isHolding
               ? _nextPlayer
               : null,
         ),
