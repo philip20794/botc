@@ -1,331 +1,527 @@
-import 'package:auto_size_text/auto_size_text.dart';
-import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+
+/// Player hand-off, private role reveal, and final Storyteller hand-off.
+/// Only the current player can enter the reveal stage.
+enum _PresentationStage { handoff, reveal, storyteller }
 
 class ShowCharactersToPlayers extends StatefulWidget {
+  const ShowCharactersToPlayers({super.key});
+
   @override
-  _ShowCharactersToPlayersState createState() =>
+  State<ShowCharactersToPlayers> createState() =>
       _ShowCharactersToPlayersState();
 }
 
-class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers> {
-  int currentCharacterIndex = 0;
-  bool isCharacterVisible = false;
-  bool isDialogVisible = true;
-  bool iCanHaveSeenMyCharacter = false;
+class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
+    with SingleTickerProviderStateMixin {
+  static const _gold = GrimoireColors.antiqueGold;
+  static const _ivory = GrimoireColors.ivory;
+  static const _secondary = GrimoireColors.secondaryText;
+  static const _violet = GrimoireColors.deepViolet;
+  static const _holdDuration = Duration(milliseconds: 750);
+
+  late final AnimationController _holdProgress;
+  _PresentationStage _stage = _PresentationStage.handoff;
+  int _currentCharacterIndex = 0;
+  int? _holdingPointer;
+  bool _roleVisible = false;
+  bool _hasSeenRole = false;
+  bool _startingGame = false;
 
   @override
   void initState() {
     super.initState();
+    _holdProgress = AnimationController(vsync: this, duration: _holdDuration)
+      ..addStatusListener((status) {
+        if (status != AnimationStatus.completed ||
+            !mounted ||
+            _stage != _PresentationStage.reveal ||
+            _holdingPointer == null) {
+          return;
+        }
+        setState(() {
+          _roleVisible = true;
+          _hasSeenRole = true;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _holdProgress.dispose();
+    super.dispose();
+  }
+
+  bool get _isGerman => Localizations.localeOf(context).languageCode == 'de';
+
+  String _tr(String german, String english) =>
+      _isGerman ? german : english;
+
+  void _beginHold(PointerDownEvent event) {
+    if (_stage != _PresentationStage.reveal || _holdingPointer != null) return;
+    _holdingPointer = event.pointer;
+    _holdProgress.forward(from: 0);
+  }
+
+  void _endHold(PointerEvent event) {
+    if (_holdingPointer != event.pointer) return;
+    _holdingPointer = null;
+    // Immediately obscure the role. Do not animate the secret back out.
+    if (_roleVisible) setState(() => _roleVisible = false);
+    _holdProgress.reset();
+  }
+
+  Widget _holdArea({required Key key, required Widget child}) {
+    return Listener(
+      key: key,
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: _beginHold,
+      onPointerUp: _endHold,
+      onPointerCancel: _endHold,
+      child: Semantics(
+        label: _tr('Zum Enthüllen gedrückt halten', 'Hold to reveal'),
+        child: child,
+      ),
+    );
+  }
+
+  void _openCharacter() {
+    _holdProgress.reset();
+    setState(() {
+      _stage = _PresentationStage.reveal;
+      _roleVisible = false;
+      _hasSeenRole = false;
+      _holdingPointer = null;
+    });
+  }
+
+  void _nextPlayer() {
+    if (!_hasSeenRole || _roleVisible || _holdingPointer != null) return;
+    _holdProgress.reset();
+    setState(() {
+      _currentCharacterIndex++;
+      _stage = _PresentationStage.handoff;
+      _roleVisible = false;
+      _hasSeenRole = false;
+      _holdingPointer = null;
+    });
+  }
+
+  Future<void> _startGame(
+    BuildContext context,
+    CharacterService characters,
+    GameStateService game,
+  ) async {
+    if (_startingGame) return;
+    setState(() => _startingGame = true);
+    try {
+      if (game.nightCount < 0) {
+        await game.startNewGame(
+          characters.gameCharactersWithoutDrunkAndFabled,
+          completeSetupCharacters: characters.gameCharacters,
+          scriptCatalog: characters.allCharacters,
+        );
+      }
+      if (!context.mounted) return;
+      // Prevent a player from returning to the private distribution flow.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => SpielbereichScreen()),
+      );
+    } finally {
+      if (mounted) setState(() => _startingGame = false);
+    }
+  }
+
+  Future<bool> _confirmBack() async {
+    final strings = AppLocalizations.of(context)!;
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(strings.reallyWantToGoBack),
+            content: Text(strings.onlyTheStorytellerMayGoBack),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(strings.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(strings.yesImTheStoryteller),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   @override
   Widget build(BuildContext context) {
-    CharacterService characterService = Provider.of<CharacterService>(context);
-    GameStateService gameStateService = Provider.of<GameStateService>(context);
-    var localizedStrings = AppLocalizations.of(context)!;
-    final characters = characterService.gameCharactersWithoutDrunkAndFabled;
-    final isGameMaster = currentCharacterIndex >= characters.length;
-    if (isGameMaster) {
-      if (!gameStateService.showCharactersToPlayers) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            gameStateService.setShowCharactersToPlayers(true);
-          }
-        });
-      }
+    final characters = context.watch<CharacterService>();
+    final game = context.read<GameStateService>();
+    final roster = characters.gameCharactersWithoutDrunkAndFabled;
+    final isStorytellerTurn = _currentCharacterIndex >= roster.length;
+    final current = isStorytellerTurn ? null : roster[_currentCharacterIndex];
+
+    if (isStorytellerTurn && !game.showCharactersToPlayers) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) game.setShowCharactersToPlayers(true);
+      });
     }
 
-    Character? currentCharacter =
-        isGameMaster ? null : characters[currentCharacterIndex];
-
     return WillPopScope(
-      onWillPop: () async {
-        // Bestätigungsdialog bevor man zurück navigiert
-        return await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
-            title: Text(localizedStrings.reallyWantToGoBack,
-                style: TextStyle(color: Colors.white)),
-            content: Text(localizedStrings.onlyTheStorytellerMayGoBack),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(localizedStrings.cancel,
-                    style: TextStyle(color: Colors.white)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(localizedStrings.yesImTheStoryteller,
-                    style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-      },
+      onWillPop: _confirmBack,
       child: AppBackground(
         type: AppBackgroundType.playground,
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.transparent),
-          ),
-          body: Stack(
-            children: [
-              if (isDialogVisible)
-                Center(
-                  child: buildPlayerDialog(
-                      context, currentCharacter, isGameMaster),
-                )
-              else
-                Stack(
-                  children: [
-                    Center(
-                      child: buildCharacterView(
-                          context, currentCharacter, isGameMaster),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
+                        ),
+                        child: switch (_stage) {
+                          _PresentationStage.handoff =>
+                            _buildHandoff(current, roster.length),
+                          _PresentationStage.reveal =>
+                            current == null
+                                ? _buildHandoff(null, roster.length)
+                                : _buildReveal(current, roster.length),
+                          _PresentationStage.storyteller =>
+                            _buildStoryteller(context, characters, game),
+                        },
+                      ),
                     ),
-                    if (!isGameMaster) _buildHoldToShowButton(context)
-                  ],
-                )
-            ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget buildPlayerDialog(
-      BuildContext context, Character? character, bool isGameMaster) {
-    var localizedStrings = AppLocalizations.of(context)!;
-    String dialogText = isGameMaster
-        ? localizedStrings.giveTheDeviceToTheStoryteller
-        : '${localizedStrings.giveTheDeviceTo} ${character!.playerName}';
-    String buttonText = isGameMaster
-        ? localizedStrings.iAmTheStoryteller
-        : '${localizedStrings.iAm} ${character!.playerName}';
+  Widget _eyebrow(String text) => Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: _gold,
+          fontFamily: GrimoireTheme.headingFont,
+          fontSize: 13,
+          letterSpacing: 1.6,
+          fontWeight: FontWeight.w600,
+        ),
+      );
 
-    return AlertDialog(
-      title: Text(dialogText, style: const TextStyle(color: Colors.white)),
-      backgroundColor: const Color(0xFF6f678a).withOpacity(0.9),
-      actions: [
-        TextButton(
-          onPressed: () {
-            if (isGameMaster) {
-              setState(() {
-                isDialogVisible = false;
-              });
-            } else {
-              setState(() {
-                isDialogVisible = false;
-              });
-            }
-          },
-          child: Text(buttonText, style: const TextStyle(color: Colors.white)),
+  Widget _heading(String text) => Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: _ivory,
+          fontFamily: GrimoireTheme.headingFont,
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          height: 1.25,
+        ),
+      );
+
+  Widget _hint(String text) => Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: _secondary, fontSize: 15, height: 1.4),
+      );
+
+  Widget _primaryButton({
+    required Key key,
+    required String text,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton.icon(
+        key: key,
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(text, textAlign: TextAlign.center),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _gold,
+          foregroundColor: GrimoireColors.background,
+          disabledBackgroundColor: _violet.withValues(alpha: 0.82),
+          disabledForegroundColor: _secondary,
+          textStyle: const TextStyle(
+            fontFamily: GrimoireTheme.headingFont,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHandoff(Character? character, int total) {
+    final storyteller = character == null;
+    final playerName = storyteller
+        ? _tr('Spielleitung', 'Storyteller')
+        : character.playerName.trim().isNotEmpty
+            ? character.playerName
+            : _tr('Spieler ${_currentCharacterIndex + 1}',
+                'Player ${_currentCharacterIndex + 1}');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _eyebrow(storyteller
+            ? _tr('Alle Rollen verteilt', 'All roles distributed')
+            : _tr('Spieler ${_currentCharacterIndex + 1} von $total',
+                'Player ${_currentCharacterIndex + 1} of $total')),
+        const SizedBox(height: 22),
+        Container(
+          width: 96,
+          height: 96,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: GrimoireColors.surface.withValues(alpha: 0.88),
+            border: Border.all(color: _gold.withValues(alpha: 0.55)),
+          ),
+          child: const Icon(Icons.phone_android_rounded, color: _gold, size: 48),
+        ),
+        const SizedBox(height: 24),
+        _heading(_tr('Gib das Gerät an', 'Pass the device to')),
+        const SizedBox(height: 8),
+        Text(
+          playerName,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: _gold,
+            fontFamily: GrimoireTheme.headingFont,
+            fontSize: 30,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 18),
+        _hint(_tr(
+          'Nur diese Person darf jetzt auf den Bildschirm schauen.',
+          'Only this person should look at the screen now.',
+        )),
+        const SizedBox(height: 30),
+        _primaryButton(
+          key: const ValueKey('role-handoff-confirm'),
+          icon: Icons.arrow_forward_rounded,
+          text: storyteller
+              ? _tr('Ich bin die Spielleitung', 'I am the Storyteller')
+              : _tr('Ich bin $playerName', 'I am $playerName'),
+          onPressed: storyteller
+              ? () => setState(() => _stage = _PresentationStage.storyteller)
+              : _openCharacter,
         ),
       ],
     );
   }
 
-  Widget _buildHoldToShowButton(BuildContext context) {
-    return Stack(children: [
-      Positioned(
-        bottom: 25,
-        right: 25,
-        child: GestureDetector(
-          onLongPressStart: (_) {
-            setState(() {
-              isCharacterVisible = true;
-              iCanHaveSeenMyCharacter = true;
-            });
-          },
-          onLongPressEnd: (_) {
-            setState(() {
-              isCharacterVisible = false;
-            });
-          },
-          child: Icon(
-            isCharacterVisible ? Icons.visibility_off : Icons.visibility,
-            size: 50,
-            color: Colors.white,
+  Widget _buildReveal(Character character, int total) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _eyebrow(_tr('Spieler ${_currentCharacterIndex + 1} von $total',
+            'Player ${_currentCharacterIndex + 1} of $total')),
+        const SizedBox(height: 14),
+        _heading('${AppLocalizations.of(context)!.characterOf} '
+            '${character.playerName}'),
+        const SizedBox(height: 22),
+        _holdArea(
+          key: const ValueKey('role-reveal-eye'),
+          child: AnimatedBuilder(
+            animation: _holdProgress,
+            builder: (context, _) => Container(
+              width: 196,
+              height: 196,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _gold.withValues(
+                        alpha: _holdProgress.value * 0.32),
+                    blurRadius: 12 + _holdProgress.value * 18,
+                    spreadRadius: _holdProgress.value * 2,
+                  ),
+                ],
+                border: Border.all(
+                  color: _gold.withValues(
+                      alpha: 0.32 + _holdProgress.value * 0.65),
+                  width: 2,
+                ),
+              ),
+              child: _roleVisible
+                  ? CharacterAvatar(
+                      character: character,
+                      showIsSelected: false,
+                      showName: true,
+                      size: 192,
+                    )
+                  : const CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      backgroundImage: AssetImage(
+                        'assets/images/backgrounds/token.png',
+                      ),
+                      child: Icon(
+                        Icons.remove_red_eye_rounded,
+                        size: 74,
+                        color: GrimoireColors.background,
+                      ),
+                    ),
+            ),
           ),
         ),
-      ),
-      const Positioned(
-          bottom: 40,
-          right: 65,
-          child: RotationTransition(
-              turns: AlwaysStoppedAnimation(0.1),
-              child:
-                  Icon(Icons.arrow_forward, size: 120, color: Colors.white))),
-    ]);
-  }
-
-  Widget buildCharacterView(
-      BuildContext context, Character? character, bool isGameMaster) {
-    final gameService = Provider.of<GameStateService>(context);
-    final characterService = Provider.of<CharacterService>(context);
-    var localizedStrings = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (isGameMaster)
-          Column(
-            children: [
-              Text(
-                localizedStrings.onlyForTheStoryteller,
-                style: TextStyle(fontSize: 24),
+        const SizedBox(height: 18),
+        SizedBox(
+          height: 74,
+          child: Center(
+            child: _hint(_roleVisible
+                ? character.descriptionShort
+                : _tr('Auge oder Button gedrückt halten',
+                    'Press and hold the eye or button')),
+          ),
+        ),
+        const SizedBox(height: 30),
+        _holdArea(
+          key: const ValueKey('role-reveal-hold-button'),
+          child: AnimatedBuilder(
+            animation: _holdProgress,
+            builder: (context, _) => Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: _violet.withValues(alpha: 0.94),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _gold.withValues(alpha: 0.58),
+                ),
               ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () async {
-                  if (gameService.nightCount < 0) {
-                    await gameService.startNewGame(
-                      characterService.gameCharactersWithoutDrunkAndFabled,
-                      completeSetupCharacters: characterService.gameCharacters,
-                      scriptCatalog: characterService.allCharacters,
-                    );
-                  }
-                  if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => SpielbereichScreen()),
-                  );
-                },
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: const DecorationImage(
-                      image: AssetImage(
-                          'assets/images/backgrounds/token.png'), // Zweites Bild
-                      fit: BoxFit.cover,
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: _holdProgress.value,
+                      child: ColoredBox(
+                        color: _gold.withValues(alpha: 0.74),
+                      ),
                     ),
                   ),
-                  child: const CircleAvatar(
-                      radius: 100,
-                      backgroundColor: Colors.transparent,
-                      child: Icon(
-                        Icons.play_arrow,
-                        size: 100,
-                        color: Colors.white,
-                      )),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: 300,
-                height: 30,
-                child: AutoSizeText(
-                  localizedStrings.startGame,
-                  style: TextStyle(fontSize: 16),
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          )
-        else
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${localizedStrings.characterOf} ${character!.playerName}',
-                style: const TextStyle(fontSize: 24),
-              ),
-              const SizedBox(height: 20),
-              Stack(children: [
-                GestureDetector(
-                  onLongPressStart: (_) {
-                    setState(() {
-                      isCharacterVisible = true;
-                      iCanHaveSeenMyCharacter = true;
-                    });
-                  },
-                  onLongPressEnd: (_) {
-                    setState(() {
-                      isCharacterVisible = false;
-                    });
-                  },
-                  child: isCharacterVisible
-                      ? CharacterAvatar(
-                          character: character,
-                          showIsSelected: false,
-                          showName: true,
-                          size: 200)
-                      : const CircleAvatar(
-                          backgroundColor: Colors.transparent,
-                          radius: 100,
-                          backgroundImage:
-                              AssetImage('assets/images/backgrounds/token.png'),
-                          child: const Icon(
-                            Icons.remove_red_eye,
-                            size: 80,
-                            color: Colors.black,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.visibility_rounded, color: _ivory),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          _tr('Charakter anzeigen', 'Reveal character'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _ivory,
+                            fontFamily: GrimoireTheme.headingFont,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                           ),
                         ),
-                ),
-              ]),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: 300,
-                height: 40,
-                child: AutoSizeText(
-                  isCharacterVisible
-                      ? character.descriptionShort
-                      : localizedStrings.pressAndHoldToSeeCharacter,
-                  style: const TextStyle(fontSize: 16),
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton.icon(
-                icon: Icon(
-                  Icons.check,
-                  color: iCanHaveSeenMyCharacter
-                      ? const Color(0xFFFFFFFF)
-                      : const Color(0xFF999999),
-                ),
-                label: Text(
-                  localizedStrings.iHaveSeenMyCharacter,
-                  style: TextStyle(
-                    color: iCanHaveSeenMyCharacter
-                        ? const Color(0xFFFFFFFF)
-                        : const Color(0xFF999999),
+                      ),
+                    ],
                   ),
-                ),
-                onPressed: () {
-                  if (!iCanHaveSeenMyCharacter) {
-                    return;
-                  }
-                  setState(() {
-                    currentCharacterIndex++;
-                    isCharacterVisible = false;
-                    iCanHaveSeenMyCharacter = false;
-                    isDialogVisible = true;
-                    if (currentCharacterIndex >=
-                        Provider.of<CharacterService>(context, listen: false)
-                            .gameCharactersWithoutDrunkAndFabled
-                            .length) {}
-                  });
-                },
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 4,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: _holdProgress.value,
+                        child: const ColoredBox(color: _gold),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 100),
-            ],
+            ),
           ),
+        ),
+        const SizedBox(height: 32),
+        _primaryButton(
+          key: const ValueKey('role-reveal-continue'),
+          icon: Icons.check_rounded,
+          text: _tr('Fertig – weitergeben', 'Done – pass it on'),
+          onPressed: _hasSeenRole && !_roleVisible && _holdingPointer == null
+              ? _nextPlayer
+              : null,
+        ),
+        const SizedBox(height: 12),
+        _hint(_hasSeenRole
+            ? _tr('Deine Rolle wird beim Loslassen wieder verdeckt.',
+                'Your role is hidden again when you release.')
+            : _tr('Halte gedrückt, bis sich der Button ganz gefüllt hat.',
+                'Keep holding until the button is fully filled.')),
+      ],
+    );
+  }
+
+  Widget _buildStoryteller(
+    BuildContext context,
+    CharacterService characters,
+    GameStateService game,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _eyebrow(_tr('Rollenverteilung abgeschlossen',
+            'Role distribution complete')),
+        const SizedBox(height: 24),
+        Container(
+          height: 108,
+          width: 108,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: GrimoireColors.surface.withValues(alpha: 0.92),
+            border: Border.all(color: _gold.withValues(alpha: 0.65)),
+          ),
+          child: const Icon(Icons.menu_book_rounded, size: 52, color: _gold),
+        ),
+        const SizedBox(height: 26),
+        _heading(AppLocalizations.of(context)!.onlyForTheStoryteller),
+        const SizedBox(height: 16),
+        _hint(_tr(
+          'Alle Spieler haben ihre geheime Rolle erhalten. Du kannst das Spiel jetzt starten.',
+          'All players have received their secret role. You can now start the game.',
+        )),
+        const SizedBox(height: 32),
+        _primaryButton(
+          key: const ValueKey('role-storyteller-start'),
+          icon: Icons.play_arrow_rounded,
+          text: AppLocalizations.of(context)!.startGame,
+          onPressed: _startingGame
+              ? null
+              : () => _startGame(context, characters, game),
+        ),
       ],
     );
   }
