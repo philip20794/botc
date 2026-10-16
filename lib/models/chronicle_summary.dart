@@ -42,6 +42,20 @@ class ChronicleSummaryProjector {
         )..events.add(event);
         continue;
       }
+      if (event.type == ChronicleEventType.savantStatement &&
+          event.phase == ChroniclePhase.day &&
+          event.character != null &&
+          event.round >= 1) {
+        final id = 'savant:${event.id}';
+        groups[id] = _SummaryAccumulator(
+          id: id,
+          phase: event.phase,
+          round: event.round,
+          actor: event.character!,
+          timestamp: event.timestamp,
+        )..events.add(event);
+        continue;
+      }
       if (event.phase != ChroniclePhase.night || event.round < 1) continue;
       final actor = _actorOf(event);
       if (actor == null || !_belongsToNightSummary(event)) continue;
