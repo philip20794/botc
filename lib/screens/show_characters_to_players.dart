@@ -31,7 +31,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   // A single continuous hold controls both the fill and the role reveal.
   // This is deliberately longer than Flutter's long-press threshold so the
   // charge feels gradual and reaches 100% exactly when the role appears.
-  static const _holdDuration = Duration(milliseconds: 1200);
+  static const _holdDuration = Duration(milliseconds: 800);
 
   late final AnimationController _holdProgress;
   _PresentationStage _stage = _PresentationStage.handoff;
