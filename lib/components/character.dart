@@ -197,6 +197,11 @@ class _CharacterWidgetState extends State<CharacterWidget> {
               showIsSelected: true,
               forSelectCharacter: true,
               isSelected: widget.selectionIsSelected,
+              // This selection mode belongs to Chronicle player inputs on
+              // the Playground. Its gold target markers must not suppress
+              // the white outline of the acting night character.
+              showNightHighlightDuringSelection:
+                  widget.showAddToken && !widget.settingsView,
               selectionBorderColor: widget.selectionBorderColor,
               showName: true,
               size: settingsService.characterKnobSize,

@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
+import 'package:blood_on_the_clocktower/components/character.dart';
+import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/services/character_service.dart';
+import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/night_order_service.dart';
@@ -187,6 +191,133 @@ void main() {
         await tester.pump();
       }
     }
+  });
+
+  testWidgets(
+      'Fortune Teller Chronicle target picker keeps its white actor ring and gold targets',
+      (tester) async {
+    final roles = [characterFor('fortuneteller'), characterFor('poisoner')];
+    final game = await runningGame(tester, roles);
+    late CharacterService characters;
+    late SettingsService settings;
+    await tester.runAsync(() async {
+      characters = CharacterService();
+      settings = SettingsService();
+      await Future.wait([characters.init(), settings.initialized]);
+    });
+
+    Future<void> mount({required bool actorIsTarget, required bool otherIsTarget}) async {
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<GameStateService>.value(value: game),
+            ChangeNotifierProvider<CharacterService>.value(value: characters),
+            ChangeNotifierProvider<SettingsService>.value(value: settings),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Row(
+                children: [
+                  for (final role in roles)
+                    Expanded(
+                      child: CharacterWidget(
+                        character: role,
+                        menuId: roles.indexOf(role),
+                        onSelect: (_) {},
+                        showAddToken: true,
+                        selectionMode: true,
+                        selectionBorderColor: Colors.amber,
+                        selectionIsSelected: role.roleId == 'fortuneteller'
+                            ? actorIsTarget
+                            : otherIsTarget,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    final activeRing = find.byKey(
+      const ValueKey('character-avatar-night-highlight-outline'),
+    );
+    final targetRing =
+        find.byKey(const ValueKey('character-avatar-highlight-outline'));
+    const actorId = 'role:fortuneteller:instance-fortuneteller';
+
+    for (final night in [1, 2]) {
+      await advanceTo(tester, game, roles, actorId);
+      expect(game.nightCount, night);
+      expect(game.isNightChroniclePlayerSelectionActive(roles), isTrue,
+          reason: 'The Chronicle player picker is the reason the ordinary '
+              'night highlighting path was bypassed.');
+
+      // No player has been selected yet, but Fortune Teller MUST be white.
+      await mount(actorIsTarget: false, otherIsTarget: false);
+      expect(activeRing, findsOneWidget);
+      expect(targetRing, findsNothing);
+      final activeBorder = tester.widget<Container>(activeRing).decoration
+          as BoxDecoration;
+      expect((activeBorder.border! as Border).top.color, Colors.white);
+
+      // Selecting somebody else adds gold to the target, never replacing
+      // the actor's white ring.
+      await mount(actorIsTarget: false, otherIsTarget: true);
+      expect(activeRing, findsOneWidget);
+      expect(targetRing, findsOneWidget);
+      final targetBorder = tester.widget<Container>(targetRing).decoration
+          as BoxDecoration;
+      expect((targetBorder.border! as Border).top.color, Colors.amber);
+
+      // Fortune Teller can even be selected as a target: both outlines
+      // must remain visible, with gold inset and white on the outside.
+      await mount(actorIsTarget: true, otherIsTarget: false);
+      expect(activeRing, findsOneWidget);
+      expect(targetRing, findsOneWidget);
+      final targetSize = tester.getSize(targetRing);
+      final whiteSize = tester.getSize(activeRing);
+      expect(targetSize.width, lessThan(whiteSize.width));
+
+      await advanceTo(tester, game, roles, 'day');
+      expect(activeRing, findsNothing);
+      if (night == 1) {
+        await tester.runAsync(() async {
+          await game.nextNightState(roles);
+        });
+        await tester.pump();
+      }
+    }
+  });
+
+  testWidgets('ordinary selection does not turn on a white night outline',
+      (tester) async {
+    final role = characterFor('fortuneteller');
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CharacterAvatar(
+          character: role,
+          showIsSelected: true,
+          forSelectCharacter: true,
+          isSelected: true,
+          showName: false,
+          selectionBorderColor: Colors.amber,
+          size: 95,
+        ),
+      ),
+    ));
+    expect(
+      find.byKey(const ValueKey('character-avatar-highlight-outline')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('character-avatar-night-highlight-outline')),
+      findsNothing,
+    );
   });
 
   testWidgets('selection-color and bluff outlines remain supported',
