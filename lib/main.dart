@@ -10,6 +10,7 @@ import 'package:blood_on_the_clocktower/services/night_order_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -24,9 +25,9 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.black,
-    systemNavigationBarDividerColor: Color(0xFF040004),
-    systemNavigationBarColor: Color(0xFF040004),
+    statusBarColor: GrimoireColors.background,
+    systemNavigationBarDividerColor: GrimoireColors.background,
+    systemNavigationBarColor: GrimoireColors.background,
     statusBarIconBrightness: Brightness.light,
   ));
   await SystemChrome.setPreferredOrientations([

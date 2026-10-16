@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/models/botc_script.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -53,8 +54,14 @@ void main() {
     expect(find.byTooltip('Delete script'), findsOneWidget);
     final managerTheme = Theme.of(tester.element(find.text('Import script')));
     expect(managerTheme.brightness, Brightness.dark);
-    expect(managerTheme.textTheme.titleMedium?.color, Colors.white);
-    expect(managerTheme.listTileTheme.subtitleTextStyle?.color, Colors.white70);
+    expect(
+      managerTheme.textTheme.titleMedium?.color,
+      GrimoireColors.ivory,
+    );
+    expect(
+      managerTheme.listTileTheme.subtitleTextStyle?.color,
+      GrimoireColors.secondaryText,
+    );
   });
 
   testWidgets('keeps selector and management action usable in separate columns',

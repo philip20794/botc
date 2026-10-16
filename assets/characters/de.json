@@ -418,7 +418,8 @@
           "id": "chefCount",
           "type": "number",
           "label": "Angezeigte Anzahl benachbarter böser Paare",
-          "min": 0
+          "min": 0,
+          "max": 3
         }
       ]
     }

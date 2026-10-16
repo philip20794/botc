@@ -94,7 +94,7 @@ void main() {
     final chef = catalogRole('chef').chronicle!;
     expect(chef.firstNight.single.type, ChronicleInputType.number);
     expect(chef.firstNight.single.min, 0);
-    expect(chef.firstNight.single.max, isNull);
+    expect(chef.firstNight.single.max, 3);
 
     final empath = catalogRole('empath').chronicle!;
     expect(empath.firstNight.single.max, 2);

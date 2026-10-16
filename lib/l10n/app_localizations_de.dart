@@ -702,4 +702,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String chronicleNightActionVisited(String role) {
     return 'Nachtaktion von $role besucht.';
   }
+
+  @override
+  String get homeGrimoireTitle => 'BotC';
+
+  @override
+  String get homeGrimoireSubtitle => 'by Günter';
+
+  @override
+  String get selectedScript => 'Ausgewähltes Skript';
+
+  @override
+  String get gamePreparation => 'Spielvorbereitung';
+
+  @override
+  String get setupCompleted => 'Abgeschlossen';
+
+  @override
+  String get setupAvailable => 'Verfügbar';
+
+  @override
+  String get setupLocked => 'Gesperrt';
+
+  @override
+  String get setupPlayersHint => 'Namen und Sitzreihenfolge festlegen';
+
+  @override
+  String get setupCharactersHint => 'Rollen auswählen';
+
+  @override
+  String get setupRevealHint => 'Mischen & Rollen zeigen';
+
+  @override
+  String get setupPlaygroundHint => 'Partie öffnen';
 }

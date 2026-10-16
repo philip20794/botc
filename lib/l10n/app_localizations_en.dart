@@ -697,4 +697,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String chronicleNightActionVisited(String role) {
     return '$role night action visited.';
   }
+
+  @override
+  String get homeGrimoireTitle => 'BotC';
+
+  @override
+  String get homeGrimoireSubtitle => 'by Günter';
+
+  @override
+  String get selectedScript => 'Selected script';
+
+  @override
+  String get gamePreparation => 'Game preparation';
+
+  @override
+  String get setupCompleted => 'Completed';
+
+  @override
+  String get setupAvailable => 'Available';
+
+  @override
+  String get setupLocked => 'Locked';
+
+  @override
+  String get setupPlayersHint => 'Set names and seating order';
+
+  @override
+  String get setupCharactersHint => 'Choose roles';
+
+  @override
+  String get setupRevealHint => 'Shuffle & Reveal roles';
+
+  @override
+  String get setupPlaygroundHint => 'Open the game';
 }

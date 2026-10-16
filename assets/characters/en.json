@@ -418,7 +418,8 @@
           "id": "chefCount",
           "type": "number",
           "label": "Number of evil-neighbour pairs shown",
-          "min": 0
+          "min": 0,
+          "max": 3
         }
       ]
     }

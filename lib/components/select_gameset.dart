@@ -5,6 +5,7 @@ import 'package:blood_on_the_clocktower/screens/custom_script_import_screen.dart
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -51,7 +52,7 @@ class SelectGameset extends StatelessWidget {
     final strings = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF4a3b5e),
+      backgroundColor: GrimoireColors.surface,
       builder: (sheetContext) => Theme(
         data: _customScriptTheme(Theme.of(context)),
         child: SafeArea(
@@ -230,8 +231,8 @@ class SelectGameset extends StatelessWidget {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 isExpanded: true,
-                dropdownColor: const Color(0xFF6f678a),
-                iconEnabledColor: Colors.white,
+                dropdownColor: GrimoireColors.surface,
+                iconEnabledColor: GrimoireColors.antiqueGold,
                 value: scripts.selectedScriptId,
                 onChanged: disabled
                     ? null
@@ -257,7 +258,9 @@ class SelectGameset extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.upload_file,
-                              color: disabled ? Colors.grey : Colors.white),
+                              color: disabled
+                                  ? GrimoireColors.disabled
+                                  : GrimoireColors.ivory),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -265,7 +268,9 @@ class SelectGameset extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: disabled ? Colors.grey : Colors.white,
+                                color: disabled
+                                    ? GrimoireColors.disabled
+                                    : GrimoireColors.ivory,
                               ),
                             ),
                           ),
@@ -280,7 +285,9 @@ class SelectGameset extends StatelessWidget {
         if (showManagementAction)
           IconButton(
             tooltip: AppLocalizations.of(context)!.manageScripts,
-            color: disabled ? Colors.grey : Colors.white,
+            color: disabled
+                ? GrimoireColors.disabled
+                : GrimoireColors.antiqueGold,
             onPressed: disabled ? null : () => _showManager(context),
             icon: const Icon(Icons.more_vert),
           ),
@@ -301,7 +308,12 @@ class SelectGameset extends StatelessWidget {
           script.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: disabled ? Colors.grey : Colors.white),
+          style: TextStyle(
+            color: disabled
+                ? GrimoireColors.disabled
+                : GrimoireColors.ivory,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -311,40 +323,41 @@ class SelectGameset extends StatelessWidget {
 ThemeData _customScriptTheme(ThemeData base) {
   final colorScheme = base.colorScheme.copyWith(
     brightness: Brightness.dark,
-    primary: const Color(0xFF6f678a),
-    onPrimary: Colors.white,
-    surface: const Color(0xFF6f678a),
-    onSurface: Colors.white,
+    primary: GrimoireColors.antiqueGold,
+    onPrimary: GrimoireColors.background,
+    surface: GrimoireColors.surface,
+    onSurface: GrimoireColors.ivory,
   );
   return withScriptComplexityEditorTheme(base.copyWith(
     colorScheme: colorScheme,
     textTheme: base.textTheme.apply(
-      bodyColor: Colors.white,
-      displayColor: Colors.white,
+      bodyColor: GrimoireColors.ivory,
+      displayColor: GrimoireColors.ivory,
     ),
     bottomSheetTheme: base.bottomSheetTheme.copyWith(
-      backgroundColor: const Color(0xFF4a3b5e),
+      backgroundColor: GrimoireColors.surface,
       surfaceTintColor: Colors.transparent,
     ),
     dialogTheme: base.dialogTheme.copyWith(
-      backgroundColor: const Color(0xFF6f678a),
+      backgroundColor: GrimoireColors.surface,
       surfaceTintColor: Colors.transparent,
       titleTextStyle: const TextStyle(
-        color: Colors.white,
+        color: GrimoireColors.ivory,
+        fontFamily: GrimoireTheme.headingFont,
         fontSize: 26,
         fontWeight: FontWeight.w600,
       ),
-      contentTextStyle: const TextStyle(color: Colors.white),
+      contentTextStyle: const TextStyle(color: GrimoireColors.ivory),
     ),
-    dividerColor: Colors.white24,
+    dividerColor: GrimoireColors.antiqueGold.withValues(alpha: 0.24),
     listTileTheme: const ListTileThemeData(
-      textColor: Colors.white,
-      iconColor: Colors.white,
-      titleTextStyle: TextStyle(color: Colors.white),
-      subtitleTextStyle: TextStyle(color: Colors.white70),
+      textColor: GrimoireColors.ivory,
+      iconColor: GrimoireColors.ivory,
+      titleTextStyle: TextStyle(color: GrimoireColors.ivory),
+      subtitleTextStyle: TextStyle(color: GrimoireColors.secondaryText),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: Colors.white),
+      style: TextButton.styleFrom(foregroundColor: GrimoireColors.antiqueGold),
     ),
   ));
 }

@@ -57,9 +57,17 @@ flutter:
     - family: CustomIcons
       fonts:
         - asset: fonts/CustomIcons.ttf
+    - family: Cinzel
+      fonts:
+        - asset: fonts/Cinzel-Variable.ttf
+    - family: SourceSans3
+      fonts:
+        - asset: fonts/SourceSans3-Variable.ttf
   assets:
     - assets/characters/de.json
     - assets/characters/en.json
+    - assets/savant/de.json
+    - assets/savant/en.json
     - assets/night_order/order.json
     - assets/ui/script_meta/storyteller_complexity.png
     - assets/ui/script_meta/player_complexity.png

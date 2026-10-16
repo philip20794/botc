@@ -1,13 +1,20 @@
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ScriptComplexitySummary extends StatelessWidget {
-  const ScriptComplexitySummary({super.key, this.scriptId, this.iconSize = 24});
+  const ScriptComplexitySummary({
+    super.key,
+    this.scriptId,
+    this.iconSize = 24,
+    this.showLabels = false,
+  });
 
   final String? scriptId;
   final double iconSize;
+  final bool showLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +36,7 @@ class ScriptComplexitySummary extends StatelessWidget {
             label: strings.storytellerComplexity,
             value: storyteller,
             iconSize: iconSize,
+            showLabel: showLabels,
           ),
         if (player != null)
           _ComplexityValue(
@@ -37,6 +45,7 @@ class ScriptComplexitySummary extends StatelessWidget {
             label: strings.playerComplexity,
             value: player,
             iconSize: iconSize,
+            showLabel: showLabels,
           ),
       ],
     );
@@ -50,12 +59,14 @@ class _ComplexityValue extends StatelessWidget {
     required this.label,
     required this.value,
     required this.iconSize,
+    required this.showLabel,
   });
 
   final String asset;
   final String label;
   final double value;
   final double iconSize;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -69,20 +80,57 @@ class _ComplexityValue extends StatelessWidget {
       message: label,
       child: Semantics(
         label: '$label: $valueText/5',
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(asset, width: iconSize, height: iconSize),
-            const SizedBox(width: 5),
-            Text(
-              '$valueText/5',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
+        child: showLabel
+            ? ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 142),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(asset, width: iconSize, height: iconSize),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: GrimoireColors.secondaryText,
+                              fontSize: 11,
+                              height: 1.05,
+                            ),
+                          ),
+                          Text(
+                            '$valueText/5',
+                            style: const TextStyle(
+                              color: GrimoireColors.ivory,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(asset, width: iconSize, height: iconSize),
+              const SizedBox(width: 5),
+              Text(
+                '$valueText/5',
+                style: const TextStyle(
+                  color: GrimoireColors.ivory,
+                  fontSize: 16,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ),
     );
   }
@@ -125,7 +173,9 @@ class ScriptComplexityEditorField extends StatelessWidget {
                         ? '${displayValue.toStringAsFixed(1)}/5'
                         : strings.notRated,
                     style: TextStyle(
-                      color: isRated ? Colors.white : Colors.white70,
+                      color: isRated
+                          ? GrimoireColors.ivory
+                          : GrimoireColors.secondaryText,
                       fontSize: 17,
                       fontWeight: isRated ? FontWeight.w600 : FontWeight.normal,
                     ),
@@ -159,12 +209,12 @@ class ScriptComplexityEditorField extends StatelessWidget {
 ThemeData withScriptComplexityEditorTheme(ThemeData base) {
   return base.copyWith(
     sliderTheme: base.sliderTheme.copyWith(
-      activeTrackColor: Colors.white,
-      inactiveTrackColor: Colors.white38,
-      thumbColor: const Color(0xFFc9f2f8),
-      overlayColor: Colors.white24,
-      activeTickMarkColor: const Color(0xFF4a3b5e),
-      inactiveTickMarkColor: Colors.white70,
+      activeTrackColor: GrimoireColors.antiqueGold,
+      inactiveTrackColor: GrimoireColors.deepViolet,
+      thumbColor: GrimoireColors.antiqueGold,
+      overlayColor: GrimoireColors.antiqueGold.withValues(alpha: 0.16),
+      activeTickMarkColor: GrimoireColors.background,
+      inactiveTickMarkColor: GrimoireColors.secondaryText,
     ),
   );
 }

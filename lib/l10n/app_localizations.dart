@@ -1321,6 +1321,72 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Nachtaktion von {role} besucht.'**
   String chronicleNightActionVisited(String role);
+
+  /// No description provided for @homeGrimoireTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'BotC'**
+  String get homeGrimoireTitle;
+
+  /// No description provided for @homeGrimoireSubtitle.
+  ///
+  /// In de, this message translates to:
+  /// **'by Günter'**
+  String get homeGrimoireSubtitle;
+
+  /// No description provided for @selectedScript.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgewähltes Skript'**
+  String get selectedScript;
+
+  /// No description provided for @gamePreparation.
+  ///
+  /// In de, this message translates to:
+  /// **'Spielvorbereitung'**
+  String get gamePreparation;
+
+  /// No description provided for @setupCompleted.
+  ///
+  /// In de, this message translates to:
+  /// **'Abgeschlossen'**
+  String get setupCompleted;
+
+  /// No description provided for @setupAvailable.
+  ///
+  /// In de, this message translates to:
+  /// **'Verfügbar'**
+  String get setupAvailable;
+
+  /// No description provided for @setupLocked.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesperrt'**
+  String get setupLocked;
+
+  /// No description provided for @setupPlayersHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Namen und Sitzreihenfolge festlegen'**
+  String get setupPlayersHint;
+
+  /// No description provided for @setupCharactersHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Rollen auswählen'**
+  String get setupCharactersHint;
+
+  /// No description provided for @setupRevealHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Mischen & Rollen zeigen'**
+  String get setupRevealHint;
+
+  /// No description provided for @setupPlaygroundHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Partie öffnen'**
+  String get setupPlaygroundHint;
 }
 
 class _AppLocalizationsDelegate

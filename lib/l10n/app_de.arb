@@ -226,5 +226,16 @@
   "chronicleCountRange": "Konfigurierte Auswahl: {min}–{max}",
   "@chronicleCountRange": {"placeholders": {"min": {"type": "int"}, "max": {"type": "String"}}},
   "chronicleNightActionVisited": "Nachtaktion von {role} besucht.",
-  "@chronicleNightActionVisited": {"placeholders": {"role": {"type": "String"}}}
+  "@chronicleNightActionVisited": {"placeholders": {"role": {"type": "String"}}},
+  "homeGrimoireTitle": "BotC",
+  "homeGrimoireSubtitle": "by Günter",
+  "selectedScript": "Ausgewähltes Skript",
+  "gamePreparation": "Spielvorbereitung",
+  "setupCompleted": "Abgeschlossen",
+  "setupAvailable": "Verfügbar",
+  "setupLocked": "Gesperrt",
+  "setupPlayersHint": "Namen und Sitzreihenfolge festlegen",
+  "setupCharactersHint": "Rollen auswählen",
+  "setupRevealHint": "Mischen & Rollen zeigen",
+  "setupPlaygroundHint": "Partie öffnen"
  }

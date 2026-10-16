@@ -82,7 +82,7 @@ class NightChronicleControls extends StatelessWidget {
     ChronicleInputDefinition field,
   ) {
     final minimum = field.min ?? 0;
-    final maximum = field.max ?? gameCharacters.length;
+    final maximum = field.max ?? gameCharacters.length - 4;
     return Tooltip(
       message: field.label,
       child: Wrap(
