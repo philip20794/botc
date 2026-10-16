@@ -359,15 +359,6 @@ class _SpielbereichScreenState extends State<SpielbereichScreen>
                     gameCharacters: characterService.gameCharacters,
                   ),
                 ),
-              if (gameStateService.isDawn())
-                _buildAnchoredMenuControl(
-                  const Offset(0, 72),
-                  IconButton(
-                    onPressed: () => _showHelpDialogBox(context),
-                    icon:
-                        const Icon(Icons.sunny, color: Colors.white, size: 50),
-                  ),
-                ),
               if (gameStateService.isDay())
                 _buildAnchoredMenuControl(
                   const Offset(0, 72),
