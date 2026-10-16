@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
@@ -395,10 +396,21 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
         SizedBox(
           height: 74,
           child: Center(
-            child: _hint(_roleVisible
-                ? character.descriptionShort
-                : _tr('Auge oder Button gedrückt halten',
-                    'Press and hold the eye or button')),
+            child: AutoSizeText(
+              _roleVisible
+                  ? character.descriptionShort
+                  : _tr('Auge oder Button gedrückt halten',
+                      'Press and hold the eye or button'),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              minFontSize: 11,
+              maxFontSize: 15,
+              style: const TextStyle(
+                color: _secondary,
+                fontSize: 15,
+                height: 1.35,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 30),
