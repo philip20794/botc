@@ -28,7 +28,7 @@ void main() {
     );
     expect(web.reverseTransitionDuration, Duration.zero);
     expect(web.allowSnapshotting, isFalse);
-    expect(android.reverseTransitionDuration, isNonZero);
+    expect(android.reverseTransitionDuration, isNot(Duration.zero));
     expect(android.allowSnapshotting, isTrue);
   });
 
@@ -42,9 +42,9 @@ void main() {
                 context,
                 AppPageRoute<void>(
                   webNavigation: true,
-                  builder: (_) => const Scaffold(
-                    appBar: AppBar(title: Text('Settings')),
-                    body: Text('Settings content'),
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Settings')),
+                    body: const Text('Settings content'),
                   ),
                 ),
               ),
@@ -97,7 +97,7 @@ void main() {
     expect(find.byType(AppSettingsScreen), findsOneWidget);
     expect(
       ModalRoute.of(tester.element(find.byType(AppSettingsScreen))),
-      isA<AppPageRoute<void>>(),
+      isA<AppPageRoute>(),
     );
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
@@ -106,13 +106,14 @@ void main() {
 
     // Characters can be opened after Settings without stale routes in the
     // navigator stack. Back gestures must return directly to Home.
-    await tester.ensureVisible(find.text('Character selection').first);
-    await tester.tap(find.text('Character selection').first);
+    final characterSelection = find.byIcon(Icons.dashboard_outlined);
+    await tester.ensureVisible(characterSelection);
+    await tester.tap(characterSelection);
     await tester.pumpAndSettle();
     expect(find.byType(CharacterAuswahlScreen), findsOneWidget);
     expect(
       ModalRoute.of(tester.element(find.byType(CharacterAuswahlScreen))),
-      isA<AppPageRoute<void>>(),
+      isA<AppPageRoute>(),
     );
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
