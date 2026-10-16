@@ -15,6 +15,11 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  Future<GameStateService> pumpPlayerScreen(WidgetTester tester) async {
+    await pumpPlayerScreen(tester);
+    return game;
+  }
+
   testWidgets('player name field matches the full width of its panel',
       (tester) async {
     tester.view.physicalSize = const Size(390, 780);
@@ -63,5 +68,53 @@ void main() {
       closeTo(tester.getSize(panel).width, 0.1),
       reason: 'No additional inset should shrink the player name input',
     );
+  });
+
+  testWidgets('keyboard Done adds successive players without losing focus',
+      (tester) async {
+    final game = await pumpPlayerScreen(tester);
+    final inputFinder = find.byKey(const ValueKey('player-name-input'));
+    final field = tester.widget<TextField>(inputFinder);
+    expect(field.textInputAction, TextInputAction.done);
+
+    await tester.enterText(inputFinder, 'Max');
+    await tester.pump();
+    expect(field.focusNode!.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    // Simulate the actual Android keyboard checkmark/Done action.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(game.playerNames, ['Max']);
+    expect(field.controller!.text, isEmpty);
+    expect(field.focusNode!.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    // The keyboard must stay active, so the next name can be entered
+    // immediately without tapping the field again.
+    await tester.testTextInput.updateEditingValue(
+      const TextEditingValue(text: 'Lisa'),
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(game.playerNames, ['Max', 'Lisa']);
+    expect(field.controller!.text, isEmpty);
+    expect(field.focusNode!.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+  });
+
+  testWidgets('plus button keeps the same repeated-add behavior',
+      (tester) async {
+    final game = await pumpPlayerScreen(tester);
+    final inputFinder = find.byKey(const ValueKey('player-name-input'));
+    final field = tester.widget<TextField>(inputFinder);
+
+    await tester.enterText(inputFinder, 'Tom');
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('add-player-button')));
+    await tester.pump();
+    expect(game.playerNames, ['Tom']);
+    expect(field.controller!.text, isEmpty);
+    expect(field.focusNode!.hasFocus, isTrue);
   });
 }
