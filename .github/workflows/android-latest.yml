@@ -36,8 +36,11 @@ jobs:
       - name: Check Firestore rules with emulator
         run: npx --yes firebase-tools@latest emulators:exec --only firestore --project b-o-t-c "node test/firestore_rules_emulator_check.mjs"
 
+  android-e2e:
+    uses: ./.github/workflows/android-e2e.yml
+
   build-and-publish:
-    needs: test
+    needs: [test, android-e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

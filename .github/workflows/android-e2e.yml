@@ -1,15 +1,21 @@
 name: Android E2E
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  integration-test:
+  android-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      ANDROID_API_LEVEL: '35'
+      ANDROID_ARCH: x86_64
+      ANDROID_AVD_NAME: botc-e2e-api-35
+      ANDROID_PROFILE: pixel_6
     steps:
       - uses: actions/checkout@v4
 
@@ -33,11 +39,50 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Cache Android AVD
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/avd/*
+          key: android-avd-${{ runner.os }}-${{ env.ANDROID_API_LEVEL }}-${{ env.ANDROID_ARCH }}-${{ env.ANDROID_PROFILE }}
+
       - name: Run Android integration tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_6
+          api-level: ${{ env.ANDROID_API_LEVEL }}
+          arch: ${{ env.ANDROID_ARCH }}
+          profile: ${{ env.ANDROID_PROFILE }}
+          avd-name: ${{ env.ANDROID_AVD_NAME }}
+          force-avd-creation: false
           disable-animations: true
-          script: flutter test integration_test/game_flows_test.dart -d emulator-5554
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
+          script: |
+            mkdir -p build/android-e2e-logs
+            collect_android_logs() {
+              adb logcat -d > build/android-e2e-logs/logcat.txt 2>&1 || true
+              adb shell dumpsys activity activities > build/android-e2e-logs/activities.txt 2>&1 || true
+              adb shell dumpsys window windows > build/android-e2e-logs/windows.txt 2>&1 || true
+            }
+            trap collect_android_logs EXIT
+            set +e
+            timeout --signal=TERM --kill-after=30s 30m \
+              flutter test integration_test/game_flows_test.dart \
+                -d emulator-5554 --reporter expanded \
+              2>&1 | tee build/android-e2e-logs/flutter-test.txt
+            test_status=${PIPESTATUS[0]}
+            set -e
+            collect_android_logs
+            trap - EXIT
+            if [ "$test_status" -ne 0 ]; then
+              echo "Last 400 Android logcat lines:"
+              tail -n 400 build/android-e2e-logs/logcat.txt || true
+            fi
+            exit "$test_status"
+
+      - name: Upload Android E2E logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-e2e-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/android-e2e-logs/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
+import 'package:blood_on_the_clocktower/custom_icons.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/my_app.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
@@ -9,6 +10,7 @@ import 'package:blood_on_the_clocktower/screens/custom_script_import_screen.dart
 import 'package:blood_on_the_clocktower/screens/playername_screen.dart';
 import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
+import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
 import 'package:blood_on_the_clocktower/services/game_record_upload_queue.dart';
@@ -130,11 +132,13 @@ class GameFixture {
           ChangeNotifierProvider.value(value: roleNotes),
           ChangeNotifierProvider.value(value: settings),
         ],
-        child: MaterialApp(
-          locale: language.locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: child,
+        child: Consumer<LanguageService>(
+          builder: (context, currentLanguage, _) => MaterialApp(
+            locale: currentLanguage.locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: child,
+          ),
         ),
       );
 
@@ -160,6 +164,15 @@ class GameFixture {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('TEST 1 - creates and starts a new game', (tester) async {
     final fixture = await GameFixture.create();
     await tester.pumpWidget(fixture.app());
@@ -179,7 +192,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(fixture.game.playerNames.first, 'Bob');
 
-    final roles = fixture.configureSixPlayerGame();
+    fixture.configureSixPlayerGame();
     for (final bluff in ['monk', 'soldier', 'ravenkeeper']) {
       await fixture.game.toggleDemonBluff(
         bluff,
@@ -189,11 +202,13 @@ void main() {
     }
     expect(fixture.game.demonBluffRoleIds, hasLength(3));
     await fixture.game.setShowCharactersToPlayers(true);
-    await fixture.game.startNewGame(
-      roles,
-      completeSetupCharacters: fixture.characters.gameCharacters,
-      scriptCatalog: fixture.characters.allCharacters,
-    );
+    await fixture.game.setChracterSelectionDone(true);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Playground'));
+
+    expect(find.byType(SpielbereichScreen), findsOneWidget);
     expect(fixture.game.nightCount, 1);
     expect(fixture.game.activeGameRecordCapture?.players, hasLength(6));
   });
@@ -209,26 +224,65 @@ void main() {
         .startNewGame(roles, scriptCatalog: fixture.characters.allCharacters);
     await tester.pumpWidget(fixture.app());
     await tester.pump(const Duration(milliseconds: 1200));
+    await tester.pumpAndSettle();
 
-    final reminder = roles.first.tokens.first;
-    await fixture.game.addTokenToCharacter(roles, roles[1], reminder);
-    expect(fixture.game.tokensOfCharacter(roles[1]), contains(reminder));
     final quickFlows = fixture.game.quickFlowEntries(roles);
-    if (quickFlows.isNotEmpty) {
-      await fixture.game.activateQuickFlowEntry(quickFlows.first, roles);
-      await fixture.game.skipQuickFlowInfo(quickFlows.first);
-    }
-    await fixture.chronicle.recordNightVisit(roles.first, 1);
+    expect(quickFlows, isNotEmpty);
+    final quickFlow = quickFlows.first;
+    final reminder = fixture.game.quickFlowToken(quickFlow);
+    expect(reminder, isNotNull);
+    await tester.tap(find.byKey(ValueKey(
+      'quick-flow-step-${quickFlow.owner.id}-${quickFlow.step.id}',
+    )));
+    await tester.pumpAndSettle();
+    final quickFlowTarget = [
+      for (final role in roles.where((role) => role.id != quickFlow.owner.id))
+        (
+          role: role,
+          finder: find.byKey(ValueKey('player-${role.id}')).hitTestable(),
+        ),
+    ].firstWhere((candidate) => candidate.finder.evaluate().isNotEmpty);
+    await tester.tap(quickFlowTarget.finder);
+    await tester.pumpAndSettle();
+    expect(
+      fixture.game.tokensOfCharacter(quickFlowTarget.role),
+      contains(reminder),
+    );
+
+    final initialChronicleEvents =
+        fixture.chronicle.activeChronicle?.events.length ?? 0;
     fixture.clock.advance(const Duration(minutes: 10));
-    await fixture.game.startDay(roles);
+    for (var step = 0; step < 20 && !fixture.game.isDay(); step++) {
+      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.pumpAndSettle();
+    }
     expect(fixture.game.isDay(), isTrue);
-    await fixture.game.toggleCharacterAlive(roles.first);
-    expect(fixture.game.isCharacterAlive(roles.first), isFalse);
+
+    final lifeStateTarget = [
+      for (final role in roles)
+        (
+          role: role,
+          finder: find.byKey(ValueKey('player-${role.id}')).hitTestable(),
+        ),
+    ].firstWhere((candidate) => candidate.finder.evaluate().isNotEmpty);
+    await tester.tap(lifeStateTarget.finder);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(CustomIcons.grave));
+    await tester.pumpAndSettle();
+    expect(fixture.game.isCharacterAlive(lifeStateTarget.role), isFalse);
+
     fixture.clock.advance(const Duration(minutes: 20));
-    await fixture.game.nextNight(roles);
+    await tester.tap(find.byIcon(Icons.arrow_forward));
+    await tester.pumpAndSettle();
     expect(fixture.game.nightCount, 2);
-    expect(fixture.game.tokensOfCharacter(roles[1]), contains(reminder));
-    expect(fixture.chronicle.activeChronicle?.events, isNotEmpty);
+    expect(
+      fixture.game.tokensOfCharacter(quickFlowTarget.role),
+      contains(reminder),
+    );
+    expect(
+      fixture.chronicle.activeChronicle?.events.length,
+      greaterThan(initialChronicleEvents),
+    );
   });
 
   testWidgets('TEST 3 - completes, queues once, and permits a new game',
@@ -243,11 +297,20 @@ void main() {
     fixture.clock.advance(const Duration(minutes: 10));
     await fixture.game.startDay(roles);
     fixture.clock.advance(const Duration(minutes: 20));
-    await fixture.game.endGame(
-      winningTeam: 'good',
-      gameCharacters: roles,
-      characterService: fixture.characters,
-    );
+    await tester.pumpWidget(fixture.app());
+    await tester.pump(const Duration(milliseconds: 1200));
+    await tester.pumpAndSettle();
+    expect(find.byType(SpielbereichScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('playground-menu-anchor')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Good'));
+    await tester.pump();
+    await tester.tap(find.text('Yes, end game'));
+    await tester.pumpAndSettle();
+
     expect(fixture.game.lastCompletedGameRecord, isNotNull);
     expect(fixture.chronicle.lastChronicle?.winningTeam, 'good');
     expect(fixture.queue.records, hasLength(1));
@@ -255,8 +318,8 @@ void main() {
     expect(await fixture.queue.enqueue(fixture.queue.records.single), isFalse);
     expect(fixture.queue.records.single.gameId, completedId);
 
-    await fixture.game
-        .startNewGame(roles, scriptCatalog: fixture.characters.allCharacters);
+    await tapVisible(tester, find.text('Playground'));
+    expect(find.byType(SpielbereichScreen), findsOneWidget);
     expect(fixture.game.nightCount, 1);
   });
 
@@ -287,13 +350,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.apps));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.close));
-    await tester.pump();
-    if (find.text('Cancel').evaluate().isNotEmpty) {
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-    }
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
     expect(restored.game.nightCount, 1);
     expect(restored.game.tokensOfCharacter(restoredRoles[1]), isNotEmpty);
     expect(restored.chronicle.activeChronicle!.events.length, eventCount);
@@ -313,24 +375,58 @@ void main() {
 
     final input = find.byKey(const ValueKey('scriptImportPasteJson'));
     await tester.enterText(input, scriptJson('Cancelled script'));
-    await tester.tap(find.byKey(const ValueKey('scriptImportAnalyzeText')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tapVisible(
+      tester,
+      find.byKey(const ValueKey('scriptImportAnalyzeText')),
+    );
     expect(find.byKey(const ValueKey('scriptImportPreview')), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(fixture.scripts.customScripts, isEmpty,
         reason: 'Closing a preview must not persist a draft.');
 
-    await tester.enterText(input, scriptJson('E2E custom script', unknownRole: true));
-    await tester.tap(find.byKey(const ValueKey('scriptImportAnalyzeText')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('scriptImportMap-1')));
+    await tapVisible(tester, input);
+    await tester.enterText(
+      input,
+      scriptJson('E2E custom script', unknownRole: true),
+    );
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(input).controller?.text,
+      contains('e2e_unknown_role'),
+    );
+    await tapVisible(
+      tester,
+      find.byKey(const ValueKey('scriptImportAnalyzeText')),
+    );
+    expect(find.byKey(const ValueKey('scriptImportPreview')), findsOneWidget);
+    expect(find.text('E2E custom script'), findsOneWidget);
+    final mapButton = find.byKey(const ValueKey('scriptImportMap-1'));
+    for (var drag = 0; drag < 5 && mapButton.evaluate().isEmpty; drag++) {
+      await tester.drag(
+        find.byKey(const ValueKey('scriptImportPreview')),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+    }
+    expect(mapButton, findsOneWidget);
+    await tester.tap(mapButton);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, 'monk');
     await tester.pumpAndSettle();
     await tester.tap(find.text('monk').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('scriptImportConfirm')));
+    final confirmImport = find.byKey(const ValueKey('scriptImportConfirm'));
+    for (var drag = 0; drag < 5 && confirmImport.evaluate().isEmpty; drag++) {
+      await tester.drag(
+        find.byKey(const ValueKey('scriptImportPreview')),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+    }
+    expect(confirmImport, findsOneWidget);
+    await tester.tap(confirmImport);
     await tester.pumpAndSettle();
 
     expect(fixture.scripts.customScripts, hasLength(1));
@@ -346,7 +442,8 @@ void main() {
     fixture.characters.clearGameCards();
     for (final id in imported.roleIds) {
       fixture.characters.addCharacter(
-        fixture.characters.allCharacters.firstWhere((role) => role.roleId == id),
+        fixture.characters.allCharacters
+            .firstWhere((role) => role.roleId == id),
       );
     }
     final roles = fixture.characters.gameCharactersWithoutDrunkAndFabled;
@@ -393,8 +490,8 @@ void main() {
       80,
     );
     final roleImages = fixture.characters.allCharacters
-        .where((role) => ['imp', 'monk', 'chef', 'empath', 'soldier']
-            .contains(role.roleId))
+        .where((role) =>
+            ['imp', 'monk', 'chef', 'empath', 'soldier'].contains(role.roleId))
         .map((role) => role.image)
         .toList();
     await fixture.roleNotes.setRolesForPlayer('Alice', roleImages);
@@ -406,7 +503,8 @@ void main() {
     expect(restored.roleNotes.positionOf('Alice'), isNotNull);
     expect(restored.roleNotes.roleImagesFor('Alice'), hasLength(3));
     await restored.roleNotes.resetPositions(['Alice', 'Bob'], board, 80);
-    expect(restored.roleNotes.positionOf('Alice'), isNot(const Offset(320, 50)));
+    expect(
+        restored.roleNotes.positionOf('Alice'), isNot(const Offset(320, 50)));
     await restored.roleNotes.clearAllRoleNotes();
     expect(restored.roleNotes.hasAnyRoleNotes(), isFalse);
   });
@@ -433,7 +531,7 @@ void main() {
     await tester.tap(find.text('Regeln').last);
     await tester.pumpAndSettle();
     expect(find.byType(RulesSelectionScreen), findsOneWidget);
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(AppSettingsScreen), findsOneWidget);
 
@@ -442,7 +540,8 @@ void main() {
     restored.characters.clearGameCards();
     for (final id in ['savant', 'imp', 'witch']) {
       restored.characters.addCharacter(
-        restored.characters.allCharacters.firstWhere((role) => role.roleId == id),
+        restored.characters.allCharacters
+            .firstWhere((role) => role.roleId == id),
       );
     }
     await tester.pumpWidget(restored.screen(const SavantGenerator()));
