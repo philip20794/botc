@@ -15,6 +15,14 @@ class PlayernameScreen extends StatefulWidget {
 
 class _PlayernameScreenState extends State<PlayernameScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _nameFocusNode.dispose();
+    super.dispose();
+  }
 
   void _addPlayer() {
     var localizedStrings = AppLocalizations.of(context)!;
@@ -95,17 +103,27 @@ class _PlayernameScreenState extends State<PlayernameScreen> {
                     child: TextField(
                       key: const ValueKey('player-name-input'),
                       controller: _nameController,
+                      focusNode: _nameFocusNode,
+                      textInputAction: TextInputAction.done,
                       cursorColor: GrimoireColors.antiqueGold,
                       style: const TextStyle(color: GrimoireColors.ivory),
                       decoration: InputDecoration(
                         labelText: localizedStrings.playerName,
                         suffixIcon: IconButton(
+                          key: const ValueKey('add-player-button'),
                           icon: const Icon(Icons.add,
                               color: GrimoireColors.antiqueGold),
                           onPressed: _addPlayer,
                         ),
                       ),
-                      onSubmitted: (value) => _addPlayer(),
+                      // The default editing completion handler unfocuses
+                      // when the IME Done/checkmark action is pressed.
+                      // Override it so Done behaves just like the plus button:
+                      // add, clear and keep the text field/keyboard active.
+                      onEditingComplete: () {
+                        _addPlayer();
+                        _nameFocusNode.requestFocus();
+                      },
                     ),
                   ),
                   const SizedBox(height: 14),
