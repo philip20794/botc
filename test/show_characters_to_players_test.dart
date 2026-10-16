@@ -107,6 +107,8 @@ void main() {
     final hold = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-hold-button'))),
     );
+    // Establish the first animation frame before advancing fake time.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 800));
     expect(find.byType(CharacterAvatar), findsOneWidget);
     expect(continueButton(tester).onPressed, isNull);
@@ -130,6 +132,8 @@ void main() {
     final hold = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-eye'))),
     );
+    // Establish the first animation frame before advancing fake time.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 800));
     expect(find.byType(CharacterAvatar), findsOneWidget);
     await hold.up();
