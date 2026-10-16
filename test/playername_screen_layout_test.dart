@@ -24,14 +24,19 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    final scripts = ScriptService();
-    final order = NightOrderService();
-    await Future.wait([scripts.ready, order.ready]);
-    final game = GameStateService(
-      scriptService: scripts,
-      nightOrderService: order,
-    );
-    await game.ready;
+    // Service initialization uses asynchronous preferences and assets;
+    // initialize outside the widget test's fake-async clock.
+    late GameStateService game;
+    await tester.runAsync(() async {
+      final scripts = ScriptService();
+      final order = NightOrderService();
+      await Future.wait([scripts.ready, order.ready]);
+      game = GameStateService(
+        scriptService: scripts,
+        nightOrderService: order,
+      );
+      await game.ready;
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider<GameStateService>.value(
@@ -44,7 +49,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final input = find.byKey(const ValueKey('player-name-input'));
     final panel = find.ancestor(
