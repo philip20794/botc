@@ -32,14 +32,11 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   // This is deliberately longer than Flutter's long-press threshold so the
   // charge feels gradual and reaches 100% exactly when the role appears.
   static const _holdDuration = Duration(milliseconds: 1200);
-  static const _cancelMoveDistance = 28.0;
 
   late final AnimationController _holdProgress;
   _PresentationStage _stage = _PresentationStage.handoff;
   int _currentCharacterIndex = 0;
   int? _holdingPointer;
-  Offset? _holdStartPosition;
-
   bool get _isHolding => _holdingPointer != null;
   bool _roleVisible = false;
   bool _hasSeenRole = false;
@@ -48,8 +45,14 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   @override
   void initState() {
     super.initState();
-    _holdProgress = AnimationController(vsync: this, duration: _holdDuration)
-      ..addStatusListener((status) {
+    // This is a privacy gate, not a decorative animation. Flutter's default
+    // AnimationBehavior.normal compresses it to 5% of its duration on devices
+    // with disabled animations, revealing the role far too soon.
+    _holdProgress = AnimationController(
+      vsync: this,
+      duration: _holdDuration,
+      animationBehavior: AnimationBehavior.preserve,
+    )..addStatusListener((status) {
         if (status == AnimationStatus.completed) _revealIfReady();
       });
   }
@@ -70,20 +73,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   void _beginCharge(PointerDownEvent event) {
     if (_stage != _PresentationStage.reveal || _isHolding) return;
     _holdingPointer = event.pointer;
-    _holdStartPosition = event.position;
     _holdProgress.forward(from: 0);
-  }
-
-  void _trackCharge(PointerMoveEvent event) {
-    if (event.pointer != _holdingPointer || _holdStartPosition == null) {
-      return;
-    }
-    // Cancel drags/scrolling so a swiping player cannot accidentally uncover
-    // secret information while scrolling the phone UI.
-    if ((event.position - _holdStartPosition!).distance >
-        _cancelMoveDistance) {
-      _endCharge(event);
-    }
   }
 
   void _revealIfReady() {
@@ -103,7 +93,6 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   void _endCharge(PointerEvent event) {
     if (event.pointer != _holdingPointer) return;
     _holdingPointer = null;
-    _holdStartPosition = null;
     _holdProgress.reset();
     // Hide secret information immediately on finger release or cancellation.
     if (_roleVisible && mounted) {
@@ -116,7 +105,8 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       key: key,
       behavior: HitTestBehavior.opaque,
       onPointerDown: _beginCharge,
-      onPointerMove: _trackCharge,
+      // Pointer routing stays bound to the original touch even when it moves
+      // outside this widget; only release/cancel may end the reveal.
       onPointerUp: _endCharge,
       onPointerCancel: _endCharge,
       child: Semantics(
@@ -133,8 +123,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _roleVisible = false;
       _hasSeenRole = false;
       _holdingPointer = null;
-      _holdStartPosition = null;
-    });
+      });
   }
 
   void _nextPlayer() {
@@ -146,8 +135,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _roleVisible = false;
       _hasSeenRole = false;
       _holdingPointer = null;
-      _holdStartPosition = null;
-    });
+      });
   }
 
   Future<void> _startGame(
