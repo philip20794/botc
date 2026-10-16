@@ -7,6 +7,7 @@ import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,12 +29,17 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   static const _ivory = GrimoireColors.ivory;
   static const _secondary = GrimoireColors.secondaryText;
   static const _violet = GrimoireColors.deepViolet;
-  static const _holdDuration = Duration(milliseconds: 900);
+  // The button fills over the same interval Flutter needs to recognize a
+  // long press, rather than starting a second wait after recognition.
+  static const _holdDuration = kLongPressTimeout;
 
   late final AnimationController _holdProgress;
   _PresentationStage _stage = _PresentationStage.handoff;
   int _currentCharacterIndex = 0;
-  bool _isHolding = false;
+  int? _holdingPointer;
+  bool _longPressRecognized = false;
+
+  bool get _isHolding => _holdingPointer != null;
   bool _roleVisible = false;
   bool _hasSeenRole = false;
   bool _startingGame = false;
@@ -43,16 +49,9 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
     super.initState();
     _holdProgress = AnimationController(vsync: this, duration: _holdDuration)
       ..addStatusListener((status) {
-        if (status != AnimationStatus.completed ||
-            !mounted ||
-            _stage != _PresentationStage.reveal ||
-            !_isHolding) {
-          return;
+        if (status == AnimationStatus.completed) {
+          _revealIfReady();
         }
-        setState(() {
-          _roleVisible = true;
-          _hasSeenRole = true;
-        });
       });
   }
 
@@ -67,34 +66,69 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   String _tr(String german, String english) =>
       _isGerman ? german : english;
 
-  // Do not start charging on a raw pointer-down: a tap must never reveal
-  // a role. Both surfaces wait for Flutter's actual long-press recognition,
-  // then show a visible 900ms charge before revealing anything private.
-  void _beginHold() {
+  // Begin the visual fill immediately on first contact. A raw pointer down
+  // alone must NEVER reveal the role; successful long-press recognition is
+  // still required. Both the eye and button use the same animation.
+  void _beginCharge(PointerDownEvent event) {
     if (_stage != _PresentationStage.reveal || _isHolding) return;
-    _isHolding = true;
+    setState(() {
+      _holdingPointer = event.pointer;
+      _longPressRecognized = false;
+    });
     _holdProgress.forward(from: 0);
   }
 
-  void _endHold() {
-    if (!_isHolding) return;
-    _isHolding = false;
-    // Cover the role immediately on release or gesture cancellation, even
-    // if the animation did not finish yet.
-    if (_roleVisible) setState(() => _roleVisible = false);
+  void _recognizeLongPress() {
+    if (!_isHolding || _stage != _PresentationStage.reveal) return;
+    _longPressRecognized = true;
+    _revealIfReady();
+  }
+
+  void _revealIfReady() {
+    if (!mounted ||
+        !_isHolding ||
+        !_longPressRecognized ||
+        !_holdProgress.isCompleted ||
+        _stage != _PresentationStage.reveal ||
+        _roleVisible) {
+      return;
+    }
+    setState(() {
+      _roleVisible = true;
+      _hasSeenRole = true;
+    });
+  }
+
+  void _endCharge([PointerEvent? event]) {
+    // Ignore a secondary finger releasing while the original finger holds.
+    if (!_isHolding ||
+        (event != null && event.pointer != _holdingPointer)) {
+      return;
+    }
+    setState(() {
+      _holdingPointer = null;
+      _longPressRecognized = false;
+      _roleVisible = false;
+    });
     _holdProgress.reset();
   }
 
   Widget _holdArea({required Key key, required Widget child}) {
-    return GestureDetector(
+    return Listener(
       key: key,
       behavior: HitTestBehavior.opaque,
-      onLongPressStart: (_) => _beginHold(),
-      onLongPressEnd: (_) => _endHold(),
-      onLongPressCancel: _endHold,
-      child: Semantics(
-        label: _tr('Zum Enthüllen gedrückt halten', 'Hold to reveal'),
-        child: child,
+      onPointerDown: _beginCharge,
+      onPointerUp: _endCharge,
+      onPointerCancel: _endCharge,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onLongPressStart: (_) => _recognizeLongPress(),
+        onLongPressEnd: (_) => _endCharge(),
+        onLongPressCancel: () => _endCharge(),
+        child: Semantics(
+          label: _tr('Zum Enthüllen gedrückt halten', 'Hold to reveal'),
+          child: child,
+        ),
       ),
     );
   }
@@ -105,7 +139,8 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _stage = _PresentationStage.reveal;
       _roleVisible = false;
       _hasSeenRole = false;
-      _isHolding = false;
+      _holdingPointer = null;
+      _longPressRecognized = false;
     });
   }
 
