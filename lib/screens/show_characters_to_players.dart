@@ -37,6 +37,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   _PresentationStage _stage = _PresentationStage.handoff;
   int _currentCharacterIndex = 0;
   int? _holdingPointer;
+
   bool get _isHolding => _holdingPointer != null;
   bool _roleVisible = false;
   bool _hasSeenRole = false;
@@ -123,7 +124,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _roleVisible = false;
       _hasSeenRole = false;
       _holdingPointer = null;
-      });
+    });
   }
 
   void _nextPlayer() {
@@ -135,7 +136,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _roleVisible = false;
       _hasSeenRole = false;
       _holdingPointer = null;
-      });
+    });
   }
 
   Future<void> _startGame(
