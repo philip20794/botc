@@ -10,6 +10,7 @@ import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
 import 'package:flutter/material.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
@@ -339,11 +340,11 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
                               height: maxRoleTokenSize * 0.58,
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Color(0xFF4a3b5e),
+                                color: GrimoireColors.deepViolet,
                               ),
                               child: Icon(
                                 Icons.add,
-                                color: Colors.white,
+                                color: GrimoireColors.ivory,
                                 size: maxRoleTokenSize * 0.36,
                               ),
                             ),
@@ -474,7 +475,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
                   heightFactor: 0.92,
                   child: Container(
                     decoration: const BoxDecoration(
-                      color: Color(0xFF4a3b5e),
+                      color: GrimoireColors.surface,
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
@@ -716,11 +717,13 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF6f678a).withOpacity(0.95)
-              : Colors.black.withOpacity(0.35),
+              ? GrimoireColors.deepViolet.withValues(alpha: 0.95)
+              : GrimoireColors.background.withValues(alpha: 0.62),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white24,
+            color: isSelected
+                ? GrimoireColors.antiqueGold
+                : GrimoireColors.antiqueGold.withValues(alpha: 0.22),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -742,7 +745,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
               maxLines: 2,
               minFontSize: 7,
               maxFontSize: 11,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: GrimoireColors.ivory),
             ),
           ],
         ),
@@ -767,17 +770,16 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.95),
           title: Text(
             localizedStrings.clearAllRoleNotes,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: GrimoireColors.ivory),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(
                 localizedStrings.cancel,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: GrimoireColors.ivory),
               ),
             ),
             TextButton(

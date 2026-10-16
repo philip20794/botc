@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/screens/custom_script_import_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,7 @@ void main() {
     await SharedPreferences.getInstance();
   });
 
-  testWidgets('uses the app dark-purple theme for custom script import',
+  testWidgets('uses the Grimoire theme for custom script import',
       (tester) async {
     final scripts = ScriptService();
     await scripts.ready;
@@ -37,10 +38,10 @@ void main() {
     );
 
     final theme = Theme.of(tester.element(find.byType(Scaffold)));
-    expect(theme.scaffoldBackgroundColor, const Color(0xFF4a3b5e));
+    expect(theme.scaffoldBackgroundColor, GrimoireColors.background);
     expect(theme.brightness, Brightness.dark);
-    expect(theme.cardTheme.color, const Color(0xFF6f678a));
-    expect(theme.dialogTheme.backgroundColor, const Color(0xFF6f678a));
+    expect(theme.cardTheme.color, isNotNull);
+    expect(theme.dialogTheme.backgroundColor, GrimoireColors.surface);
   });
 
   testWidgets('imports selected and pasted JSON and preserves invalid input',

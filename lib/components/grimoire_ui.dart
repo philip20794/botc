@@ -7,17 +7,89 @@ class GrimoirePanel extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.emphasized = false,
+    this.surfaceOpacity,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final bool emphasized;
+  final double? surfaceOpacity;
 
   @override
   Widget build(BuildContext context) {
+    final decoration = GrimoireTheme.panelDecoration(emphasized: emphasized);
     return DecoratedBox(
-      decoration: GrimoireTheme.panelDecoration(emphasized: emphasized),
+      decoration: surfaceOpacity == null
+          ? decoration
+          : decoration.copyWith(
+              color: GrimoireColors.surface.withValues(alpha: surfaceOpacity!),
+            ),
       child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+/// A restrained, tappable surface for management and preparation screens.
+/// It deliberately leaves game tokens and their interaction untouched.
+class GrimoirePressablePanel extends StatefulWidget {
+  const GrimoirePressablePanel({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(16),
+    this.emphasized = false,
+    this.enabled = true,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+  final bool emphasized;
+  final bool enabled;
+
+  @override
+  State<GrimoirePressablePanel> createState() => _GrimoirePressablePanelState();
+}
+
+class _GrimoirePressablePanelState extends State<GrimoirePressablePanel> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final enabled = widget.enabled && widget.onTap != null;
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
+    final decoration = GrimoireTheme.panelDecoration(
+      emphasized: widget.emphasized || _pressed,
+    ).copyWith(
+      color: enabled
+          ? GrimoireColors.surface.withValues(alpha: _pressed ? 0.98 : 0.90)
+          : GrimoireColors.surface.withValues(alpha: 0.55),
+    );
+    return Semantics(
+      button: enabled,
+      enabled: enabled,
+      child: AnimatedScale(
+        duration: duration,
+        scale: _pressed ? 0.985 : 1,
+        child: AnimatedContainer(
+          duration: duration,
+          decoration: decoration,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: enabled ? widget.onTap : null,
+              onHighlightChanged: enabled
+                  ? (value) => setState(() => _pressed = value)
+                  : null,
+              child: Padding(padding: widget.padding, child: widget.child),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/next_screen_footer.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -114,19 +115,19 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildCharacterSection(context, 'Townsfolk', townsfolk, false),
-                const Divider(color: Colors.white, thickness: 1),
+                Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.22)),
                 _buildCharacterSection(context, 'Outsider', outsider, false),
-                const Divider(color: Colors.white, thickness: 1),
+                Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.22)),
                 _buildCharacterSection(context, 'Minion', minion, false),
-                const Divider(color: Colors.white, thickness: 1),
+                Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.22)),
                 _buildCharacterSection(context, 'Demon', demon, false),
                 if (widget.travellersAreSelectable) ...[
-                  const Divider(color: Colors.white, thickness: 3),
+                  Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.38)),
                   _buildCharacterSection(
                       context, 'Traveller', travellers, true),
                 ],
                 if (widget.fabledAreSelectable) ...[
-                  const Divider(color: Colors.white, thickness: 1),
+                  Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.22)),
                   _buildCharacterSection(context, 'Fabled', fabled, true),
                 ],
               ],
@@ -194,7 +195,7 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                   if (showHideButton) ...[
                     Icon(
                       hidden ? Icons.arrow_drop_down : Icons.arrow_drop_up,
-                      color: Colors.white,
+                      color: GrimoireColors.antiqueGold,
                     ),
                     const SizedBox(width: 10),
                   ],
@@ -202,7 +203,7 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                     title,
                     style: const TextStyle(
                         fontSize: 18,
-                        color: Colors.white,
+                        color: GrimoireColors.antiqueGold,
                         fontWeight: FontWeight.bold),
                   ),
                   if (!hidden) ...[
@@ -211,9 +212,9 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                       constraints:
                           const BoxConstraints(minHeight: 30, minWidth: 60),
                       borderRadius: BorderRadius.circular(10),
-                      borderColor: const Color(0xFF4a3b5e),
-                      selectedColor: Colors.white,
-                      fillColor: const Color(0xFF4a3b5e),
+                      borderColor: GrimoireColors.antiqueGold.withValues(alpha: 0.42),
+                      selectedColor: GrimoireColors.background,
+                      fillColor: GrimoireColors.antiqueGold,
                       isSelected: [
                         characterService.showInfoButtonOnCharacterSelection,
                         !characterService.showInfoButtonOnCharacterSelection
@@ -226,8 +227,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                         });
                       },
                       children: const [
-                        Icon(Icons.help, color: Colors.white),
-                        Icon(Icons.circle_outlined, color: Colors.white),
+                        Icon(Icons.help, color: GrimoireColors.ivory),
+                        Icon(Icons.circle_outlined, color: GrimoireColors.ivory),
                       ],
                     ),
                   ],

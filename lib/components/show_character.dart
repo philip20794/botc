@@ -6,6 +6,7 @@ import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 
 class ShowCharacter extends StatefulWidget {
   final Character character;
@@ -36,7 +37,7 @@ class _ShowCharacterState extends State<ShowCharacter> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(widget.character.name,
-              style: const TextStyle(color: Colors.white)),
+              style: const TextStyle(color: GrimoireColors.ivory)),
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
@@ -53,7 +54,8 @@ class _ShowCharacterState extends State<ShowCharacter> {
                   child: Text(
                     widget.character.name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold, color: Colors.white),
+                        fontWeight: FontWeight.bold,
+                        color: GrimoireColors.antiqueGold),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -88,7 +90,7 @@ class _ShowCharacterState extends State<ShowCharacter> {
                           widget.character.descriptionShort,
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.white,
+                                    color: GrimoireColors.ivory,
                                   ),
                           textAlign: TextAlign.center,
                         ),
@@ -208,13 +210,13 @@ class _ShowCharacterState extends State<ShowCharacter> {
               child: Row(
                 children: [
                   Icon(open ? Icons.arrow_drop_down : Icons.arrow_drop_up,
-                      color: Colors.white),
+                      color: GrimoireColors.antiqueGold),
                   Text(
                     titel,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: GrimoireColors.antiqueGold,
                     ),
                   ),
                 ],
@@ -227,7 +229,7 @@ class _ShowCharacterState extends State<ShowCharacter> {
                 child: Container(
                     padding: const EdgeInsets.all(8.0),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.7),
+                      color: GrimoireColors.surface.withValues(alpha: 0.94),
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                     child: Column(
@@ -243,13 +245,15 @@ class _ShowCharacterState extends State<ShowCharacter> {
                             if ((idx != 0 && index != 0) && index != 1)
                               const Text("➥ ",
                                   style: TextStyle(
-                                      fontSize: 14, color: Colors.black)),
+                                      fontSize: 14,
+                                      color: GrimoireColors.antiqueGold)),
                             // Text für das Element
                             Expanded(
                               child: Text(
                                 point,
                                 style: const TextStyle(
-                                    fontSize: 14, color: Colors.black),
+                                    fontSize: 14,
+                                    color: GrimoireColors.ivory),
                               ),
                             ),
                           ],

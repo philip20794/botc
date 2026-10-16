@@ -1,90 +1,103 @@
 import 'package:blood_on_the_clocktower/components/app_background.dart';
-import 'package:blood_on_the_clocktower/screens/pdf_viewer_page.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/screens/pdf_viewer_page.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
+import 'package:flutter/material.dart';
 
-class RulesSelectionScreen extends StatefulWidget {
-  @override
-  _RulesSelectionScreenState createState() => _RulesSelectionScreenState();
-}
+class RulesSelectionScreen extends StatelessWidget {
+  const RulesSelectionScreen({super.key});
 
-class _RulesSelectionScreenState extends State<RulesSelectionScreen> {
   @override
   Widget build(BuildContext context) {
-    var localizedStrings = AppLocalizations.of(context)!;
-
+    final strings = AppLocalizations.of(context)!;
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(localizedStrings.rules,
-              style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
+        appBar: AppBar(title: Text(strings.rules)),
         body: GridView.count(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           crossAxisCount: 2,
-          children: [
-            _buildCard("Main Rules", "main"),
-            _buildCard("Trouble Brewing", "trouble_brewing"),
-            _buildCard("Sects & Violets", "sects_and_violets"),
-            _buildCard("Bad Moon Rising", "bad_moon_rising"),
-            _buildCard("Traveller & Fabled", "traveller_and_fabled"),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.92,
+          children: const [
+            _RuleCard(title: 'Main Rules', name: 'main'),
+            _RuleCard(title: 'Trouble Brewing', name: 'trouble_brewing'),
+            _RuleCard(title: 'Sects & Violets', name: 'sects_and_violets'),
+            _RuleCard(title: 'Bad Moon Rising', name: 'bad_moon_rising'),
+            _RuleCard(title: 'Traveller & Fabled', name: 'traveller_and_fabled'),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildCard(String title, String name) {
-    var size = MediaQuery.of(context).size.height * 0.14;
-    final pdfUri = rulePdfUriFor(name);
-    return Center(
-        child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        PdfViewerPage(pdfUrl: pdfUri, title: title)),
-              );
-            },
+class _RuleCard extends StatelessWidget {
+  const _RuleCard({required this.title, required this.name});
+
+  final String title;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context).height * 0.105;
+    return GrimoirePressablePanel(
+      padding: const EdgeInsets.all(10),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerPage(pdfUrl: rulePdfUriFor(name), title: title),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: size * 1.4,
+            height: size * 1.4,
             child: Stack(
+              alignment: Alignment.center,
               children: [
-                Positioned(
-                  child: Container(
-                    width: size * 1.4,
-                    height: size * 1.4,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage(
-                            'assets/images/backgrounds/token.png'), // Zweites Bild
-                        fit: BoxFit.cover,
-                      ),
+                Container(
+                  width: size * 1.4,
+                  height: size * 1.4,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/backgrounds/token.png'),
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                // Unterstes Bild
-                Positioned(
-                    top: size * 0.2,
-                    left: size * 0.2,
-                    child: Container(
-                      width: size, // Breite und Höhe anpassen
-                      height: size,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: AssetImage('assets/rules/Logo_$name.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ))
-                // Oberstes Bild
+                Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      image: AssetImage('assets/rules/Logo_$name.png'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
               ],
-            )));
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: GrimoireColors.antiqueGold,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

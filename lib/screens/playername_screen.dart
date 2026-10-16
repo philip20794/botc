@@ -1,10 +1,12 @@
 import 'package:blood_on_the_clocktower/components/next_screen_footer.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 
 class PlayernameScreen extends StatefulWidget {
   @override
@@ -34,12 +36,11 @@ class _PlayernameScreenState extends State<PlayernameScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: Color(0xFF4a3b5e).withOpacity(0.9),
               title: Text(localizedStrings.playerAlreadyExists,
-                  style: TextStyle(color: Colors.white)),
+                  style: const TextStyle(color: GrimoireColors.ivory)),
               content: Text(
                   localizedStrings.playerWithNameAlreadyExists(playerName),
-                  style: TextStyle(color: Colors.white)),
+                  style: const TextStyle(color: GrimoireColors.ivory)),
             );
           },
         );
@@ -86,21 +87,24 @@ class _PlayernameScreenState extends State<PlayernameScreen> {
                   top: 16, left: 16, right: 16, bottom: 64),
               child: Column(
                 children: [
-                  TextField(
-                    controller: _nameController,
-                    cursorColor: Colors.white,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: localizedStrings.playerName,
-                      labelStyle: TextStyle(color: Colors.white),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.add, color: Colors.white),
-                        onPressed: _addPlayer,
+                  GrimoirePanel(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: TextField(
+                      controller: _nameController,
+                      cursorColor: GrimoireColors.antiqueGold,
+                      style: const TextStyle(color: GrimoireColors.ivory),
+                      decoration: InputDecoration(
+                        labelText: localizedStrings.playerName,
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.add,
+                              color: GrimoireColors.antiqueGold),
+                          onPressed: _addPlayer,
+                        ),
                       ),
+                      onSubmitted: (value) => _addPlayer(),
                     ),
-                    onSubmitted: (value) => _addPlayer(),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 14),
                   Expanded(
                     child: gameStatusService.playerNames.isEmpty
                         ? Center(
@@ -121,30 +125,30 @@ class _PlayernameScreenState extends State<PlayernameScreen> {
                                       Padding(
                                           key: ValueKey(player),
                                           padding: const EdgeInsets.only(
-                                              bottom: 4.0),
+                                              bottom: 8.0),
                                           child: SizedBox(
                                             height: 50,
                                             key: ValueKey(player),
-                                            child: Material(
+                                            child: AnimatedContainer(
+                                              duration: MediaQuery.disableAnimationsOf(context)
+                                                  ? Duration.zero
+                                                  : const Duration(milliseconds: 180),
                                               key: ValueKey(player),
-                                              color: Color(0xFF4a3b5e)
-                                                  .withOpacity(0.5),
+                                              decoration: GrimoireTheme.panelDecoration(),
                                               child: ListTile(
-                                                tileColor: Colors.black
-                                                    .withOpacity(0.5),
                                                 key: ValueKey(player),
                                                 leading:
                                                     ReorderableDragStartListener(
                                                   index: index,
                                                   child: Icon(Icons.drag_handle,
-                                                      color: Colors.white),
+                                                      color: GrimoireColors.secondaryText),
                                                 ),
                                                 title: Text(player,
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
+                                                    style: const TextStyle(
+                                                        color: GrimoireColors.ivory)),
                                                 trailing: IconButton(
                                                   icon: Icon(Icons.delete,
-                                                      color: Colors.white),
+                                                      color: GrimoireColors.secondaryText),
                                                   onPressed: () =>
                                                       _removePlayer(player),
                                                 ),

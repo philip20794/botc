@@ -2,77 +2,16 @@ import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/components/script_complexity_summary.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/script_import.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-const _importBackground = Color(0xFF4a3b5e);
-const _importSurface = Color(0xFF6f678a);
-
-ThemeData _customScriptImportTheme(ThemeData base) {
-  final colorScheme = base.colorScheme.copyWith(
-    brightness: Brightness.dark,
-    primary: _importSurface,
-    onPrimary: Colors.white,
-    surface: _importSurface,
-    onSurface: Colors.white,
-  );
-  final border = OutlineInputBorder(
-    borderSide: const BorderSide(color: Colors.white54),
-    borderRadius: BorderRadius.circular(8),
-  );
-  return withScriptComplexityEditorTheme(base.copyWith(
-    colorScheme: colorScheme,
-    scaffoldBackgroundColor: _importBackground,
-    appBarTheme: base.appBarTheme.copyWith(
-      backgroundColor: _importBackground,
-      foregroundColor: Colors.white,
-      elevation: 0,
-    ),
-    cardTheme: base.cardTheme.copyWith(
-      color: _importSurface,
-      surfaceTintColor: Colors.transparent,
-    ),
-    dialogTheme: base.dialogTheme.copyWith(
-      backgroundColor: _importSurface,
-      surfaceTintColor: Colors.transparent,
-    ),
-    inputDecorationTheme: base.inputDecorationTheme.copyWith(
-      filled: true,
-      fillColor: _importBackground,
-      labelStyle: const TextStyle(color: Colors.white70),
-      prefixIconColor: Colors.white70,
-      enabledBorder: border,
-      focusedBorder: border.copyWith(
-        borderSide: const BorderSide(color: Colors.white, width: 2),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _importSurface,
-        foregroundColor: Colors.white,
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: const BorderSide(color: Colors.white70),
-      ),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: Colors.white),
-    ),
-    listTileTheme: const ListTileThemeData(
-      textColor: Colors.white,
-      iconColor: Colors.white,
-    ),
-  ));
-}
 
 class CustomScriptImportScreen extends StatefulWidget {
   const CustomScriptImportScreen({super.key, this.pickJson, this.openUri});
@@ -177,7 +116,7 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
     final strings = AppLocalizations.of(context)!;
     return AppBackground(
       child: Theme(
-        data: _customScriptImportTheme(Theme.of(context)),
+        data: withScriptComplexityEditorTheme(GrimoireTheme.build()),
         child: Builder(
             builder: (context) => Scaffold(
                   backgroundColor: Colors.transparent,
@@ -189,7 +128,8 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
                   body: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Card(
+                      GrimoirePanel(
+                        padding: EdgeInsets.zero,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -247,7 +187,8 @@ class _CustomScriptImportScreenState extends State<CustomScriptImportScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Card(
+                      GrimoirePanel(
+                        padding: EdgeInsets.zero,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -311,7 +252,7 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
     final roleId = await showDialog<String>(
       context: context,
       builder: (context) => Theme(
-        data: _customScriptImportTheme(Theme.of(this.context)),
+        data: withScriptComplexityEditorTheme(GrimoireTheme.build()),
         child: _RoleMappingDialog(
           excludedRoleIds: _draft.roles
               .where((candidate) => candidate.index != role.index)
@@ -380,7 +321,7 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
     final draft = _draft;
     return AppBackground(
       child: Theme(
-        data: _customScriptImportTheme(Theme.of(context)),
+        data: withScriptComplexityEditorTheme(GrimoireTheme.build()),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(

@@ -3,6 +3,7 @@ import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/select_gameset.dart';
 import 'package:blood_on_the_clocktower/components/show_character.dart';
+import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -10,6 +11,7 @@ import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 
 class AllCharactersScreen extends StatefulWidget {
   final bool hideTravellers;
@@ -78,16 +80,12 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Card(
-                    margin: EdgeInsets.zero,
-                    color: const Color(0xFF4a3b5e),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: SelectGameset(
-                        disabled: false,
-                        scriptWidth: scriptWidth,
-                        showManagementAction: false,
-                      ),
+                  GrimoirePanel(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: SelectGameset(
+                      disabled: false,
+                      scriptWidth: scriptWidth,
+                      showManagementAction: false,
                     ),
                   ),
                 ],
@@ -105,20 +103,20 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSection(townsfolk, "Townsfolk"),
-                const Divider(color: Colors.white, thickness: 1),
+                const SizedBox(height: 12),
                 _buildSection(outsider, "Outsider"),
-                const Divider(color: Colors.white, thickness: 1),
+                const SizedBox(height: 12),
                 _buildSection(minion, "Minion"),
-                const Divider(color: Colors.white, thickness: 1),
+                const SizedBox(height: 12),
                 _buildSection(demon, "Demon"),
-                const Divider(color: Colors.white, thickness: 3),
+                const SizedBox(height: 12),
                 _buildSection(travellers, "Travellers"),
                 Center(
                     child: Text(
                   localizedStrings.notInTheFirstNight,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.white,
+                    color: GrimoireColors.secondaryText,
                   ),
                 )),
               ],
@@ -151,21 +149,26 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                         _hideTravellers
                             ? Icons.arrow_drop_down
                             : Icons.arrow_drop_up,
-                        color: Colors.white),
+                        color: GrimoireColors.antiqueGold),
                   ],
                   Text(
                     title,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: GrimoireColors.antiqueGold,
                     ),
                   ),
                 ],
               )),
           SizedBox(height: 8), // Abstand zwischen Titel und Karten
-          if (!travellers || !_hideTravellers) ...[
-            ListView.builder(
+          AnimatedSize(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 200),
+            alignment: Alignment.topCenter,
+            child: (!travellers || !_hideTravellers)
+                ? ListView.builder(
               shrinkWrap:
                   true, // Wichtig, damit der ListView in der Column funktioniert
               physics:
@@ -175,7 +178,8 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                 return _buildCard(characters[index]);
               },
             )
-          ],
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -183,7 +187,8 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
 
   Widget _buildCard(Character character) {
     var maxWidth = MediaQuery.of(context).size.width - 140;
-    return GestureDetector(
+    return GrimoirePressablePanel(
+        padding: const EdgeInsets.all(8),
         onTap: () {
           Navigator.push(
               context,
@@ -193,11 +198,7 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                       showHowToRun: false,
                       showMoreDetails: true)));
         },
-        child: Card(
-            color: Color(0xFF4a3b5e).withOpacity(0.9),
-            child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Row(children: [
+        child: Row(children: [
                   CharacterAvatar(
                       character: character,
                       size: 70,
@@ -210,17 +211,19 @@ class _AllCharactersScreenState extends State<AllCharactersScreen> {
                       AutoSizeText(
                         character.name,
                         maxLines: 1,
-                        style: TextStyle(color: Colors.white, fontSize: 18),
+                        style: const TextStyle(
+                            color: GrimoireColors.ivory, fontSize: 18),
                       ),
                       SizedBox(
                           width: maxWidth,
                           child: AutoSizeText(
                             character.descriptionShort,
                             maxLines: 2,
-                            style: TextStyle(color: Colors.white),
+                            style: const TextStyle(
+                                color: GrimoireColors.secondaryText),
                           ))
                     ],
                   ),
-                ]))));
+                ]));
   }
 }

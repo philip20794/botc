@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -7,6 +8,7 @@ import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 
 class SettingsCharacterCircle extends StatefulWidget {
   @override
@@ -80,11 +82,14 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: const Icon(Icons.arrow_back,
+                          color: GrimoireColors.ivory),
                     ),
                     Text(
                       localizedStrings.layoutSettings,
-                      style: const TextStyle(color: Colors.white, fontSize: 20),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: GrimoireColors.ivory,
+                          ),
                     ),
                   ],
                 ),
@@ -95,8 +100,8 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 56, bottom: 16),
                   child: SizedBox(
-                    width: 300,
-                    height: 750,
+                    width: MediaQuery.sizeOf(context).width.clamp(0, 360),
+                    height: MediaQuery.sizeOf(context).height * 0.78,
                     child: _buildSettingsDialog(context, settingsService),
                   ),
                 ),
@@ -144,11 +149,13 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
   Widget _buildSettingsDialog(
       BuildContext context, SettingsService settingsService) {
     var localizedStrings = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 5,
-      color: Color(0xFF4a3b5e).withOpacity(0.6),
+    return GrimoirePanel(
+      emphasized: true,
+      // Keep the live circle preview visible while editing layout values.
+      surfaceOpacity: 0.66,
+      padding: const EdgeInsets.all(16.0),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.zero,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,16 +401,16 @@ class _ReminderTokenPreviewCard extends StatelessWidget {
       width: size,
       height: size * 1.15,
       decoration: BoxDecoration(
-        color: const Color(0xFF493131).withValues(alpha: 0.94),
+        color: GrimoireColors.surface.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: selected ? Colors.amberAccent : const Color(0xFF6f678a),
+          color: selected ? GrimoireColors.antiqueGold : GrimoireColors.deepViolet,
           width: selected ? 3 : 1.5,
         ),
       ),
       child: Icon(
         selected ? Icons.check : Icons.more_horiz,
-        color: Colors.white,
+        color: GrimoireColors.ivory,
         size: size * 0.55,
       ),
     );
