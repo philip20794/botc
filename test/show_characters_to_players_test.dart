@@ -80,6 +80,13 @@ void main() {
         find.byKey(const ValueKey('role-reveal-continue')),
       );
 
+  int chargePercent(WidgetTester tester) {
+    final text = tester.widget<Text>(
+      find.byKey(const ValueKey('role-reveal-progress-percent')),
+    ).data!;
+    return int.parse(text.replaceAll('%', ''));
+  }
+
   testWidgets('short press does not reveal or unlock next player',
       (tester) async {
     await showFlow(tester, players: 1);
@@ -87,6 +94,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(continueButton(tester).onPressed, isNull);
+    expect(chargePercent(tester), 0);
     // A plain tap must never expose secret character data.
     await tester.tap(find.byKey(const ValueKey('role-reveal-eye')));
     await tester.pump();
@@ -108,10 +116,12 @@ void main() {
     expect(partialFill, greaterThan(0),
         reason: 'The button must start filling on first touch.');
     expect(partialFill, lessThan(fullWidth));
+    expect(chargePercent(tester), inInclusiveRange(12, 35));
     await gesture.up();
     await tester.pump();
     expect(find.byType(CharacterAvatar), findsNothing);
     expect(continueButton(tester).onPressed, isNull);
+    expect(chargePercent(tester), 0);
     expect(tester.getSize(
         find.byKey(const ValueKey('role-reveal-progress-fill'))).width, 0);
   });
@@ -125,9 +135,10 @@ void main() {
     final hold = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-hold-button'))),
     );
-    // Charging starts immediately, before Flutter recognizes a long press.
+    // A single continuous touch controls both the visible fill and reveal.
+    expect(chargePercent(tester), 0);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump(const Duration(milliseconds: 300));
     final fillWidth = tester.getSize(
       find.byKey(const ValueKey('role-reveal-progress-fill')),
     ).width;
@@ -136,15 +147,22 @@ void main() {
     ).width;
     expect(fillWidth, greaterThan(0));
     expect(fillWidth, lessThan(buttonWidth));
+    expect(chargePercent(tester), inInclusiveRange(18, 35));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    // Only after the long-press deadline AND a full bar may the role appear.
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 450));
+    expect(chargePercent(tester), inInclusiveRange(53, 73));
+    expect(find.byType(CharacterAvatar), findsNothing);
+    expect(continueButton(tester).onPressed, isNull);
+
+    // The role must appear at the SAME moment the percentage reaches 100.
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(chargePercent(tester), 100);
     expect(find.byType(CharacterAvatar), findsOneWidget);
     expect(continueButton(tester).onPressed, isNull);
     await hold.up();
     await tester.pump();
+    expect(chargePercent(tester), 0);
     expect(find.byType(CharacterAvatar), findsNothing);
     expect(continueButton(tester).onPressed, isNotNull);
 
@@ -163,9 +181,10 @@ void main() {
     final hold = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-eye'))),
     );
-    // Charging starts immediately, before Flutter recognizes a long press.
+    // A single continuous touch controls both the visible fill and reveal.
+    expect(chargePercent(tester), 0);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump(const Duration(milliseconds: 300));
     final fillWidth = tester.getSize(
       find.byKey(const ValueKey('role-reveal-progress-fill')),
     ).width;
@@ -174,11 +193,17 @@ void main() {
     ).width;
     expect(fillWidth, greaterThan(0));
     expect(fillWidth, lessThan(buttonWidth));
+    expect(chargePercent(tester), inInclusiveRange(18, 35));
     expect(find.byType(CharacterAvatar), findsNothing);
 
-    // Only after the long-press deadline AND a full bar may the role appear.
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 450));
+    expect(chargePercent(tester), inInclusiveRange(53, 73));
+    expect(find.byType(CharacterAvatar), findsNothing);
+    expect(continueButton(tester).onPressed, isNull);
+
+    // The role must appear at the SAME moment the percentage reaches 100.
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(chargePercent(tester), 100);
     expect(find.byType(CharacterAvatar), findsOneWidget);
     await hold.up();
     await tester.pump();
@@ -212,6 +237,7 @@ void main() {
     );
     await hold.cancel();
     await tester.pump();
+    expect(chargePercent(tester), 0);
     expect(find.byType(CharacterAvatar), findsNothing);
     expect(continueButton(tester).onPressed, isNull);
     expect(
@@ -242,10 +268,44 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await hold.up();
     await tester.pump();
+    expect(chargePercent(tester), 0);
     expect(find.byType(CharacterAvatar), findsNothing);
     expect(continueButton(tester).onPressed, isNull);
     expect(tester.getSize(
         find.byKey(const ValueKey('role-reveal-progress-fill'))).width, 0);
+  });
+
+  testWidgets('second finger cannot interrupt or bypass active hold',
+      (tester) async {
+    await showFlow(tester, players: 1);
+    await tester.tap(find.byKey(const ValueKey('role-handoff-confirm')));
+    await tester.pumpAndSettle();
+
+    final center = tester.getCenter(
+      find.byKey(const ValueKey('role-reveal-hold-button')),
+    );
+    final primary = await tester.startGesture(center, pointer: 1);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    final beforeSecondFinger = chargePercent(tester);
+    expect(beforeSecondFinger, greaterThan(0));
+
+    final secondary =
+        await tester.startGesture(center + const Offset(10, 0), pointer: 2);
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(chargePercent(tester), greaterThan(beforeSecondFinger));
+    await secondary.up();
+    await tester.pump();
+    expect(chargePercent(tester), greaterThan(0));
+    expect(find.byType(CharacterAvatar), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 850));
+    expect(chargePercent(tester), 100);
+    expect(find.byType(CharacterAvatar), findsOneWidget);
+    await primary.up();
+    await tester.pump();
+    expect(find.byType(CharacterAvatar), findsNothing);
+    expect(chargePercent(tester), 0);
   });
 
   testWidgets('small phone size can scroll to the continue button',
