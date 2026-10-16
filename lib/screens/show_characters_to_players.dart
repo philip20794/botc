@@ -146,7 +146,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _roleVisible = false;
       _hasSeenRole = false;
       _holdingPointer = null;
-      _longPressRecognized = false;
+      _holdStartPosition = null;
     });
   }
 
