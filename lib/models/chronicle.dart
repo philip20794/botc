@@ -14,6 +14,7 @@ enum ChronicleEventType {
   characterChanged,
   nightActionVisited,
   nightInformation,
+  savantStatement,
 }
 
 class ChronicleCharacterSnapshot {
