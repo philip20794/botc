@@ -117,7 +117,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _stage = _PresentationStage.handoff;
       _roleVisible = false;
       _hasSeenRole = false;
-      _holdingPointer = null;
+      _isHolding = false;
     });
   }
 
