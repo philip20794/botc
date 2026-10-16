@@ -151,7 +151,7 @@ void main() {
     );
     expect(steps.map((step) => step.orderId), contains('ravenkeeper'));
     expect(steps.map((step) => step.orderId), contains('professor'));
-    expect(steps.map((step) => step.orderId, isNot(contains('dawn')));
+    expect(steps.map((step) => step.orderId), isNot(contains('dawn')));
     expect(
       steps.indexWhere((step) => step.orderId == 'leviathan'),
       greaterThan(steps.indexWhere((step) => step.orderId == 'professor')),
