@@ -250,29 +250,81 @@ void main() {
     expect(find.byType(CharacterAvatar), findsNothing);
   });
 
-  testWidgets('moving away before long press never reveals character',
+  for (final surface in [
+    'role-reveal-eye',
+    'role-reveal-hold-button',
+  ]) {
+    testWidgets('holding $surface survives moving outside the touch area',
+        (tester) async {
+      await showFlow(tester, players: 1);
+      await tester.tap(find.byKey(const ValueKey('role-handoff-confirm')));
+      await tester.pumpAndSettle();
+
+      final finder = find.byKey(ValueKey(surface));
+      final originalBounds = tester.getRect(finder);
+      final hold = await tester.startGesture(tester.getCenter(finder));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(chargePercent(tester), inInclusiveRange(12, 35));
+
+      // Drag well beyond the original widget bounds. The active touch must
+      // keep its charging progress even if the scroll view wins the drag.
+      await hold.moveBy(Offset(0, originalBounds.height + 110));
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(chargePercent(tester), inInclusiveRange(42, 60));
+      expect(find.byType(CharacterAvatar), findsNothing);
+      expect(continueButton(tester).onPressed, isNull);
+
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(chargePercent(tester), 100);
+      expect(find.byType(CharacterAvatar), findsOneWidget);
+
+      // Movement AFTER the role is visible must not conceal it either.
+      await hold.moveBy(const Offset(60, 60));
+      await tester.pump();
+      expect(chargePercent(tester), 100);
+      expect(find.byType(CharacterAvatar), findsOneWidget);
+
+      await hold.up();
+      await tester.pump();
+      expect(chargePercent(tester), 0);
+      expect(find.byType(CharacterAvatar), findsNothing);
+      expect(continueButton(tester).onPressed, isNotNull);
+    });
+  }
+
+  testWidgets('disabled system animations cannot shorten secret hold time',
       (tester) async {
+    tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(() {
+      tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue();
+    });
+
     await showFlow(tester, players: 1);
     await tester.tap(find.byKey(const ValueKey('role-handoff-confirm')));
     await tester.pumpAndSettle();
 
     final hold = await tester.startGesture(
-      tester.getCenter(find.byKey(const ValueKey('role-reveal-eye'))),
+      tester.getCenter(find.byKey(const ValueKey('role-reveal-hold-button'))),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 180));
-    expect(tester.getSize(
-        find.byKey(const ValueKey('role-reveal-progress-fill'))).width,
-        greaterThan(0));
-    await hold.moveBy(const Offset(100, 100));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 140));
+    expect(chargePercent(tester), inInclusiveRange(6, 20));
+    expect(find.byType(CharacterAvatar), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 460));
+    expect(chargePercent(tester), inInclusiveRange(40, 60));
+    expect(find.byType(CharacterAvatar), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 650));
+    expect(chargePercent(tester), 100);
+    expect(find.byType(CharacterAvatar), findsOneWidget);
+
     await hold.up();
     await tester.pump();
     expect(chargePercent(tester), 0);
     expect(find.byType(CharacterAvatar), findsNothing);
-    expect(continueButton(tester).onPressed, isNull);
-    expect(tester.getSize(
-        find.byKey(const ValueKey('role-reveal-progress-fill'))).width, 0);
   });
 
   testWidgets('second finger cannot interrupt or bypass active hold',
