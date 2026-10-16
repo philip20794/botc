@@ -500,6 +500,37 @@ void main() {
     expect(state.dayElapsed.inSeconds, lessThanOrEqualTo(1));
   });
 
+  test('last night arrow enters day with running and persisted day timer',
+      () async {
+    final chronicle = ChronicleService();
+    final state = await gameState(chronicle);
+    final chef = catalogRole('chef');
+    await state.startNewGame([chef]);
+    for (var i = 0; i < 30 && !state.isDawn(); i++) {
+      await state.nextNightState([chef]);
+    }
+    expect(state.isDawn(), isTrue);
+
+    // One tap on the arrow must both enter day and initialize the timer.
+    await state.nextNightState([chef]);
+    expect(state.isDay(), isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    final dayStarted = prefs.getString('day_started_at');
+    expect(dayStarted, isNotNull);
+    expect(DateTime.tryParse(dayStarted!), isNotNull);
+    expect(state.dayElapsed.inSeconds, lessThan(3));
+
+    // Subsequent state synchronization may not restart or lose the timer.
+    await state.synchronizeNightStep([chef]);
+    expect(prefs.getString('day_started_at'), dayStarted);
+    expect(state.currentChroniclePhase, ChroniclePhase.day);
+
+    // The following tap must already start the next night, not the day timer.
+    await state.nextNightState([chef]);
+    expect(state.isDay(), isFalse);
+    expect(state.nightCount, 2);
+  });
+
   test('game timer persists from its start time and clears when the game ends',
       () async {
     final startedAt = DateTime.now().subtract(const Duration(minutes: 2));

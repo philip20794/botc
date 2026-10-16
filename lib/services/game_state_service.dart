@@ -46,6 +46,7 @@ class GameStateService extends ChangeNotifier {
   int _nightCount = -1;
   DateTime? _gameStartedAt;
   DateTime? _dayStartedAt;
+  Future<void>? _pendingDayTransition;
   GameRecordCapture? _activeGameRecordCapture;
   GameRecordCapture? _lastGameRecordCapture;
   GameRecord? _lastCompletedGameRecord;
@@ -1496,7 +1497,13 @@ class GameStateService extends ChangeNotifier {
     closeMenu();
     _ensureCurrentNightStep(gameCharacters);
     if (_currentNightStepId == 'day') {
-      await nextNight(gameCharacters);
+      // A missing/removed final night step may have resolved to "day"
+      // before its timer was initialized. Finish that transition first.
+      if (_dayStartedAt == null) {
+        await startDay(gameCharacters);
+      } else {
+        await nextNight(gameCharacters);
+      }
       return;
     }
     final steps = _stepsFor(gameCharacters);
@@ -1527,7 +1534,21 @@ class GameStateService extends ChangeNotifier {
     await startDay(gameCharacters);
   }
 
-  Future<void> startDay([List<Character> gameCharacters = const []]) async {
+  /// Serializes all paths entering daytime, including restored or removed
+  /// night steps, so the timer and captured phase are initialized once.
+  Future<void> startDay([List<Character> gameCharacters = const []]) {
+    final pending = _pendingDayTransition;
+    if (pending != null) return pending;
+    final transition = _enterDay(gameCharacters);
+    _pendingDayTransition = transition;
+    return transition.whenComplete(() {
+      if (identical(_pendingDayTransition, transition)) {
+        _pendingDayTransition = null;
+      }
+    });
+  }
+
+  Future<void> _enterDay(List<Character> gameCharacters) async {
     await _recordCurrentNightReminderSnapshot(gameCharacters);
     final transitionAt = _now();
     final changed = await _transitionGameRecordPhase(
@@ -1626,7 +1647,12 @@ class GameStateService extends ChangeNotifier {
 
   Future<void> synchronizeNightStep(List<Character> gameCharacters) async {
     await _nightOrderService.ready;
-    if (_ensureCurrentNightStep(gameCharacters)) {
+    final changed = _ensureCurrentNightStep(gameCharacters);
+    if (_currentNightStepId == 'day' &&
+        _dayStartedAt == null &&
+        gameIsRunning()) {
+      await startDay(gameCharacters);
+    } else if (changed) {
       notifyListeners();
     }
   }
@@ -1650,7 +1676,12 @@ class GameStateService extends ChangeNotifier {
                   missingOrderIndex)
               ?.id ??
           'day';
-      unawaited(_persistNightPosition());
+      if (_currentNightStepId == 'day') {
+        // Never expose a canonical day state without starting its timer.
+        unawaited(startDay(gameCharacters));
+      } else {
+        unawaited(_persistNightPosition());
+      }
       return true;
     }
     final legacy = _legacyNightStateNumber;
@@ -1683,7 +1714,11 @@ class GameStateService extends ChangeNotifier {
     }
     _currentNightStepId ??= steps.isEmpty ? 'day' : steps.first.id;
     _legacyNightStateNumber = null;
-    unawaited(_persistNightPosition());
+    if (_currentNightStepId == 'day') {
+      unawaited(startDay(gameCharacters));
+    } else {
+      unawaited(_persistNightPosition());
+    }
     return true;
   }
 
@@ -1694,6 +1729,11 @@ class GameStateService extends ChangeNotifier {
     _currentNightStepId = stepId;
     _legacyNightStateNumber = null;
     _nightStateNumber = stepId == 'day' ? 0 : 1;
+    // A day step can also be reached through restored or reverse navigation.
+    // Ensure its elapsed timer always has a persisted start timestamp.
+    if (stepId == 'day' && _dayStartedAt == null) {
+      await _startDayTimer();
+    }
     await _persistNightPosition();
     final phase = currentChroniclePhase;
     await _chronicleService?.recordPhase(phase, _nightCount);

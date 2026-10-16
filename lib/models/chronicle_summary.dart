@@ -46,14 +46,22 @@ class ChronicleSummaryProjector {
           event.phase == ChroniclePhase.day &&
           event.character != null &&
           event.round >= 1) {
-        final id = 'savant:${event.id}';
-        groups[id] = _SummaryAccumulator(
-          id: id,
-          phase: event.phase,
-          round: event.round,
-          actor: event.character!,
-          timestamp: event.timestamp,
-        )..events.add(event);
+        // Persist individual statements, but display a single Savant card
+        // per actor and day (including existing persisted day events).
+        final id = 'savant:${event.round}:${event.character!.characterId}';
+        groups
+            .putIfAbsent(
+              id,
+              () => _SummaryAccumulator(
+                id: id,
+                phase: event.phase,
+                round: event.round,
+                actor: event.character!,
+                timestamp: event.timestamp,
+              ),
+            )
+            .events
+            .add(event);
         continue;
       }
       if (event.phase != ChroniclePhase.night || event.round < 1) continue;
