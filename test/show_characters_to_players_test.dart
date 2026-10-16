@@ -87,11 +87,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(continueButton(tester).onPressed, isNull);
+    // A plain tap must never expose secret character data.
+    await tester.tap(find.byKey(const ValueKey('role-reveal-eye')));
+    await tester.pump();
+    expect(find.byType(CharacterAvatar), findsNothing);
+    expect(continueButton(tester).onPressed, isNull);
+
     final gesture = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-hold-button'))),
     );
     await tester.pump(const Duration(milliseconds: 250));
     expect(find.byType(CharacterAvatar), findsNothing);
+    expect(
+      tester.getSize(
+        find.byKey(const ValueKey('role-reveal-progress-fill')),
+      ).width,
+      0,
+      reason: 'A short press must not start charging',
+    );
     await gesture.up();
     await tester.pump();
     expect(find.byType(CharacterAvatar), findsNothing);
@@ -107,9 +120,22 @@ void main() {
     final hold = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-hold-button'))),
     );
-    // Establish the first animation frame before advancing fake time.
+    // Flutter recognizes a long press after its gesture deadline. Charging
+    // starts only then, and the progress must be visually nonzero mid-hold.
+    await tester.pump(const Duration(milliseconds: 650));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.byType(CharacterAvatar), findsNothing);
+    await tester.pump(const Duration(milliseconds: 350));
+    final fillWidth = tester.getSize(
+      find.byKey(const ValueKey('role-reveal-progress-fill')),
+    ).width;
+    final buttonWidth = tester.getSize(
+      find.byKey(const ValueKey('role-reveal-hold-button')),
+    ).width;
+    expect(fillWidth, greaterThan(0));
+    expect(fillWidth, lessThan(buttonWidth));
+    expect(find.byType(CharacterAvatar), findsNothing);
+    await tester.pump(const Duration(milliseconds: 650));
     expect(find.byType(CharacterAvatar), findsOneWidget);
     expect(continueButton(tester).onPressed, isNull);
     await hold.up();
@@ -132,9 +158,22 @@ void main() {
     final hold = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('role-reveal-eye'))),
     );
-    // Establish the first animation frame before advancing fake time.
+    // Flutter recognizes a long press after its gesture deadline. Charging
+    // starts only then, and the progress must be visually nonzero mid-hold.
+    await tester.pump(const Duration(milliseconds: 650));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.byType(CharacterAvatar), findsNothing);
+    await tester.pump(const Duration(milliseconds: 350));
+    final fillWidth = tester.getSize(
+      find.byKey(const ValueKey('role-reveal-progress-fill')),
+    ).width;
+    final buttonWidth = tester.getSize(
+      find.byKey(const ValueKey('role-reveal-hold-button')),
+    ).width;
+    expect(fillWidth, greaterThan(0));
+    expect(fillWidth, lessThan(buttonWidth));
+    expect(find.byType(CharacterAvatar), findsNothing);
+    await tester.pump(const Duration(milliseconds: 650));
     expect(find.byType(CharacterAvatar), findsOneWidget);
     await hold.up();
     await tester.pump();
@@ -147,6 +186,38 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('role-handoff-confirm')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('role-storyteller-start')), findsOneWidget);
+  });
+
+  testWidgets('cancelled long press resets visible fill and does not unlock',
+      (tester) async {
+    await showFlow(tester, players: 1);
+    await tester.tap(find.byKey(const ValueKey('role-handoff-confirm')));
+    await tester.pumpAndSettle();
+
+    final hold = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('role-reveal-hold-button'))),
+    );
+    await tester.pump(const Duration(milliseconds: 650));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 320));
+    expect(
+      tester.getSize(
+        find.byKey(const ValueKey('role-reveal-progress-fill')),
+      ).width,
+      greaterThan(0),
+    );
+    await hold.cancel();
+    await tester.pump();
+    expect(find.byType(CharacterAvatar), findsNothing);
+    expect(continueButton(tester).onPressed, isNull);
+    expect(
+      tester.getSize(
+        find.byKey(const ValueKey('role-reveal-progress-fill')),
+      ).width,
+      0,
+    );
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(CharacterAvatar), findsNothing);
   });
 
   testWidgets('small phone size can scroll to the continue button',
