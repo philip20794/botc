@@ -524,6 +524,11 @@ void main() {
     await state.synchronizeNightStep([chef]);
     expect(prefs.getString('day_started_at'), dayStarted);
     expect(state.currentChroniclePhase, ChroniclePhase.day);
+
+    // The following tap must already start the next night, not the day timer.
+    await state.nextNightState([chef]);
+    expect(state.isDay(), isFalse);
+    expect(state.nightCount, 2);
   });
 
   test('game timer persists from its start time and clears when the game ends',
