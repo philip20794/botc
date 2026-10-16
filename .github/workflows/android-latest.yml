@@ -1,9 +1,13 @@
-name: Android latest APK
+name: Deploy Android APK and Firebase Hosting
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: production-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -89,3 +93,49 @@ jobs:
           gh release delete-asset android-latest app-release.apk --yes >/dev/null 2>&1 || true
           cp build/app/outputs/flutter-apk/app-release.apk b-o-t-c.apk
           gh release upload android-latest b-o-t-c.apk --clobber
+
+  deploy-web-hosting:
+    name: Build Flutter Web and deploy Firebase Hosting
+    # Web deployment and Android publication can run independently after
+    # checks pass. A signing issue must not prevent updating the web app.
+    needs: [test, android-e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Fetch dependencies
+        run: flutter pub get
+
+      - name: Build production Web/PWA
+        run: flutter build web --release
+
+      - name: Require Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Configure repository secret FIREBASE_SERVICE_ACCOUNT_B_O_T_C with Firebase Hosting deploy service-account JSON."
+            exit 1
+          fi
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Deploy Web/PWA to Firebase Hosting
+        run: npx --yes firebase-tools@latest deploy --only hosting --project b-o-t-c --non-interactive
+
+      - name: Production URL
+        run: echo "Web app published at https://b-o-t-c.web.app/" >> "$GITHUB_STEP_SUMMARY"
