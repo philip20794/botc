@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/app_page_route.dart';
 import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/components/script_complexity_summary.dart';
 import 'package:blood_on_the_clocktower/components/select_gameset.dart';
@@ -314,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openScreen(Widget screen) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => screen),
+      AppPageRoute(builder: (_) => screen),
     );
   }
 
