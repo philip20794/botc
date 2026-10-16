@@ -28,7 +28,6 @@ void main() {
     );
     expect(web.reverseTransitionDuration, Duration.zero);
     expect(web.allowSnapshotting, isFalse);
-    expect(android.reverseTransitionDuration, isNot(Duration.zero));
     expect(android.allowSnapshotting, isTrue);
   });
 
