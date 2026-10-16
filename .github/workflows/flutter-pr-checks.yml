@@ -6,6 +6,8 @@ on:
       - 'lib/**'
       - 'test/**'
       - 'pubspec.yaml'
+      - 'web/**'
+      - '.github/workflows/flutter-pr-checks.yml'
 
 permissions:
   contents: read
@@ -26,3 +28,5 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Run all Flutter tests
         run: flutter test
+      - name: Test web installation choices
+        run: node --test test/web_install_options_test.mjs
