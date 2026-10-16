@@ -16,19 +16,6 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   Future<GameStateService> pumpPlayerScreen(WidgetTester tester) async {
-    await pumpPlayerScreen(tester);
-    return game;
-  }
-
-  testWidgets('player name field matches the full width of its panel',
-      (tester) async {
-    tester.view.physicalSize = const Size(390, 780);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
     // Service initialization uses asynchronous preferences and assets;
     // initialize outside the widget test's fake-async clock.
     late GameStateService game;
@@ -55,6 +42,19 @@ void main() {
       ),
     );
     await tester.pump();
+    return game;
+  }
+
+  testWidgets('player name field matches the full width of its panel',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await pumpPlayerScreen(tester);
 
     final input = find.byKey(const ValueKey('player-name-input'));
     final panel = find.ancestor(
@@ -92,7 +92,7 @@ void main() {
 
     // The keyboard must stay active, so the next name can be entered
     // immediately without tapping the field again.
-    await tester.testTextInput.updateEditingValue(
+    tester.testTextInput.updateEditingValue(
       const TextEditingValue(text: 'Lisa'),
     );
     await tester.testTextInput.receiveAction(TextInputAction.done);
