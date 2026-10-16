@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:blood_on_the_clocktower/components/savant_generator.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
+import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +32,7 @@ class _TestSavantBundle extends CachingAssetBundle {
         statements = german;
         break;
       default:
-        throw FlutterError('Unexpected asset: $key');
+        return rootBundle.load(key);
     }
     return ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(statements))));
   }
@@ -66,9 +66,14 @@ Future<Widget> _createApp({
 }) async {
   final scripts = ScriptService();
   await scripts.ready;
-  final game = GameStateService(scriptService: scripts);
+  final chronicle = ChronicleService();
+  await chronicle.ready;
+  final game = GameStateService(
+    scriptService: scripts,
+    chronicleService: chronicle,
+  );
   await game.ready;
-  final characters = CharacterService();
+  final characters = CharacterService(chronicleService: chronicle);
   await characters.init();
 
   if (withPlayers) await game.addPlayerName('Alice');
@@ -83,6 +88,7 @@ Future<Widget> _createApp({
   return MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: scripts),
+      ChangeNotifierProvider.value(value: chronicle),
       ChangeNotifierProvider.value(value: game),
       ChangeNotifierProvider.value(value: characters),
     ],
@@ -120,7 +126,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('English statement.'), findsOneWidget);
-    expect(find.text('No Savant statement available.'), findsNothing);
+    expect(find.text('No eligible statement available.'), findsNothing);
   });
 
   testWidgets('skips statements requiring unavailable game data',
@@ -142,7 +148,7 @@ void main() {
 
     expect(find.text('There was no starting Demon.'), findsOneWidget);
     for (var i = 0; i < 5; i++) {
-      await tester.tap(find.text('New statement'));
+      await tester.tap(find.text('Generate another statement'));
       await tester.pumpAndSettle();
       expect(find.text('There was no starting Demon.'), findsOneWidget);
       expect(find.textContaining('['), findsNothing);
@@ -168,8 +174,8 @@ void main() {
     for (var i = 0; i < 6; i++) {
       expect(find.textContaining('Alice'), findsNothing);
       expect(find.textContaining('['), findsNothing);
-      expect(find.text('No Savant statement available.'), findsNothing);
-      await tester.tap(find.text('New statement'));
+      expect(find.text('No eligible statement available.'), findsNothing);
+      await tester.tap(find.text('Generate another statement'));
       await tester.pumpAndSettle();
     }
   });
@@ -193,7 +199,7 @@ void main() {
     for (var i = 0; i < 4; i++) {
       expect(find.textContaining('players woke last night.'), findsOneWidget);
       expect(find.textContaining('['), findsNothing);
-      await tester.tap(find.text('New statement'));
+      await tester.tap(find.text('Generate another statement'));
       await tester.pumpAndSettle();
     }
   });
@@ -211,7 +217,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('No Savant statement available.'), findsOneWidget);
+    expect(find.text('No eligible statement available.'), findsOneWidget);
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNull);
   });
@@ -296,7 +302,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final firstWasShown = find.text('English first.').evaluate().isNotEmpty;
-    await tester.tap(find.text('New statement'));
+    await tester.tap(find.text('Generate another statement'));
     await tester.pumpAndSettle();
     expect(
       find.text(firstWasShown ? 'English second.' : 'English first.'),

@@ -126,6 +126,7 @@ class ScriptService extends ChangeNotifier {
         'bishop',
       ],
     ),
+    BotcScript(id: experimentalId, name: 'Experimental', roleIds: const []),
   ];
 
   static const _standardComplexities = <String, _ScriptComplexities>{
