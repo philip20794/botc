@@ -7,7 +7,6 @@ import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
-import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -29,15 +28,17 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   static const _ivory = GrimoireColors.ivory;
   static const _secondary = GrimoireColors.secondaryText;
   static const _violet = GrimoireColors.deepViolet;
-  // The button fills over the same interval Flutter needs to recognize a
-  // long press, rather than starting a second wait after recognition.
-  static const _holdDuration = kLongPressTimeout;
+  // A single continuous hold controls both the fill and the role reveal.
+  // This is deliberately longer than Flutter's long-press threshold so the
+  // charge feels gradual and reaches 100% exactly when the role appears.
+  static const _holdDuration = Duration(milliseconds: 1200);
+  static const _cancelMoveDistance = 28.0;
 
   late final AnimationController _holdProgress;
   _PresentationStage _stage = _PresentationStage.handoff;
   int _currentCharacterIndex = 0;
   int? _holdingPointer;
-  bool _longPressRecognized = false;
+  Offset? _holdStartPosition;
 
   bool get _isHolding => _holdingPointer != null;
   bool _roleVisible = false;
@@ -49,9 +50,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
     super.initState();
     _holdProgress = AnimationController(vsync: this, duration: _holdDuration)
       ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _revealIfReady();
-        }
+        if (status == AnimationStatus.completed) _revealIfReady();
       });
   }
 
@@ -66,28 +65,30 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
   String _tr(String german, String english) =>
       _isGerman ? german : english;
 
-  // Begin the visual fill immediately on first contact. A raw pointer down
-  // alone must NEVER reveal the role; successful long-press recognition is
-  // still required. Both the eye and button use the same animation.
+  // Touch -> hold -> release. No GestureDetector/long-press recognizer:
+  // the exact same animation drives the gold progress and the reveal.
   void _beginCharge(PointerDownEvent event) {
     if (_stage != _PresentationStage.reveal || _isHolding) return;
-    setState(() {
-      _holdingPointer = event.pointer;
-      _longPressRecognized = false;
-    });
+    _holdingPointer = event.pointer;
+    _holdStartPosition = event.position;
     _holdProgress.forward(from: 0);
   }
 
-  void _recognizeLongPress() {
-    if (!_isHolding || _stage != _PresentationStage.reveal) return;
-    _longPressRecognized = true;
-    _revealIfReady();
+  void _trackCharge(PointerMoveEvent event) {
+    if (event.pointer != _holdingPointer || _holdStartPosition == null) {
+      return;
+    }
+    // Cancel drags/scrolling so a swiping player cannot accidentally uncover
+    // secret information while scrolling the phone UI.
+    if ((event.position - _holdStartPosition!).distance >
+        _cancelMoveDistance) {
+      _endCharge(event);
+    }
   }
 
   void _revealIfReady() {
     if (!mounted ||
         !_isHolding ||
-        !_longPressRecognized ||
         !_holdProgress.isCompleted ||
         _stage != _PresentationStage.reveal ||
         _roleVisible) {
@@ -99,18 +100,15 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
     });
   }
 
-  void _endCharge([PointerEvent? event]) {
-    // Ignore a secondary finger releasing while the original finger holds.
-    if (!_isHolding ||
-        (event != null && event.pointer != _holdingPointer)) {
-      return;
-    }
-    setState(() {
-      _holdingPointer = null;
-      _longPressRecognized = false;
-      _roleVisible = false;
-    });
+  void _endCharge(PointerEvent event) {
+    if (event.pointer != _holdingPointer) return;
+    _holdingPointer = null;
+    _holdStartPosition = null;
     _holdProgress.reset();
+    // Hide secret information immediately on finger release or cancellation.
+    if (_roleVisible && mounted) {
+      setState(() => _roleVisible = false);
+    }
   }
 
   Widget _holdArea({required Key key, required Widget child}) {
@@ -118,17 +116,12 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       key: key,
       behavior: HitTestBehavior.opaque,
       onPointerDown: _beginCharge,
+      onPointerMove: _trackCharge,
       onPointerUp: _endCharge,
       onPointerCancel: _endCharge,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onLongPressStart: (_) => _recognizeLongPress(),
-        onLongPressEnd: (_) => _endCharge(),
-        onLongPressCancel: () => _endCharge(),
-        child: Semantics(
-          label: _tr('Zum Enthüllen gedrückt halten', 'Hold to reveal'),
-          child: child,
-        ),
+      child: Semantics(
+        label: _tr('Zum Enthüllen gedrückt halten', 'Hold to reveal'),
+        child: child,
       ),
     );
   }
@@ -140,7 +133,7 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
       _roleVisible = false;
       _hasSeenRole = false;
       _holdingPointer = null;
-      _longPressRecognized = false;
+      _holdStartPosition = null;
     });
   }
 
@@ -490,33 +483,55 @@ class _ShowCharactersToPlayersState extends State<ShowCharactersToPlayers>
                           ),
                         ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.visibility_rounded,
-                            color: _ivory,
-                            shadows: [
-                              Shadow(color: Colors.black54, blurRadius: 3),
-                            ],
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              _tr('Charakter anzeigen', 'Reveal character'),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: _ivory,
-                                shadows: [
-                                  Shadow(color: Colors.black54, blurRadius: 3),
-                                ],
-                                fontFamily: GrimoireTheme.headingFont,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.visibility_rounded,
+                              color: _ivory,
+                              shadows: [
+                                Shadow(color: Colors.black54, blurRadius: 3),
+                              ],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _tr('Charakter anzeigen', 'Reveal character'),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: _ivory,
+                                  shadows: [
+                                    Shadow(color: Colors.black54, blurRadius: 3),
+                                  ],
+                                  fontFamily: GrimoireTheme.headingFont,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 44,
+                              child: Text(
+                                '${(_holdProgress.value * 100).round()}%',
+                                key: const ValueKey('role-reveal-progress-percent'),
+                                textAlign: TextAlign.end,
+                                style: const TextStyle(
+                                  color: _ivory,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                  shadows: [
+                                    Shadow(color: Colors.black54, blurRadius: 3),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       Positioned(
                         left: 0,
