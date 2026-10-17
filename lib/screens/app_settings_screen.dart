@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/screens/rules_selection_screen.dart';
 import 'package:blood_on_the_clocktower/screens/settings_character_circle.dart';
+import 'package:blood_on_the_clocktower/screens/statistics_sync_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -64,6 +65,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                 const RoleNotesScreen(), null, false),
             _buildCard(localizedStrings.rules, CustomIcons.law,
                 RulesSelectionScreen(), null, false),
+            _buildCard(
+                Localizations.localeOf(context).languageCode == 'de'
+                    ? 'Statistik-Synchronisierung'
+                    : 'Statistics synchronization',
+                Icons.cloud_sync_outlined,
+                const StatisticsSyncScreen(), null, false),
             _buildCard(localizedStrings.downloadAndroidApp, Icons.download,
                 null, () => downloadApkForWeb(), !kIsWeb)
           ],
