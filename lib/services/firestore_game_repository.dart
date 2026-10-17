@@ -29,16 +29,43 @@ class CloudFirestoreGameDocumentWriter implements FirestoreGameDocumentWriter {
     Map<String, dynamic> document,
   ) {
     final reference = _firestore.collection(collectionName).doc(gameId);
-    // A transaction serializes competing client uploads for the same document:
-    // only a missing document is set, while an existing one is left untouched.
-    return _firestore.runTransaction((transaction) async {
-      final existing = await transaction.get(reference);
-      if (existing.exists) {
-        return FirestoreGameDocumentCreateResult.alreadyExists;
-      }
-      transaction.set(reference, document);
+    // The Firestore rules allow creates, but categorically reject updates.
+    // Avoid the Web SDK's transactional read/commit path: the server rules,
+    // rather than a client transaction, guarantee immutability.
+    //
+    // Always read from the server. A cached document is not proof of an
+    // acknowledged upload and must not clear the durable outbox.
+    const serverOnly = GetOptions(source: Source.server);
+    return _createIfAbsent(reference, document, serverOnly);
+  }
+
+  Future<FirestoreGameDocumentCreateResult> _createIfAbsent(
+    DocumentReference<Map<String, dynamic>> reference,
+    Map<String, dynamic> document,
+    GetOptions serverOnly,
+  ) async {
+    final before = await reference.get(serverOnly);
+    if (before.exists) {
+      return FirestoreGameDocumentCreateResult.alreadyExists;
+    }
+
+    try {
+      // This is a CREATE while the document is absent. If a concurrent
+      // client writes first, the immutable rules reject our attempted UPDATE.
+      await reference.set(document);
       return FirestoreGameDocumentCreateResult.created;
-    });
+    } on FirebaseException catch (error) {
+      if (error.code == 'permission-denied' || error.code == 'already-exists') {
+        // A concurrent client may have created the same gameId. Confirm that
+        // the document exists on the server before acknowledging the queue.
+        // For genuine rules/permission errors on a missing document, rethrow.
+        final after = await reference.get(serverOnly);
+        if (after.exists) {
+          return FirestoreGameDocumentCreateResult.alreadyExists;
+        }
+      }
+      rethrow;
+    }
   }
 }
 
