@@ -26,6 +26,8 @@ void main() {
         characters.init(), game.ready, settings.initialized,
       ]);
     });
+    await tester.runAsync(() =>
+        characters.loadAllCharactersFromJson(const Locale('de')));
     game.playerNames = List.generate(10, (i) => 'Player $i');
     final idiot = characters.allCharacters.singleWhere(
         (character) => character.roleId == 'villageidiot');
