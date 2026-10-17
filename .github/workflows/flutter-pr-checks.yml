@@ -8,6 +8,7 @@ on:
       - 'scripts/statistics/**'
       - 'firestore.rules'
       - '.github/workflows/aggregate-statistics.yml'
+      - '.github/workflows/seed-demo-statistics.yml'
       - 'pubspec.yaml'
       - 'web/**'
       - '.github/workflows/flutter-pr-checks.yml'
