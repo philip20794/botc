@@ -4,6 +4,8 @@
   "impressum": "Impressum",
   "privacyPolicy": "Privacy Policy",
   "settings": "Settings",
+  "statistics": "Statistics",
+  "statisticsPlaceholder": "Game statistics will appear here.",
   "email": "E-Mail",
   "de": "Deutsch",
   "en": "English",

@@ -11,6 +11,7 @@ import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/screens/playername_screen.dart';
 import 'package:blood_on_the_clocktower/screens/show_characters_to_players.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
+import 'package:blood_on_the_clocktower/screens/statistics_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
@@ -232,6 +233,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+        IconButton(
+          key: const ValueKey('homeStatisticsButton'),
+          tooltip: strings.statistics,
+          onPressed: () => _openScreen(const StatisticsScreen()),
+          icon: const Icon(Icons.bar_chart_rounded),
+          color: GrimoireColors.ivory,
         ),
         IconButton(
           key: const ValueKey('homeSettingsButton'),

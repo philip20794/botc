@@ -65,8 +65,18 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.byKey(const ValueKey('homeStatisticsButton')),
+        findsOneWidget,
+      );
+      expect(
         find.byKey(const ValueKey('homeSettingsButton')),
         findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('homeStatisticsButton'))).dx,
+        lessThan(
+          tester.getTopLeft(find.byKey(const ValueKey('homeSettingsButton'))).dx,
+        ),
       );
       expect(tester.takeException(), isNull);
 
