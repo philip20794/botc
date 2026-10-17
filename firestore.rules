@@ -14,12 +14,8 @@ service cloud.firestore {
 
   function validGameRecord(gameId, data) {
     return data is map
+      && data.keys().size() == 11
       && data.keys().hasAll([
-        'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
-        'playerCount', 'winnerTeam', 'script', 'players', 'phases',
-        'chronicleEvents'
-      ])
-      && data.keys().hasOnly([
         'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
         'playerCount', 'winnerTeam', 'script', 'players', 'phases',
         'chronicleEvents'
@@ -47,10 +43,8 @@ service cloud.firestore {
 
   function validScript(script) {
     return script is map
+      && script.keys().size() == 5
       && script.keys().hasAll([
-        'scriptId', 'name', 'isCustom', 'roleIds', 'contentHash'
-      ])
-      && script.keys().hasOnly([
         'scriptId', 'name', 'isCustom', 'roleIds', 'contentHash'
       ])
       && script.scriptId is string && script.scriptId.size() >= 3
@@ -65,11 +59,8 @@ service cloud.firestore {
 
   function validPlayer(player) {
     return player is map
+      && player.keys().size() == 7
       && player.keys().hasAll([
-        'anonymizedPlayerId', 'position', 'actualStartRoleId',
-        'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
-      ])
-      && player.keys().hasOnly([
         'anonymizedPlayerId', 'position', 'actualStartRoleId',
         'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
       ])
