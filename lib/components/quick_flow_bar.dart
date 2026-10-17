@@ -1,12 +1,14 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
 import 'package:blood_on_the_clocktower/screens/quick_flow_selected_character_screen.dart';
 import 'package:blood_on_the_clocktower/screens/this-character-slected-you/this_character_selected_you_screen.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
@@ -120,6 +122,7 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
       QuickFlowStepType.reminderCharacterToken =>
         _buildCharacterToken(context, entry),
       QuickFlowStepType.showInfo => _buildInfo(context, entry),
+      QuickFlowStepType.roleChange => _buildRoleChange(context, entry),
     };
   }
 
@@ -260,6 +263,129 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildRoleChange(BuildContext context, QuickFlowEntry entry) {
+    final characters = Provider.of<CharacterService>(context);
+    final riot = entry.step.targetRoleId == 'riot';
+    final targets = riot
+        ? gameCharacters.where(
+            (character) => character.fraction.name == 'minion').toList()
+        : [
+            if (gameState.quickFlowTarget(
+                QuickFlowEntry(
+                  owner: entry.owner,
+                  phase: entry.phase,
+                  step: entry.owner.quickFlow.stepsFor(entry.phase)
+                      .firstWhere((step) => step.id == 'newFarmerPlayer'),
+                ),
+                gameCharacters) case final target?)
+              target,
+          ];
+    final prerequisites = riot || gameState.isQuickFlowEntryCompleted(
+        QuickFlowEntry(
+          owner: entry.owner,
+          phase: entry.phase,
+          step: entry.owner.quickFlow.stepsFor(entry.phase)
+              .firstWhere((step) => step.id == 'showNewFarmer'),
+        ), gameCharacters);
+    final ready = targets.isNotEmpty && prerequisites;
+    return _frame(
+      entry: entry,
+      complete: gameState.isQuickFlowEntryCompleted(entry, gameCharacters),
+      onTap: widget.readOnly || !ready
+          ? null
+          : () async {
+              await showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: Text(riot
+                      ? 'Night 3: Minions become Riot'
+                      : 'Confirm new Farmer'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (riot)
+                        const Text(
+                            'Wake each Minion, show YOU ARE + Riot and confirm their new character.'),
+                      for (final target in targets)
+                        ListTile(
+                          key: ValueKey('convert-role-${target.id}'),
+                          title: Text(target.playerName.isNotEmpty
+                              ? target.playerName : target.name),
+                          subtitle: Text('${target.name} → ${entry.step.targetRoleId}'),
+                          trailing: const Icon(Icons.check_circle_outline),
+                          onTap: () async {
+                            if (riot) {
+                              final riotRole = characters.allCharacters
+                                  .firstWhere((role) => role.roleId == 'riot');
+                              // The Minion sees the actual YOU ARE + Riot
+                              // reveal before the Storyteller confirms it.
+                              await Navigator.of(dialogContext).push<void>(
+                                MaterialPageRoute(
+                                  builder: (_) => ThisCharacterSelectedYouScreen(
+                                    preparedInfo: QuickFlowInfo(
+                                      kind: 'youAre',
+                                      owner: entry.owner,
+                                      recipient: target,
+                                      selectedCharacter: riotRole,
+                                      infoToken: Basictoken.you_are,
+                                    ),
+                                  ),
+                                ),
+                              );
+                              if (!dialogContext.mounted) return;
+                            }
+                            final confirm = await showDialog<bool>(
+                              context: dialogContext,
+                              builder: (confirmContext) => AlertDialog(
+                                title: const Text('Charakterwechsel bestätigen?'),
+                                content: Text(
+                                    '${target.playerName}: ${target.name} → ${entry.step.targetRoleId}'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(confirmContext, false),
+                                    child: const Text('Abbrechen'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(confirmContext, true),
+                                    child: const Text('Umwandeln'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm != true) return;
+                            final ok = await gameState.applyQuickFlowRoleChange(
+                                entry, target, characters);
+                            if (dialogContext.mounted && ok) {
+                              Navigator.pop(dialogContext);
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                  ],
+                ),
+              );
+            },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.change_circle, color: Colors.white, size: 34),
+          Text(
+            riot ? 'Riot ${targets.length} left' : 'Farmer',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white, fontSize: 9),
+          ),
+        ],
+      ),
     );
   }
 

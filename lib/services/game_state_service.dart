@@ -40,6 +40,7 @@ class GameStateService extends ChangeNotifier {
   final Map<String, List<Token>> _characterTokens = {};
   final Map<String, bool> _characterAliveState = {};
   final Set<String> _apparentlyDeadCharacterIds = {};
+  final Set<String> _farmerNightDeaths = {};
   int? _lastReportedDeathDay;
   List<Token> unsedGameTokens = [];
   List<String> playerNames = [];
@@ -58,6 +59,7 @@ class GameStateService extends ChangeNotifier {
   bool charactersWhereShownToPlayers = false;
   final String _storageCharacterTokensKey = 'character_tokens';
   final String _storageCharacterAliveStateKey = 'character_alive_state';
+  static const String _storageFarmerNightDeathsKey = 'farmer_night_deaths_v1';
   static const String _storageApparentDeathStateKey =
       'character_apparent_death_state';
   static const String _storageLastReportedDeathDayKey =
@@ -117,6 +119,8 @@ class GameStateService extends ChangeNotifier {
     _loadCharacterTokens(prefs);
     _loadCharacterAliveState(prefs);
     _loadApparentDeathState(prefs);
+    _farmerNightDeaths.addAll(
+        prefs.getStringList(_storageFarmerNightDeathsKey) ?? const []);
     _loadPlayerNames(prefs);
     _loadNightCount(prefs);
     _currentNightStepId = prefs.getString(_storageNightStepIdKey);
@@ -168,6 +172,7 @@ class GameStateService extends ChangeNotifier {
     _characterTokens.clear();
     _characterAliveState.clear();
     _apparentlyDeadCharacterIds.clear();
+    _farmerNightDeaths.clear();
     _lastReportedDeathDay = null;
     playerNames.clear();
     _nightCount = -1;
@@ -410,6 +415,12 @@ class GameStateService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         _storageCharacterAliveStateKey, jsonEncode(_characterAliveState));
+  }
+
+  Future<void> _saveFarmerNightDeaths() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+        _storageFarmerNightDeathsKey, _farmerNightDeaths.toList());
   }
 
   Future<void> _saveApparentDeathState() async {
@@ -1353,6 +1364,8 @@ class GameStateService extends ChangeNotifier {
       gameId: gameId,
       startedAt: startedAt,
     );
+    _farmerNightDeaths.clear();
+    await _saveFarmerNightDeaths();
     await _clearDayTimer();
     await _startGameTimer(startedAt: startedAt);
     _nightCount = 1;
@@ -1630,7 +1643,13 @@ class GameStateService extends ChangeNotifier {
     final wake = character.nightWake;
     final apparentDeathAllowsWake = wake.allowWhenApparentDead &&
         _apparentlyDeadCharacterIds.contains(character.id);
-    if (!isCharacterAlive(character) && !apparentDeathAllowsWake) return false;
+    // A Farmer killed tonight still needs its conditional night visit to
+    // transform a living good player. Dead Farmers from earlier nights do not.
+    final farmerDiedTonight = character.roleId == 'farmer' &&
+        _farmerNightDeaths.contains('$_nightCount:${character.id}');
+    if (!isCharacterAlive(character) &&
+        !apparentDeathAllowsWake && !farmerDiedTonight) return false;
+    if (character.roleId == 'farmer' && !farmerDiedTonight) return false;
     if (_nightCount > 1 &&
         wake.otherNightsRequireNoDeathsPreviousDay &&
         _lastReportedDeathDay == _nightCount - 1) {
@@ -1986,13 +2005,21 @@ class GameStateService extends ChangeNotifier {
     prefs.remove(_storageNightStateNumberKey);
   }
 
+  bool wasFarmerKilledTonight(Character character) =>
+      _farmerNightDeaths.contains('$_nightCount:${character.id}');
+
   List<QuickFlowEntry> quickFlowEntries(List<Character> gameCharacters) {
     if (_nightCount <= 0 ||
         (_nightCount == 1 && _currentNightStepId == 'phase:dusk')) {
       return [
         for (final character in gameCharacters)
           for (final step in character.quickFlow.stepsFor(QuickFlowPhase.setup))
-            QuickFlowEntry(
+            // Exactly one Village Idiot has no extra who must be DRUNK.
+            if (!(character.roleId == 'villageidiot' &&
+                step.id == 'drunkIdiot' &&
+                gameCharacters.where((role) => role.roleId == 'villageidiot')
+                    .length == 1))
+              QuickFlowEntry(
               owner: character,
               phase: QuickFlowPhase.setup,
               step: step,
@@ -2009,7 +2036,8 @@ class GameStateService extends ChangeNotifier {
         : QuickFlowPhase.otherNights;
     return [
       for (final step in owner.quickFlow.stepsFor(phase))
-        QuickFlowEntry(owner: owner, phase: phase, step: step),
+        if (step.nightConstraint != 'night3' || _nightCount == 3)
+          QuickFlowEntry(owner: owner, phase: phase, step: step),
     ];
   }
 
@@ -2434,6 +2462,63 @@ class GameStateService extends ChangeNotifier {
     return true;
   }
 
+  /// Applies a confirmed, rule-validated role change to the live game,
+  /// preserving the affected player's tokens and death state. CharacterService
+  /// records the change in the Chronicle and persists the new roster.
+  Future<bool> applyQuickFlowRoleChange(
+    QuickFlowEntry entry,
+    Character target,
+    CharacterService characters,
+  ) async {
+    final step = entry.step;
+    if (step.type != QuickFlowStepType.roleChange ||
+        !isQuickFlowEntrySupported(entry)) return false;
+    final all = characters.gameCharacters;
+    if (!all.any((character) => character.id == target.id)) return false;
+    if (step.targetRoleId == 'riot') {
+      if (_nightCount != 3 || isDay() ||
+          entry.owner.roleId != 'riot' ||
+          target.fraction != Fraction.minion) return false;
+    } else if (step.targetRoleId == 'farmer') {
+      if (entry.owner.roleId != 'farmer' ||
+          !wasFarmerKilledTonight(entry.owner) ||
+          !isCharacterAlive(target) ||
+          ![Fraction.townsfolk, Fraction.outsider].contains(target.fraction) ||
+          target.roleId == 'farmer') {
+        return false;
+      }
+      final selected = quickFlowTargets(
+        _entryForStepId(entry.owner, entry.phase, 'newFarmerPlayer') ??
+            entry, all);
+      if (!selected.any((candidate) => candidate.id == target.id) ||
+          !isQuickFlowEntryCompleted(
+            _entryForStepId(entry.owner, entry.phase, 'showNewFarmer') ?? entry,
+            all,
+          )) return false;
+    } else {
+      return false;
+    }
+
+    final replacement = characters.allCharacters
+        .firstWhereOrNull((candidate) =>
+            candidate.roleId == step.targetRoleId);
+    if (replacement == null) return false;
+    final newId = characters.changeCharacter(target, replacement);
+    if (newId.isEmpty) return false;
+    // Do not mark the QuickFlow step complete until the new character and
+    // its Chronicle character-change event are durably persisted.
+    await characters.flushPendingGameWrites();
+    await giveAllTokensFromCharacterAToCharacterB(all, target, newId);
+
+    if (step.targetRoleId == 'farmer' ||
+        !all.any((character) => character.fraction == Fraction.minion)) {
+      await completeQuickFlowEntry(entry, all);
+    } else {
+      notifyListeners();
+    }
+    return true;
+  }
+
   bool isQuickFlowStepComplete(
     QuickFlowEntry entry,
     List<Character> gameCharacters,
@@ -2449,6 +2534,8 @@ class GameStateService extends ChangeNotifier {
               allCharacters,
             ) !=
             null;
+      case QuickFlowStepType.roleChange:
+        return isQuickFlowEntryCompleted(entry, gameCharacters);
       case QuickFlowStepType.showInfo:
         return isQuickFlowInfoReady(entry, gameCharacters, allCharacters);
     }
@@ -2648,8 +2735,12 @@ class GameStateService extends ChangeNotifier {
   Future<void> resetCharacterAliveState() async {
     _characterAliveState.clear();
     _apparentlyDeadCharacterIds.clear();
+    _farmerNightDeaths.clear();
     _lastReportedDeathDay = null;
-    await Future.wait([_saveCharacterAliveState(), _saveApparentDeathState()]);
+    await Future.wait([
+      _saveCharacterAliveState(), _saveApparentDeathState(),
+      _saveFarmerNightDeaths(),
+    ]);
     notifyListeners();
   }
 
@@ -2660,6 +2751,10 @@ class GameStateService extends ChangeNotifier {
     bool? recordedLifeStatus;
     if (wasAlive) {
       _characterAliveState[character.id] = false;
+      if (character.roleId == 'farmer' && !isDay() && _nightCount > 0) {
+        _farmerNightDeaths.add('$_nightCount:${character.id}');
+        await _saveFarmerNightDeaths();
+      }
       if (character.nightWake.allowWhenApparentDead) {
         _apparentlyDeadCharacterIds.add(character.id);
       } else {
@@ -2674,6 +2769,8 @@ class GameStateService extends ChangeNotifier {
       if (isDay()) _lastReportedDeathDay = _nightCount;
     } else {
       _characterAliveState[character.id] = true;
+      _farmerNightDeaths.remove('$_nightCount:${character.id}');
+      await _saveFarmerNightDeaths();
       recordedLifeStatus = true;
     }
     await Future.wait([_saveCharacterAliveState(), _saveApparentDeathState()]);

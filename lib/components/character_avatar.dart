@@ -17,6 +17,7 @@ class CharacterAvatar extends StatefulWidget {
   final bool showNightHighlightDuringSelection;
   final bool isBluff;
   final bool showExemplare;
+  final String? exemplarLabel;
 
   CharacterAvatar({
     required this.character,
@@ -29,6 +30,7 @@ class CharacterAvatar extends StatefulWidget {
     this.isBluff = false,
     this.forSelectCharacter = false,
     this.showExemplare = false,
+    this.exemplarLabel,
   });
 
   @override
@@ -184,7 +186,7 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${widget.character.numberOfExemplars}',
+                      widget.exemplarLabel ?? '${widget.character.numberOfExemplars}',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: widget.size * 0.1,

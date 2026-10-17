@@ -8,6 +8,7 @@ import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/services/role_multiplicity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -261,33 +262,11 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
               return GestureDetector(
                   onLongPress: () {
                     if (characterService.showInfoButtonOnCharacterSelection) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ShowCharacter(character: character),
-                        ),
-                      );
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) =>
+                            ShowCharacter(character: character)));
                     } else if (widget.isForSetupGame &&
-                        character.variableNumberOfExemplars &&
-                        isSelected) {
-                      showCharacterExemplarDialog(
-                        context,
-                        character.numberOfExemplars,
-                        character.possibleNrOfExemplars,
-                        (newValue) {
-                          setState(() {
-                            if (isSelected) {
-                              characterService.removeCharacter(character);
-                              character.numberOfExemplars = newValue;
-                              characterService.addCharacter(character);
-                            } else {
-                              character.numberOfExemplars = newValue;
-                            }
-                          });
-                        },
-                      );
-                    } else if (widget.isForSetupGame) {
+                        !RoleMultiplicity.storytellerChooses(character.roleId)) {
                       gameStateService.toggleDemonBluff(
                         character.roleId,
                         isEligible: isEligibleBluff || isBluff,
@@ -295,31 +274,42 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                       );
                     }
                   },
-                  onTap: () {
+                  onTap: () async {
                     if (characterService.showInfoButtonOnCharacterSelection) {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  ShowCharacter(character: character)));
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) =>
+                            ShowCharacter(character: character)));
                     } else if (widget.isForSetupGame) {
-                      if (isBluff) {
-                        return;
-                      }
+                      if (isBluff) return;
                       if (isSelected) {
                         characterService.removeCharacter(character);
+                      } else if (RoleMultiplicity.storytellerChooses(
+                          character.roleId)) {
+                        final count = await showCharacterExemplarDialog(
+                          context,
+                          character,
+                          gameStateService.playerNames.length,
+                          availableSlots: gameStateService.playerNames.length -
+                              characterService.gameCharacters
+                                  .where((role) =>
+                                      role.fraction != Fraction.traveller &&
+                                      role.fraction != Fraction.fabled &&
+                                      role.fraction != Fraction.loric)
+                                  .length,
+                        );
+                        if (count == null || !mounted) return;
+                        characterService.addCharacter(character,
+                            exemplars: count,
+                            playerCount: gameStateService.playerNames.length);
                       } else {
                         characterService.addCharacter(character);
                       }
-                      return;
                     } else {
                       setState(() {
                         selectCharacter(character);
                         if (!widget.needToConfirm) {
                           widget.onConfirm();
-                          if (widget.onResult != null) {
-                            widget.onResult!(result);
-                          }
+                          widget.onResult?.call(result);
                         }
                       });
                     }
@@ -331,7 +321,11 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                       isSelected: isSelected,
                       isBluff: isBluff,
                       showExemplare: widget.isForSetupGame &&
-                          character.variableNumberOfExemplars,
+                          RoleMultiplicity.trackedRoles.contains(character.roleId),
+                      exemplarLabel: widget.isForSetupGame
+                          ? _multiplicityBadge(character, characterService,
+                              gameStateService.playerNames.length)
+                          : null,
                       size: maxWidth / 4,
                       showName: true));
             },
@@ -366,81 +360,89 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
     }
   }
 
-  Future<void> showCharacterExemplarDialog(
-      BuildContext context,
-      int currentExemplars,
-      List<int> possibleNrOfExemplars,
-      Function(int) onValueChanged) {
-    int updatedExemplars = currentExemplars;
+  String _multiplicityBadge(Character character,
+      CharacterService characters, int playerCount) {
+    final selected = characters.gameCharacters
+        .where((role) => role.roleId == character.roleId)
+        .length;
+    if (selected > 0) return '$selected';
+    // Riot's final count is unknown until Minions transform on day 3;
+    // Farmer can generate more instances through nightly deaths.
+    if (character.roleId == 'riot' || character.roleId == 'farmer') {
+      return 'n';
+    }
+    return RoleMultiplicity.storytellerChooses(character.roleId)
+        ? 'n'
+        : '1';
+  }
 
-    return showDialog(
+  Future<int?> showCharacterExemplarDialog(
+      BuildContext context, Character character, int playerCount,
+      {int? availableSlots}) {
+    final allowed =
+        RoleMultiplicity.allowedCounts(character.roleId, playerCount,
+          availableSlots: availableSlots);
+    if (allowed.isEmpty) {
+      return showDialog<int>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Keine gültige Anzahl'),
+          content: Text(
+              'Für $playerCount Spieler ist hier keine gültige Anzahl möglich.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context),
+                child: const Text('Schließen')),
+          ],
+        ),
+      );
+    }
+    var selected = allowed.first;
+    return showDialog<int>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF4a3b5e).withOpacity(0.9),
-          title: const Text('Adjust Exemplars',
-              style: TextStyle(color: Colors.white)),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, update) => AlertDialog(
+          backgroundColor: const Color(0xFF4a3b5e),
+          title: Text('${character.name} – Anzahl',
+              style: const TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_downward, color: Colors.white),
-                onPressed: () {
-                  if (possibleNrOfExemplars.isNotEmpty) {
-                    // Handle case with predefined values
-                    int currentIndex =
-                        possibleNrOfExemplars.indexOf(updatedExemplars);
-                    if (currentIndex > 0) {
-                      updatedExemplars =
-                          possibleNrOfExemplars[currentIndex - 1];
-                      onValueChanged(updatedExemplars);
-                    }
-                  } else {
-                    // Handle case with free adjustment
-                    if (updatedExemplars > 0) {
-                      updatedExemplars--;
-                      onValueChanged(updatedExemplars);
-                    }
-                  }
-                },
+              Text('$selected',
+                  key: const ValueKey('exemplar-count-value'),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold)),
+              Slider(
+                key: const ValueKey('exemplar-count-slider'),
+                min: 0,
+                max: (allowed.length - 1).toDouble(),
+                divisions: allowed.length > 1 ? allowed.length - 1 : null,
+                value: allowed.indexOf(selected).toDouble(),
+                label: '$selected',
+                onChanged: allowed.length == 1
+                    ? null
+                    : (value) => update(() {
+                          selected = allowed[value.round()];
+                        }),
               ),
-              Text(
-                updatedExemplars.toString(),
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_upward, color: Colors.white),
-                onPressed: () {
-                  if (possibleNrOfExemplars.isNotEmpty) {
-                    // Handle case with predefined values
-                    int currentIndex =
-                        possibleNrOfExemplars.indexOf(updatedExemplars);
-                    if (currentIndex >= 0 &&
-                        currentIndex < possibleNrOfExemplars.length - 1) {
-                      updatedExemplars =
-                          possibleNrOfExemplars[currentIndex + 1];
-                      onValueChanged(updatedExemplars);
-                    }
-                  } else {
-                    // Handle case with free adjustment
-                    updatedExemplars++;
-                    onValueChanged(updatedExemplars);
-                  }
-                },
-              ),
+              Text('${allowed.first}–${allowed.last}',
+                  style: const TextStyle(color: Colors.white70)),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Close', style: TextStyle(color: Colors.white)),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              key: const ValueKey('confirm-exemplar-count'),
+              onPressed: () => Navigator.pop(dialogContext, selected),
+              child: const Text('Hinzufügen'),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }

@@ -29,6 +29,9 @@ class QuickFlowInterpreter {
             step.nightConstraint == 'differentFromPreviousNight';
       case QuickFlowStepType.reminderCharacterToken:
         return step.selection != null;
+      case QuickFlowStepType.roleChange:
+        return step.targetRoleId == 'riot' ||
+            step.targetRoleId == 'farmer';
       case QuickFlowStepType.showInfo:
         final presentation = step.presentation;
         if (presentation == null ||
