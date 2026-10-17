@@ -8,6 +8,7 @@ import 'package:blood_on_the_clocktower/screens/show_characters_to_players.dart'
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:blood_on_the_clocktower/services/role_multiplicity.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
@@ -360,8 +361,9 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
     }
     if (characterService.gameCharacters
         .any((character) => character.image == 'Icon_legion')) {
-      var demon = (gameStateService.playerNames.length * 0.7).round();
-      var town = gameStateService.playerNames.length - demon;
+      final demon = characterService.gameCharacters
+          .where((character) => character.roleId == 'legion').length;
+      final town = gameStateService.playerNames.length - demon;
       switch (fraction) {
         case Fraction.townsfolk:
           currentValue = town;
@@ -371,17 +373,6 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
           currentValue = 0;
         case Fraction.demon:
           currentValue = demon;
-        default:
-          break;
-      }
-    }
-    if (characterService.gameCharacters
-        .any((character) => character.image == 'Icon_riot')) {
-      switch (fraction) {
-        case Fraction.minion:
-          currentValue = 0;
-        case Fraction.demon:
-          currentValue += normalNrOfMinions;
         default:
           break;
       }
@@ -659,13 +650,14 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
     randomMinusOrPlusOne = Random().nextBool() ? 1 : -1;
     randomTwoOrZero = Random().nextBool() ? 2 : 0;
     randomZeroToThree = Random().nextInt(4);
-    while (!done) {
+    var attempts = 0;
+    while (!done && attempts++ < 150) {
       if (isFractionNotDone(Fraction.minion)) {
-        _addRandomCharacterOfFraction(Fraction.minion);
+        if (!_addRandomCharacterOfFraction(Fraction.minion)) break;
       } else if (isFractionNotDone(Fraction.outsider)) {
-        _addRandomCharacterOfFraction(Fraction.outsider);
+        if (!_addRandomCharacterOfFraction(Fraction.outsider)) break;
       } else if (isFractionNotDone(Fraction.townsfolk)) {
-        _addRandomCharacterOfFraction(Fraction.townsfolk);
+        if (!_addRandomCharacterOfFraction(Fraction.townsfolk)) break;
       } else {
         done = true;
       }
@@ -722,31 +714,43 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
         characterService.getFractionCount(fraction);
   }
 
-  void _addRandomCharacterOfFraction(Fraction fraction) {
-    CharacterService characterService =
+  bool _addRandomCharacterOfFraction(Fraction fraction) {
+    final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    final scriptService = Provider.of<ScriptService>(context, listen: false);
-    final allCharactersOfGameset =
-        scriptService.resolveCharacters(characterService.allCharacters);
-    List<Character> charactersOfFraction = allCharactersOfGameset
-        .where((character) => character.fraction == fraction)
+    final scripts = Provider.of<ScriptService>(context, listen: false);
+    final gameState =
+        Provider.of<GameStateService>(context, listen: false);
+    final eligible = scripts.resolveCharacters(characterService.allCharacters)
+        .where((character) => character.fraction == fraction &&
+            !characterService.gameCharacters
+                .any((selected) => selected.roleId == character.roleId))
         .toList();
-    List<Character> availableCharacters = charactersOfFraction
-        .where(
-            (character) => !characterService.gameCharacters.contains(character))
-        .toList();
-    if (availableCharacters.isNotEmpty) {
-      Character randomCharacter =
-          availableCharacters[Random().nextInt(availableCharacters.length)];
-      characterService.addCharacter(randomCharacter);
-      if (randomCharacter.image == 'Icon_choirboy') {
-        characterService
-            .addCharacter(characterService.getCharacterByImage('Icon_king'));
-      }
-      if (randomCharacter.image == 'Icon_huntsman') {
-        characterService
-            .addCharacter(characterService.getCharacterByImage('Icon_damsel'));
-      }
+    final slots = getMaxCount(context, fraction) -
+        characterService.getFractionCount(fraction);
+    final possible = eligible.where((character) {
+      return RoleMultiplicity.allowedCounts(
+        character.roleId,
+        gameState.playerNames.length,
+        availableSlots: slots,
+      ).isNotEmpty;
+    }).toList();
+    if (possible.isEmpty) return false;
+    final character = possible[Random().nextInt(possible.length)];
+    final count = RoleMultiplicity.storytellerChooses(character.roleId)
+        ? RoleMultiplicity.randomCount(
+            character.roleId, gameState.playerNames.length,
+            availableSlots: slots)
+        : 1;
+    characterService.addCharacter(character,
+        exemplars: count, playerCount: gameState.playerNames.length);
+    if (character.roleId == 'choirboy') {
+      characterService
+          .addCharacter(characterService.getCharacterByImage('Icon_king'));
     }
+    if (character.roleId == 'huntsman') {
+      characterService
+          .addCharacter(characterService.getCharacterByImage('Icon_damsel'));
+    }
+    return true;
   }
 }
