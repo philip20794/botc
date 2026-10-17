@@ -9,10 +9,12 @@ abstract interface class StatisticsRepository {
 }
 
 class CloudStatisticsRepository implements StatisticsRepository {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _client;
+
+  FirebaseFirestore get _firestore => _client ?? FirebaseFirestore.instance;
 
   CloudStatisticsRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _client = firestore;
 
   @override
   Future<StatisticsTotals?> loadOverview() async {
