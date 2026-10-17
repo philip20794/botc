@@ -1,0 +1,50 @@
+name: Update global BotC statistics
+
+on:
+  schedule:
+    # Every 15 minutes, offset from the top of the hour to reduce delays.
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'incremental = normal; reconcile = manually scan legacy APK uploads'
+        type: choice
+        required: true
+        default: incremental
+        options:
+          - incremental
+          - reconcile
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botc-statistics
+  cancel-in-progress: false
+
+jobs:
+  aggregate:
+    name: Update read-only Firestore statistics
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install statistics worker dependencies
+        run: npm install --prefix scripts/statistics --no-package-lock --no-audit --no-fund
+
+      - name: Authenticate as GitHub Actions Firebase service account
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
+
+      - name: Incrementally aggregate new games
+        env:
+          GOOGLE_CLOUD_PROJECT: b-o-t-c
+          STATS_MAX_GAMES: '200'
+          WORKER_MODE: ${{ inputs.mode || 'incremental' }}
+        run: node scripts/statistics/run.mjs "$WORKER_MODE"
