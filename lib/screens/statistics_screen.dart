@@ -571,7 +571,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             child: CircularProgressIndicator()));
         }
         if (snapshot.data?.failed == true) return _empty(context, s.statsError, error: true);
-        final values = snapshot.data ?? [];
+        final values = snapshot.data?.value ?? <StatisticsScript>[];
         if (values.isEmpty) return _empty(context, s.statsEmptyScripts);
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -641,7 +641,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ),
               ]),
             ),
-            FutureBuilder<StatisticsTotals?>(
+            FutureBuilder<_Result<StatisticsTotals?>>(
               future: _global,
               builder: (context, snapshot) {
                 final demoGames = snapshot.data?.value?.demoGames ?? 0;
