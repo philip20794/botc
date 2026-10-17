@@ -36,7 +36,12 @@ class CloudFirestoreGameDocumentWriter implements FirestoreGameDocumentWriter {
       if (existing.exists) {
         return FirestoreGameDocumentCreateResult.alreadyExists;
       }
-      transaction.set(reference, document);
+      // The server sets the upload time even if a completed game was kept
+      // offline for weeks. Stats workers can then read only new uploads.
+      transaction.set(reference, {
+        ...document,
+        'uploadedAt': FieldValue.serverTimestamp(),
+      });
       return FirestoreGameDocumentCreateResult.created;
     });
   }
