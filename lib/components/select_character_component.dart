@@ -289,6 +289,13 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                           context,
                           character,
                           gameStateService.playerNames.length,
+                          availableSlots: gameStateService.playerNames.length -
+                              characterService.gameCharacters
+                                  .where((role) =>
+                                      role.fraction != Fraction.traveller &&
+                                      role.fraction != Fraction.fabled &&
+                                      role.fraction != Fraction.loric)
+                                  .length,
                         );
                         if (count == null || !mounted) return;
                         characterService.addCharacter(character,
@@ -370,9 +377,11 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
   }
 
   Future<int?> showCharacterExemplarDialog(
-      BuildContext context, Character character, int playerCount) {
+      BuildContext context, Character character, int playerCount,
+      {int? availableSlots}) {
     final allowed =
-        RoleMultiplicity.allowedCounts(character.roleId, playerCount);
+        RoleMultiplicity.allowedCounts(character.roleId, playerCount,
+          availableSlots: availableSlots);
     if (allowed.isEmpty) {
       return showDialog<int>(
         context: context,
