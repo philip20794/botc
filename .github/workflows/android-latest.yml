@@ -139,3 +139,24 @@ jobs:
 
       - name: Production URL
         run: echo "Web app published at https://b-o-t-c.web.app/" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-firestore-rules:
+    name: Deploy Firestore security rules
+    needs: [test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Deploy checked Firestore rules
+        run: npx --yes firebase-tools@latest deploy --only firestore:rules --project b-o-t-c --non-interactive

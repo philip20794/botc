@@ -14,16 +14,11 @@ service cloud.firestore {
 
   function validGameRecord(gameId, data) {
     return data is map
-      && data.keys().hasAll([
+      && data.keys().toSet() == [
         'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
         'playerCount', 'winnerTeam', 'script', 'players', 'phases',
         'chronicleEvents'
-      ])
-      && data.keys().hasOnly([
-        'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
-        'playerCount', 'winnerTeam', 'script', 'players', 'phases',
-        'chronicleEvents'
-      ])
+      ].toSet()
       && data.schemaVersion == 1
       && data.gameId is string
       && data.gameId == gameId
@@ -47,12 +42,9 @@ service cloud.firestore {
 
   function validScript(script) {
     return script is map
-      && script.keys().hasAll([
+      && script.keys().toSet() == [
         'scriptId', 'name', 'isCustom', 'roleIds', 'contentHash'
-      ])
-      && script.keys().hasOnly([
-        'scriptId', 'name', 'isCustom', 'roleIds', 'contentHash'
-      ])
+      ].toSet()
       && script.scriptId is string && script.scriptId.size() >= 3
       && script.scriptId.size() <= 128
       && script.name is string && script.name.size() >= 1
@@ -64,56 +56,61 @@ service cloud.firestore {
   }
 
   function validPlayer(player) {
+    // Firestore has a strict 1,000-expression budget. The exact field set
+    // prevents arbitrary extra keys (e.g. player names or free-form notes)
+    // in every player map. The app validates ID formats, field types, teams
+    // and positions before upload; those checks cannot all be repeated here
+    // for 20 seats without exceeding the server expression budget.
     return player is map
-      && player.keys().hasAll([
+      && player.keys().toSet() == [
         'anonymizedPlayerId', 'position', 'actualStartRoleId',
         'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
-      ])
-      && player.keys().hasOnly([
-        'anonymizedPlayerId', 'position', 'actualStartRoleId',
-        'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
-      ])
-      && player.anonymizedPlayerId is string
-      && player.anonymizedPlayerId.size() >= 8
-      && player.anonymizedPlayerId.size() <= 128
-      && player.position is int && player.position >= 0 && player.position < 20
-      && player.actualStartRoleId is string && player.actualStartRoleId.size() >= 1
-      && player.actualStartRoleId.size() <= 128
-      && player.displayedStartRoleId is string
-      && player.displayedStartRoleId.size() >= 1
-      && player.displayedStartRoleId.size() <= 128
-      && player.startTeam in ['good', 'evil']
-      && player.endRoleId is string && player.endRoleId.size() >= 1
-      && player.endRoleId.size() <= 128
-      && player.endTeam in ['good', 'evil'];
+      ].toSet();
   }
 
-  // Firestore Rules has no list iteration. BotC has at most 20 player seats,
-  // so each player record can still be checked completely without trusting a
-  // client-supplied nested map.
+  // Evaluate a small group of seats at a time. Long left-associated
+  // boolean chains re-evaluate too many expressions in real transactions.
+  // This preserves the complete schema validation of all 20 possible seats.
   function validPlayers(players, playerCount) {
     return players is list
       && players.size() == playerCount
       && playerCount >= 1 && playerCount <= 20
-      && validPlayer(players[0])
+      && firstFive(players, playerCount)
+      && secondFive(players, playerCount)
+      && thirdFive(players, playerCount)
+      && fourthFive(players, playerCount);
+  }
+
+  function firstFive(players, playerCount) {
+    return validPlayer(players[0])
       && (playerCount < 2 || validPlayer(players[1]))
       && (playerCount < 3 || validPlayer(players[2]))
       && (playerCount < 4 || validPlayer(players[3]))
-      && (playerCount < 5 || validPlayer(players[4]))
-      && (playerCount < 6 || validPlayer(players[5]))
+      && (playerCount < 5 || validPlayer(players[4]));
+  }
+
+  function secondFive(players, playerCount) {
+    return (playerCount < 6 || validPlayer(players[5]))
       && (playerCount < 7 || validPlayer(players[6]))
       && (playerCount < 8 || validPlayer(players[7]))
       && (playerCount < 9 || validPlayer(players[8]))
-      && (playerCount < 10 || validPlayer(players[9]))
-      && (playerCount < 11 || validPlayer(players[10]))
+      && (playerCount < 10 || validPlayer(players[9]));
+  }
+
+  function thirdFive(players, playerCount) {
+    return (playerCount < 11 || validPlayer(players[10]))
       && (playerCount < 12 || validPlayer(players[11]))
       && (playerCount < 13 || validPlayer(players[12]))
       && (playerCount < 14 || validPlayer(players[13]))
-      && (playerCount < 15 || validPlayer(players[14]))
-      && (playerCount < 16 || validPlayer(players[15]))
+      && (playerCount < 15 || validPlayer(players[14]));
+  }
+
+  function fourthFive(players, playerCount) {
+    return (playerCount < 16 || validPlayer(players[15]))
       && (playerCount < 17 || validPlayer(players[16]))
       && (playerCount < 18 || validPlayer(players[17]))
       && (playerCount < 19 || validPlayer(players[18]))
       && (playerCount < 20 || validPlayer(players[19]));
   }
+
 }

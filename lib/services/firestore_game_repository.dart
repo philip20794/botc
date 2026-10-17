@@ -94,14 +94,14 @@ class FirestoreGameRepository {
         _validator = validator;
 
   Future<GameRecordPublishResult> publish(GameRecord record) async {
-    if (!_validator.validate(record).isValid) {
-      return const GameRecordPublishResult(GameRecordPublishOutcome.invalid);
-    }
-
     final document = record.toJson();
     final serializedBytes = utf8.encode(jsonEncode(document)).length;
+    // Report oversized documents before the more detailed schema checks.
     if (serializedBytes > maxSerializedDocumentBytes) {
       return const GameRecordPublishResult(GameRecordPublishOutcome.tooLarge);
+    }
+    if (!_validator.validate(record).isValid) {
+      return const GameRecordPublishResult(GameRecordPublishOutcome.invalid);
     }
 
     try {

@@ -43,6 +43,17 @@ class GameRecordValidator {
         record.totalDuration != record.endedAt.difference(record.startedAt)) {
       add('totalDurationMs', 'Must exactly match the game timestamps.');
     }
+    // Mirror the hard Firestore Rules limits before attempting any network
+    // write. An otherwise locally valid record must not become a 403 upload.
+    if (record.playerCount > 20) {
+      add('playerCount', 'Firestore permits at most 20 player seats.');
+    }
+    if (record.phases.length > 512) {
+      add('phases', 'Firestore permits at most 512 phases.');
+    }
+    if (record.chronicleEvents.length > 4096) {
+      add('chronicleEvents', 'Firestore permits at most 4096 events.');
+    }
     _validateScript(record.script, add);
     _validatePlayers(record, add);
     _validatePhases(record, add);
@@ -67,6 +78,12 @@ class GameRecordValidator {
       add('script.scriptId', 'Must be a stable script identifier.');
     }
     if (script.name.trim().isEmpty) add('script.name', 'Must not be empty.');
+    if (script.name.length > 128) {
+      add('script.name', 'Firestore permits at most 128 characters.');
+    }
+    if (script.roleIds.length > 512) {
+      add('script.roleIds', 'Firestore permits at most 512 roles.');
+    }
     if (script.roleIds.isEmpty) {
       add('script.roleIds', 'A complete game needs a non-empty role list.');
     }
