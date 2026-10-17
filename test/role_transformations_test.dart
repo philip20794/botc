@@ -5,6 +5,7 @@ import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/night_order_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +20,7 @@ void main() {
     final characters = CharacterService(chronicleService: chronicles);
     await Future.wait([chronicles.ready, scripts.ready, order.ready,
       characters.init()]);
+    await characters.loadAllCharactersFromJson(const Locale('en'));
     final game = GameStateService(scriptService: scripts,
         nightOrderService: order, chronicleService: chronicles);
     await game.ready;
