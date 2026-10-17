@@ -1355,7 +1355,7 @@
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0
+      2
     ],
     "nightStateNumbersOtherNights": [],
     "roleId": "baron",
@@ -1410,7 +1410,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       4.1
     ],
     "nightStateNumbersOtherNights": [
@@ -1487,7 +1487,7 @@
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0
+      2
     ],
     "nightStateNumbersOtherNights": [],
     "roleId": "scarletwoman",
@@ -1597,7 +1597,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       5.1
     ],
     "nightStateNumbersOtherNights": [
@@ -3372,7 +3372,7 @@
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       6.2
     ],
     "nightStateNumbersOtherNights": [],
@@ -3508,7 +3508,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       7.2
     ],
     "nightStateNumbersOtherNights": [
@@ -3588,7 +3588,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       8.2
     ],
     "nightStateNumbersOtherNights": [
@@ -3726,7 +3726,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0
+      2
     ],
     "nightStateNumbersOtherNights": [
       6.2
@@ -5567,7 +5567,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       7.3
     ],
     "nightStateNumbersOtherNights": [
@@ -5640,7 +5640,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0,
+      2,
       8.3
     ],
     "nightStateNumbersOtherNights": [
@@ -5714,7 +5714,7 @@
     "wakeUpEveryNight": true,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0
+      2
     ],
     "nightStateNumbersOtherNights": [
       13.3
@@ -5783,7 +5783,7 @@
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [
-      2.0
+      2
     ],
     "nightStateNumbersOtherNights": [],
     "roleId": "mastermind",
@@ -8468,9 +8468,25 @@
           "showOnlyWhen": {
             "type": "storytellerConfirmed"
           }
+        },
+        {
+          "id": "convertToFarmer",
+          "type": "roleChange",
+          "targetRoleId": "farmer",
+          "recipient": {
+            "type": "reminderTarget",
+            "stepId": "newFarmerPlayer"
+          },
+          "requires": [
+            "showNewFarmer"
+          ],
+          "note": "After showing YOU ARE and Farmer, confirm the actual role replacement."
         }
       ]
-    }
+    },
+    "numberOfExemplars": 1,
+    "variableNumberOfExemplars": false,
+    "possibleNrOfExemplars": []
   },
   {
     "name": "Fisherman",
@@ -9881,9 +9897,10 @@
     "nightStateNumbersOtherNights": [
       38.5
     ],
-    "numberOfExemplars": 3,
+    "numberOfExemplars": 1,
     "possibleNrOfExemplars": [
       1,
+      2,
       3
     ],
     "roleId": "villageidiot",
@@ -9968,7 +9985,8 @@
           ]
         }
       ]
-    }
+    },
+    "variableNumberOfExemplars": true
   },
   {
     "name": "Damsel",
@@ -11729,7 +11747,7 @@
     "nightStateNumbersOtherNights": [
       20.5
     ],
-    "numberOfExemplars": 6,
+    "numberOfExemplars": 1,
     "roleId": "legion",
     "nightInstructions": {
       "firstNight": null,
@@ -11751,7 +11769,9 @@
         "nightStep",
         "quickFlow"
       ]
-    }
+    },
+    "variableNumberOfExemplars": true,
+    "possibleNrOfExemplars": []
   },
   {
     "name": "Leviathan",
@@ -12082,7 +12102,7 @@
     "name": "Riot",
     "descriptionShort": "On day 3, Minions become Riot & nominees die but nominate an alive player immediately. This must happen.",
     "descriptionLong": "Riot kills everybody in a panic.\n\nEach player that is nominated dies immediately. Even though they are dead, they may nominate again today. This may happen multiple times per day.\nThe player that was nominated must nominate again immediately or lose their chance to do so. The Storyteller counts down “3... 2... 1...” to let the player know how long they have to nominate, should they wish to. If they don’t, no more nominations are allowed today.\nThe good team wins if all Riot players are dead. If the last Riot dies and only two players are alive, they do not nominate, and the good team wins.\nOn the third day, each nominated player must nominate again. If they do not, the Storyteller will nominate on their behalf, or declare that that player’s team loses.\nIf just three players are alive when the third day nominations begin, the group chooses which player nominates first. If no one nominates, the day ends and evil wins. \nOptional Rule: When Riot is in play, the dead may not be nominated. (This is more fun, and is the original intent of Riot.)",
-    "howToRun": "While setting up the game, before putting the character tokens in the bag, replace all Minion tokens with Riot tokens. During the first night, skip the Minion Info step. During the Demon Info step, wake all Riot players and allow them to make eye contact. Show each Riot player three character bluffs, then put them to sleep.\n\nEach time a player is nominated, they die. Declare that they are dead, and add a shroud immediately. Tell them that they may nominate again. Publicly count down “3... 2... 1...” and if they nominate before their time runs out, repeat this process for the new nominee (they die, may nominate etc.) If they do not nominate before their time runs out, the day ends.\n\nOn the third day, nominated players die and must nominate again. If the day ends with more than two players alive, evil wins. \nOptional Rule: When Riot is in play, the dead may not be nominated. (This is more fun, and is the original intent of Riot.)",
+    "howToRun": "During setup, keep the normal Minions and one Riot Demon. On days 1 and 2, place the matching day reminder. On night 3 wake each Minion in turn, show YOU ARE and the Riot token, then put them to sleep. Replace their Minion character tokens with Riot tokens during night 3 or before nominations on day 3. On day 3, each nominated player dies immediately, then must immediately nominate a living player. Count down publicly from three to one. If no nomination occurs, or the player fails to nominate in time, the Storyteller nominates. Continue until all Riot are dead or only two players remain, then resolve the winner. Normal nominations take place on the first two days.",
     "image": "Icon_riot",
     "tipsAndTricks": [
       "Since all evil players are the Demon, all evil players get 3 bluffs at the start of the game. Communicate early on so that you don't accidentally choose the same bluffs, as the good team is likely to nominate and kill any suspicious players as early as possible.\nPay attention to the jinxes, and ask the Storyteller for clarification on any jinxed character that you intend to bluff as. Riot is a very unusual Demon and breaks the game's core rules in a number of ways, so has some unusual character interactions with Townsfolk that gain information or have mechanics based around nominations, executions, and voting. Make sure you know how your jinxed character operates so that you can bluff effectively.\nBefore nominations begin, think about one or two players that you would like to nominate. Once nominations begin, things get a little bit hectic, and if you are nominated you will only have a single chance to kill a player for the entire game, so make it count. If your number one player is dead when it becomes your turn to nominate, nominate your number two player instead.\nDon't be afraid to nominate good players that are trusted, powerful, or both. Since there will be no deaths at night, killing trusted good players early in the game avoids the very real possibility that you will need to face them when only 3 or 4 players are left alive. Even if nominating a trusted good player makes you look evil, it is often best to get them out of the way early on. If you are nominated and die as a result, then other Riot players may keep the game going.\nIf you are nominated on day one or two, nominate another player. This is your only chance to kill a player, and it is best to remove good players that may act tonight, so that the good team has less information on the final day. The best case scenario is that the good player you nominate will nominate another good player, and that player will nominate again. The worst case scenario is that the player that you nominate doesn't nominate again, but that still means one less good player alive. While it is unlikely that you will be able to win the game on day one or two, any attrition that you can cause on these days grants the good team less information to work with.\nOn day three, remember that you must nominate if you are nominated. Hesitation may look very suspicious.\nNominate players that look like they have given little thought to who they will nominate. Or nominate randomly. The more the good players feel rushed and confused, the poorer decisions they will make. Pretending to be flustered, rushed and confused yourself can go a long way into keeping up the pretence that you are a good player. This may not even be pretence.\nBe the first player to nominate each day, if possible. Pay attention to the Storyteller and when it looks like they are going to call for nominations. If you are the first player to nominate, then you kill a player without dying yourself. So, if you are nominated and die, you get to nominate a second player. This is very handy.\nIf you want to appear to be a good player, don't nominate on days one or two. The downside is that you don't get to kill a player, but if you are bluffing as a character that is crucial to the decisions that the good team are making, such as the Fortune Teller or the Town Crier, then appearing to be trustworthy might result in the good team nominating more good players.\nDon't be afraid to die. Normally, the Demon should stay alive at all costs. When you are Riot, dying isn't that much of a downside, as long as other Riot are still alive. Riot is particularly suited to bluffing as characters that have game-altering effects when they die, such as the Sage, Klutz or Ravenkeeper.\nUnlike other Demons, the evil team wins when there are three players alive and two of them are evil, because whoever is nominated, the remaining two players will contain at least one Demon. If the player count is small, campaigning to be a character that is very important to keep alive can scare the good team into completely avoiding nominating you. You will need to make these arguments before nominations begin each day though, as the nomination phase leaves no time for talk."
@@ -12103,15 +12123,15 @@
     ],
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": true,
-    "nightStateNumbersFirstNight": [
-      3.5
+    "nightStateNumbersFirstNight": [],
+    "nightStateNumbersOtherNights": [
+      87.5
     ],
-    "nightStateNumbersOtherNights": [],
-    "numberOfExemplars": 3,
+    "numberOfExemplars": 1,
     "roleId": "riot",
     "nightInstructions": {
       "firstNight": null,
-      "otherNight": "Change the Riot reminder token to the relevant day. If it is night 3, you may wake the Minions. Show the YOU ARE & Riot tokens."
+      "otherNight": "On night 3, wake each Minion to show YOU ARE and Riot. Confirm each transformation in QuickFlow before day 3. Do not transform Minions on nights 1 or 2."
     },
     "chronicle": {
       "auto": [
@@ -12121,9 +12141,22 @@
         {
           "id": "minionsTransformed",
           "type": "yesNo",
-          "label": "Were Minions transformed into Riot?",
+          "label": "Were all Minions changed into Riot?",
           "when": "onlyIfApplicable",
           "night": 3
+        }
+      ]
+    },
+    "variableNumberOfExemplars": false,
+    "possibleNrOfExemplars": [],
+    "quickFlow": {
+      "otherNights": [
+        {
+          "id": "transformMinions",
+          "type": "roleChange",
+          "targetRoleId": "riot",
+          "nightConstraint": "night3",
+          "note": "On night 3: show YOU ARE + Riot to each Minion, then confirm each conversion."
         }
       ]
     }
