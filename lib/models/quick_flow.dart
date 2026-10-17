@@ -3,7 +3,7 @@ import 'package:blood_on_the_clocktower/utils/basic_token_info.dart';
 
 enum QuickFlowPhase { setup, firstNight, otherNights }
 
-enum QuickFlowStepType { reminder, reminderCharacterToken, showInfo }
+enum QuickFlowStepType { reminder, reminderCharacterToken, showInfo, roleChange }
 
 enum QuickFlowReminderOperation { move, setOnce, append }
 
@@ -58,6 +58,7 @@ class QuickFlowStep {
   final String id;
   final QuickFlowStepType type;
   final String? tokenId;
+  final String? targetRoleId;
   final QuickFlowReminderOperation? operation;
   final String? group;
   final List<String> distinctFrom;
@@ -76,6 +77,7 @@ class QuickFlowStep {
     required this.id,
     required this.type,
     this.tokenId,
+    this.targetRoleId,
     this.operation,
     this.group,
     this.distinctFrom = const [],
@@ -99,6 +101,7 @@ class QuickFlowStep {
       'reminder' => QuickFlowStepType.reminder,
       'reminderCharacterToken' => QuickFlowStepType.reminderCharacterToken,
       'showInfo' => QuickFlowStepType.showInfo,
+      'roleChange' => QuickFlowStepType.roleChange,
       _ => null,
     };
     if (type == null) return null;
@@ -115,11 +118,18 @@ class QuickFlowStep {
         (tokenId == null || tokenId.isEmpty || operation == null)) {
       return null;
     }
+    if (type == QuickFlowStepType.roleChange &&
+        json['targetRoleId'] != 'riot' &&
+        json['targetRoleId'] != 'farmer') {
+      return null;
+    }
 
     return QuickFlowStep(
       id: id,
       type: type,
       tokenId: tokenId,
+      targetRoleId: json['targetRoleId'] is String
+          ? json['targetRoleId'] as String : null,
       operation: operation,
       group: json['group'] is String ? json['group'] as String : null,
       distinctFrom: _strings(json['distinctFrom']),
@@ -144,8 +154,10 @@ class QuickFlowStep {
           QuickFlowStepType.reminder => 'reminder',
           QuickFlowStepType.reminderCharacterToken => 'reminderCharacterToken',
           QuickFlowStepType.showInfo => 'showInfo',
+          QuickFlowStepType.roleChange => 'roleChange',
         },
         if (tokenId != null) 'tokenId': tokenId,
+        if (targetRoleId != null) 'targetRoleId': targetRoleId,
         if (operation != null)
           'operation': switch (operation!) {
             QuickFlowReminderOperation.move => 'move',
