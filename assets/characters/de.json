@@ -12169,9 +12169,7 @@
     "wakeUpEveryNight": false,
     "wakeUpAtFirstNight": true,
     "nightStateNumbersFirstNight": [],
-    "nightStateNumbersOtherNights": [
-      87.5
-    ],
+    "nightStateNumbersOtherNights": [],
     "numberOfExemplars": 1,
     "roleId": "riot",
     "nightInstructions": {
