@@ -128,6 +128,8 @@ void main() {
         ],
         child: const MaterialApp(
           locale: Locale('de'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: StatisticsSyncScreen(),
         ),
       ),
