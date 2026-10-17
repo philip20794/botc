@@ -1364,6 +1364,8 @@ class GameStateService extends ChangeNotifier {
       gameId: gameId,
       startedAt: startedAt,
     );
+    _farmerNightDeaths.clear();
+    await _saveFarmerNightDeaths();
     await _clearDayTimer();
     await _startGameTimer(startedAt: startedAt);
     _nightCount = 1;
@@ -2012,7 +2014,12 @@ class GameStateService extends ChangeNotifier {
       return [
         for (final character in gameCharacters)
           for (final step in character.quickFlow.stepsFor(QuickFlowPhase.setup))
-            QuickFlowEntry(
+            // Exactly one Village Idiot has no extra who must be DRUNK.
+            if (!(character.roleId == 'villageidiot' &&
+                step.id == 'drunkIdiot' &&
+                gameCharacters.where((role) => role.roleId == 'villageidiot')
+                    .length == 1))
+              QuickFlowEntry(
               owner: character,
               phase: QuickFlowPhase.setup,
               step: step,
@@ -2476,7 +2483,8 @@ class GameStateService extends ChangeNotifier {
       if (entry.owner.roleId != 'farmer' ||
           !wasFarmerKilledTonight(entry.owner) ||
           !isCharacterAlive(target) ||
-          ![Fraction.townsfolk, Fraction.outsider].contains(target.fraction)) {
+          ![Fraction.townsfolk, Fraction.outsider].contains(target.fraction) ||
+          target.roleId == 'farmer') {
         return false;
       }
       final selected = quickFlowTargets(
