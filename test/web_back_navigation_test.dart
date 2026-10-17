@@ -3,6 +3,7 @@ import 'package:blood_on_the_clocktower/my_app.dart';
 import 'package:blood_on_the_clocktower/screens/app_settings_screen.dart';
 import 'package:blood_on_the_clocktower/screens/character_auswahl_screen.dart';
 import 'package:blood_on_the_clocktower/screens/home_screen.dart';
+import 'package:blood_on_the_clocktower/screens/statistics_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
@@ -64,7 +65,7 @@ void main() {
     expect(find.text('Settings content'), findsNothing);
   });
 
-  testWidgets('Home uses the same managed route for settings and characters',
+  testWidgets('Home uses the same managed route for statistics, settings and characters',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final language = LanguageService();
@@ -103,7 +104,20 @@ void main() {
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.byType(AppSettingsScreen), findsNothing);
 
-    // Characters can be opened after Settings without stale routes in the
+    // Statistics opens from the Home header and returns directly to Home.
+    await tester.tap(find.byKey(const ValueKey('homeStatisticsButton')));
+    await tester.pumpAndSettle();
+    expect(find.byType(StatisticsScreen), findsOneWidget);
+    expect(
+      ModalRoute.of(tester.element(find.byType(StatisticsScreen))),
+      isA<AppPageRoute>(),
+    );
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.byType(StatisticsScreen), findsNothing);
+
+    // Characters can be opened after Settings and Statistics without stale routes in the
     // navigator stack. Back gestures must return directly to Home.
     final characterSelection = find.byIcon(Icons.dashboard_outlined);
     await tester.ensureVisible(characterSelection);
