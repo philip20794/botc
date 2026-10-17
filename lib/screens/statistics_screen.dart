@@ -221,7 +221,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final s = AppLocalizations.of(context)!;
     if (history) {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _demoNotice(context, totals.demoGames),
         GrimoireSectionHeading(title: s.statsHistory,
           icon: Icons.timeline_outlined),
         const SizedBox(height: 12),
@@ -244,7 +243,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       ]);
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _demoNotice(context, totals.demoGames),
       GrimoirePanel(emphasized: true, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
           GrimoireSectionHeading(title: s.statsGlobal,
@@ -631,6 +629,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     ),
                   ),
               ]),
+            ),
+            FutureBuilder<StatisticsTotals?>(
+              future: _global,
+              builder: (context, snapshot) {
+                final demoGames = snapshot.data?.demoGames ?? 0;
+                if (demoGames == 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _demoNotice(context, demoGames),
+                );
+              },
             ),
             Expanded(child: ListView(
               key: const ValueKey('statisticsContent'),
