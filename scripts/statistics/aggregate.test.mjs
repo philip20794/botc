@@ -38,10 +38,10 @@ test('counts winning team and player roles after team/role changes', () => {
   assert.equal(value.global.deaths, 1);
   assert.equal(value.global.revivals, 1);
   assert.deepEqual({ ...value.roles.imp }, {
-    appearances: 1, wins: 1, losses: 0, totalDurationMs: 100000, roleChanges: 0,
+    appearances: 1, wins: 1, losses: 0, totalDurationMs: 100000, roleChanges: 0, demoAppearances: 0,
   });
   assert.deepEqual({ ...value.roles.monk }, {
-    appearances: 2, wins: 1, losses: 1, totalDurationMs: 200000, roleChanges: 1,
+    appearances: 2, wins: 1, losses: 1, totalDurationMs: 200000, roleChanges: 1, demoAppearances: 0,
   });
   assert.equal(value.scriptHash, 'a'.repeat(64));
   assert.equal(value.scriptMetadata.name, 'Test Script');
@@ -67,4 +67,17 @@ test('compares same-millisecond Firestore cursors by nanoseconds then game ID', 
   assert.equal(compareCursors(b, a), 1);
   assert.equal(compareCursors(a, { ...a, gameId: 'aab' }), -1);
   assert.equal(compareCursors(a, a), 0);
+});
+
+test('counts clearly marked demo records separately from real games', () => {
+  const demo = game();
+  demo.demo = true;
+  const demoTotals = contributionsForGame(demo);
+  assert.equal(demoTotals.global.games, 1);
+  assert.equal(demoTotals.global.demoGames, 1);
+  assert.equal(demoTotals.roles.monk.demoAppearances, 2);
+  assert.equal(demoTotals.scriptCounters.demoGames, 1);
+  const realTotals = contributionsForGame(game());
+  assert.equal(realTotals.global.demoGames, 0);
+  assert.equal(realTotals.roles.monk.demoAppearances, 0);
 });
