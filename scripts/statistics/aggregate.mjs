@@ -40,10 +40,11 @@ export function contributionsForGame(game) {
     if (!roles[id]) {
       roles[id] = {
         appearances: 0, wins: 0, losses: 0,
-        totalDurationMs: 0, roleChanges: 0,
+        totalDurationMs: 0, roleChanges: 0, demoAppearances: 0,
       };
     }
     roles[id].appearances++;
+    if (game.demo === true) roles[id].demoAppearances++;
     roles[id][player.endTeam === game.winnerTeam ? 'wins' : 'losses']++;
     roles[id].totalDurationMs += game.totalDurationMs;
     if (player.endRoleId !== id) roles[id].roleChanges++;
@@ -77,6 +78,7 @@ export function contributionsForGame(game) {
 
   const summary = {
     games: 1,
+    demoGames: game.demo === true ? 1 : 0,
     goodWins: game.winnerTeam === 'good' ? 1 : 0,
     evilWins: game.winnerTeam === 'evil' ? 1 : 0,
     totalDurationMs: game.totalDurationMs,
