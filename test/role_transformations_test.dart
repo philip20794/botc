@@ -1,4 +1,5 @@
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
+import 'package:blood_on_the_clocktower/models/chronicle.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
@@ -82,6 +83,15 @@ void main() {
         .where((x) => x.fraction == Fraction.minion), isEmpty);
     expect(game.isQuickFlowEntryCompleted(
         entries.single, characters.gameCharacters), isTrue);
+    final restored = ChronicleService();
+    await restored.ready;
+    final changes = restored.activeChronicle!.events
+        .where((event) => event.type == ChronicleEventType.characterChanged)
+        .toList();
+    expect(changes.length, 2);
+    expect(changes.every((event) =>
+        event.character?.roleId != 'riot' &&
+        event.targets.single.roleId == 'riot'), isTrue);
   });
 
   test('Farmer is woken ONLY on night of death and converts chosen good',
@@ -129,5 +139,11 @@ void main() {
         (x) => x.roleId == 'farmer' && x.id != farmer.id);
     expect(newFarmer.playerName, chef.playerName);
     expect(game.isCharacterAlive(newFarmer), isTrue);
+    final restored = ChronicleService();
+    await restored.ready;
+    expect(restored.activeChronicle!.events.any((event) =>
+        event.type == ChronicleEventType.characterChanged &&
+        event.character?.roleId == 'chef' &&
+        event.targets.single.roleId == 'farmer'), isTrue);
   });
 }
