@@ -2455,6 +2455,59 @@ class GameStateService extends ChangeNotifier {
     return true;
   }
 
+  /// Applies a confirmed, rule-validated role change to the live game,
+  /// preserving the affected player's tokens and death state. CharacterService
+  /// records the change in the Chronicle and persists the new roster.
+  Future<bool> applyQuickFlowRoleChange(
+    QuickFlowEntry entry,
+    Character target,
+    CharacterService characters,
+  ) async {
+    final step = entry.step;
+    if (step.type != QuickFlowStepType.roleChange ||
+        !isQuickFlowEntrySupported(entry)) return false;
+    final all = characters.gameCharacters;
+    if (!all.any((character) => character.id == target.id)) return false;
+    if (step.targetRoleId == 'riot') {
+      if (_nightCount != 3 || isDay() ||
+          entry.owner.roleId != 'riot' ||
+          target.fraction != Fraction.minion) return false;
+    } else if (step.targetRoleId == 'farmer') {
+      if (entry.owner.roleId != 'farmer' ||
+          !wasFarmerKilledTonight(entry.owner) ||
+          !isCharacterAlive(target) ||
+          ![Fraction.townsfolk, Fraction.outsider].contains(target.fraction)) {
+        return false;
+      }
+      final selected = quickFlowTargets(
+        _entryForStepId(entry.owner, entry.phase, 'newFarmerPlayer') ??
+            entry, all);
+      if (!selected.any((candidate) => candidate.id == target.id) ||
+          !isQuickFlowEntryCompleted(
+            _entryForStepId(entry.owner, entry.phase, 'showNewFarmer') ?? entry,
+            all,
+          )) return false;
+    } else {
+      return false;
+    }
+
+    final replacement = characters.allCharacters
+        .firstWhereOrNull((candidate) =>
+            candidate.roleId == step.targetRoleId);
+    if (replacement == null) return false;
+    final newId = characters.changeCharacter(target, replacement);
+    if (newId.isEmpty) return false;
+    await giveAllTokensFromCharacterAToCharacterB(all, target, newId);
+
+    if (step.targetRoleId == 'farmer' ||
+        !all.any((character) => character.fraction == Fraction.minion)) {
+      await completeQuickFlowEntry(entry, all);
+    } else {
+      notifyListeners();
+    }
+    return true;
+  }
+
   bool isQuickFlowStepComplete(
     QuickFlowEntry entry,
     List<Character> gameCharacters,
