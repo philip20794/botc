@@ -10,15 +10,38 @@ service cloud.firestore {
       allow create: if validGameRecord(gameId, request.resource.data);
       allow update, delete: if false;
     }
+
+    // Only aggregate results are public. Clients must never modify totals,
+    // progress cursors or per-game deduplication receipts.
+    match /statistics/{statisticId} {
+      allow get: if statisticId in ['global', 'roles'];
+      allow list, write: if false;
+    }
+    match /statistics_scripts/{scriptHash} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 
   function validGameRecord(gameId, data) {
     return data is map
-      && data.keys().toSet() == [
-        'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
-        'playerCount', 'winnerTeam', 'script', 'players', 'phases',
-        'chronicleEvents'
-      ].toSet()
+      && (
+        // Keep old Android/PWA clients working until they update.
+        data.keys().toSet() == [
+          'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
+          'playerCount', 'winnerTeam', 'script', 'players', 'phases',
+          'chronicleEvents'
+        ].toSet()
+        || (
+          data.keys().toSet() == [
+            'schemaVersion', 'gameId', 'startedAt', 'endedAt', 'totalDurationMs',
+            'playerCount', 'winnerTeam', 'script', 'players', 'phases',
+            'chronicleEvents', 'uploadedAt'
+          ].toSet()
+          // Clients cannot forge a timestamp to hide games from aggregation.
+          && data.uploadedAt == request.time
+        )
+      )
       && data.schemaVersion == 1
       && data.gameId is string
       && data.gameId == gameId
