@@ -5,6 +5,9 @@ on:
     paths:
       - 'lib/**'
       - 'test/**'
+      - 'scripts/statistics/**'
+      - 'firestore.rules'
+      - '.github/workflows/aggregate-statistics.yml'
       - 'pubspec.yaml'
       - 'web/**'
       - '.github/workflows/flutter-pr-checks.yml'
