@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { initializeApp, deleteApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { updateStatistics } from './worker.mjs';
+import { demoGame } from './demo-data.mjs';
 
 function record(gameId, winnerTeam = 'good', uploadedAt) {
   return {
@@ -101,6 +102,19 @@ test('emulator: bootstrap, incremental cursor, replay and legacy reconciliation'
       .get('invalidGames'), 1);
     assert.equal((await db.doc('statistics_processed/game_new_invalid01').get())
       .get('status'), 'invalid_game_record');
+    // Demo records are aggregated with the normal worker, but counted
+    // separately so statistics UI can show a clear preview-data warning.
+    await db.doc('games/game_demo_v1_0001').set({
+      ...demoGame(1),
+      uploadedAt: Timestamp.fromMillis(Date.now() + 60_000),
+    });
+    const demoResult = await updateStatistics(db);
+    assert.equal(demoResult.counted, 1);
+    assert.equal((await db.doc('statistics/global').get()).get('demoGames'), 1);
+    assert.equal((await db.doc('statistics/global').get()).get('games'), 5);
+    assert.equal((await db.doc('statistics_scripts/' +
+      demoGame(1).script.contentHash).get()).get('demoGames') >= 1, true);
+    assert.equal((await updateStatistics(db)).counted, 0);
   } finally {
     await deleteApp(app);
   }
