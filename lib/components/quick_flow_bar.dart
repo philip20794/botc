@@ -1,6 +1,7 @@
 import 'package:blood_on_the_clocktower/components/character_avatar.dart';
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/enums/basicToken.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow_runtime.dart';
 import 'package:blood_on_the_clocktower/screens/select_one_charater.dart';
@@ -316,6 +317,45 @@ class _QuickFlowBarState extends State<QuickFlowBar> {
                           subtitle: Text('${target.name} → ${entry.step.targetRoleId}'),
                           trailing: const Icon(Icons.check_circle_outline),
                           onTap: () async {
+                            if (riot) {
+                              final riotRole = characters.allCharacters
+                                  .firstWhere((role) => role.roleId == 'riot');
+                              // The Minion sees the actual YOU ARE + Riot
+                              // reveal before the Storyteller confirms it.
+                              await Navigator.of(dialogContext).push<void>(
+                                MaterialPageRoute(
+                                  builder: (_) => ThisCharacterSelectedYouScreen(
+                                    preparedInfo: QuickFlowInfo(
+                                      kind: 'youAre',
+                                      owner: entry.owner,
+                                      recipient: target,
+                                      selectedCharacter: riotRole,
+                                      infoToken: Basictoken.you_are,
+                                    ),
+                                  ),
+                                ),
+                              );
+                              if (!dialogContext.mounted) return;
+                            }
+                            final confirm = await showDialog<bool>(
+                              context: dialogContext,
+                              builder: (confirmContext) => AlertDialog(
+                                title: const Text('Charakterwechsel bestätigen?'),
+                                content: Text(
+                                    '${target.playerName}: ${target.name} → ${entry.step.targetRoleId}'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(confirmContext, false),
+                                    child: const Text('Abbrechen'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(confirmContext, true),
+                                    child: const Text('Umwandeln'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm != true) return;
                             final ok = await gameState.applyQuickFlowRoleChange(
                                 entry, target, characters);
                             if (dialogContext.mounted && ok) {
