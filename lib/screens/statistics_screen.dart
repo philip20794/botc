@@ -14,6 +14,12 @@ const _good = Color(0xFF638BB8);
 const _evil = Color(0xFFC0556C);
 enum _Sort { usage, winRate, wins, name }
 
+class _Result<T> {
+  final T? value;
+  final bool failed;
+  const _Result(this.value, {this.failed = false});
+}
+
 /// Global, read-only statistics built from server-side aggregated documents.
 /// The application never downloads individual public game records to render UI.
 class StatisticsScreen extends StatefulWidget {
@@ -26,9 +32,9 @@ class StatisticsScreen extends StatefulWidget {
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
   late final StatisticsRepository _repository;
-  Future<StatisticsTotals?>? _global;
-  Future<List<StatisticsRole>>? _roles;
-  Future<List<StatisticsScript>>? _scripts;
+  Future<_Result<StatisticsTotals?>>? _global;
+  Future<_Result<List<StatisticsRole>>>? _roles;
+  Future<_Result<List<StatisticsScript>>>? _scripts;
   Future<Map<String, String>>? _names;
   String? _language;
   String _query = '';
@@ -44,9 +50,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   // Defer repository calls until after FutureBuilder can subscribe.
   // This also makes immediate offline failures safe during widget tests.
-  Future<T> _scheduled<T>(Future<T> Function() load) async {
-    await Future<void>.delayed(Duration.zero);
-    return load();
+  Future<_Result<T>> _scheduled<T>(Future<T> Function() load) async {
+    try {
+      return _Result<T>(await load());
+    } catch (_) {
+      // Store errors as values. They cannot escape as unhandled async zone
+      // exceptions while FutureBuilder switches between tabs or retries.
+      return _Result<T>(null, failed: true);
+    }
   }
 
   @override
@@ -271,15 +282,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Widget _globalTab(BuildContext context, {required bool history}) {
     final s = AppLocalizations.of(context)!;
-    return FutureBuilder<StatisticsTotals?>(
+    return FutureBuilder<_Result<StatisticsTotals?>>(
       future: _global,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: Padding(padding: EdgeInsets.all(24),
             child: CircularProgressIndicator()));
         }
-        if (snapshot.hasError) return _empty(context, s.statsError, error: true);
-        final totals = snapshot.data;
+        if (snapshot.data?.failed == true) return _empty(context, s.statsError, error: true);
+        final totals = snapshot.data?.value;
         if (totals == null || totals.games == 0) {
           return _empty(context, s.statsEmpty);
         }
@@ -417,15 +428,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Widget _rolesTab(BuildContext context) {
     final s = AppLocalizations.of(context)!;
-    return FutureBuilder<List<StatisticsRole>>(
+    return FutureBuilder<_Result<List<StatisticsRole>>>(
       future: _roles,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: Padding(padding: EdgeInsets.all(24),
             child: CircularProgressIndicator()));
         }
-        if (snapshot.hasError) return _empty(context, s.statsError, error: true);
-        final values = snapshot.data ?? [];
+        if (snapshot.data?.failed == true) return _empty(context, s.statsError, error: true);
+        final values = snapshot.data?.value ?? [];
         if (values.isEmpty) return _empty(context, s.statsEmptyRoles);
         return FutureBuilder<Map<String, String>>(
           future: _names,
@@ -552,14 +563,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Widget _scriptsTab(BuildContext context) {
     final s = AppLocalizations.of(context)!;
-    return FutureBuilder<List<StatisticsScript>>(
+    return FutureBuilder<_Result<List<StatisticsScript>>>(
       future: _scripts,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: Padding(padding: EdgeInsets.all(24),
             child: CircularProgressIndicator()));
         }
-        if (snapshot.hasError) return _empty(context, s.statsError, error: true);
+        if (snapshot.data?.failed == true) return _empty(context, s.statsError, error: true);
         final values = snapshot.data ?? [];
         if (values.isEmpty) return _empty(context, s.statsEmptyScripts);
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -633,7 +644,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             FutureBuilder<StatisticsTotals?>(
               future: _global,
               builder: (context, snapshot) {
-                final demoGames = snapshot.data?.demoGames ?? 0;
+                final demoGames = snapshot.data?.value?.demoGames ?? 0;
                 if (demoGames == 0) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
