@@ -128,15 +128,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(data.roleLoads, 1);
     expect(find.text('Character rankings'), findsOneWidget);
-    expect(find.text('Imp'), findsOneWidget);
-    expect(find.text('Monk'), findsOneWidget);
+    expect(find.byKey(const ValueKey('stats-role-imp')), findsOneWidget);
+    expect(find.byKey(const ValueKey('stats-role-monk')), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const ValueKey('stats-role-search')), 'imp');
     await tester.pumpAndSettle();
-    expect(find.text('Imp'), findsOneWidget);
-    expect(find.text('Monk'), findsNothing);
-    await tester.tap(find.text('Imp'));
+    expect(find.byKey(const ValueKey('stats-role-imp')), findsOneWidget);
+    expect(find.byKey(const ValueKey('stats-role-monk')), findsNothing);
+    await tester.ensureVisible(find.byKey(const ValueKey('stats-role-imp')));
+    await tester.tap(find.byKey(const ValueKey('stats-role-imp')));
     await tester.pumpAndSettle();
     expect(find.text('Role changes'), findsOneWidget);
     await tester.pageBack();
