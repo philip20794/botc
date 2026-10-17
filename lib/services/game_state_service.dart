@@ -2505,6 +2505,9 @@ class GameStateService extends ChangeNotifier {
     if (replacement == null) return false;
     final newId = characters.changeCharacter(target, replacement);
     if (newId.isEmpty) return false;
+    // Do not mark the QuickFlow step complete until the new character and
+    // its Chronicle character-change event are durably persisted.
+    await characters.flushPendingGameWrites();
     await giveAllTokensFromCharacterAToCharacterB(all, target, newId);
 
     if (step.targetRoleId == 'farmer' ||
