@@ -1,0 +1,58 @@
+name: Seed demo BotC statistics (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'To create 120 synthetic games in production enter SEED_120_DEMO_GAMES'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botc-statistics
+  cancel-in-progress: false
+
+jobs:
+  seed-demo:
+    name: Create clearly labeled synthetic games
+    if: inputs.confirmation == 'SEED_120_DEMO_GAMES'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install statistics worker
+        run: npm install --prefix scripts/statistics --no-package-lock --no-audit --no-fund
+
+      - name: Verify demo generator and aggregation logic
+        run: node --test scripts/statistics/aggregate.test.mjs scripts/statistics/demo-data.test.mjs
+
+      - name: Authenticate as Firebase service account
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: \${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
+
+      - name: Create at most 120 synthetic game documents
+        env:
+          GOOGLE_CLOUD_PROJECT: b-o-t-c
+          CONFIRMATION: \${{ inputs.confirmation }}
+        run: node scripts/statistics/seed-demo.mjs "$CONFIRMATION" --apply
+
+      - name: Update aggregated statistics immediately
+        env:
+          GOOGLE_CLOUD_PROJECT: b-o-t-c
+          STATS_MAX_GAMES: '200'
+        run: node scripts/statistics/run.mjs incremental
+
+      - name: Note
+        run: |
+          echo "Synthetic game IDs begin with game_demo_v1_ and contain demo=true." >> "$GITHUB_STEP_SUMMARY"
+          echo "All aggregates include demoGames to distinguish simulated and genuine games." >> "$GITHUB_STEP_SUMMARY"
+          echo "This workflow never deletes existing games; full database reset must be a separate deliberate operation." >> "$GITHUB_STEP_SUMMARY"
