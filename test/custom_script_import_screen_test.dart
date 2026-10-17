@@ -131,22 +131,48 @@ void main() {
 
     final nameField = find.byKey(const ValueKey('scriptImportName'));
     final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
+    final previewScrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('scriptImportPreview')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
     expect(tester.widget<TextField>(nameField).controller!.text, isEmpty);
-    await tester.scrollUntilVisible(confirm, 250);
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
 
-    await tester.scrollUntilVisible(nameField, -250);
+    await tester.scrollUntilVisible(
+      nameField,
+      -250,
+      scrollable: previewScrollable,
+    );
     await tester.enterText(nameField, '   ');
     await tester.pump();
-    await tester.scrollUntilVisible(confirm, 250);
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
 
-    await tester.scrollUntilVisible(nameField, -250);
+    await tester.scrollUntilVisible(
+      nameField,
+      -250,
+      scrollable: previewScrollable,
+    );
     await tester.enterText(nameField, '  New name  ');
     await tester.pump();
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(confirm, 250);
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
     await tester.tap(confirm);
     await tester.pumpAndSettle();
@@ -163,16 +189,34 @@ void main() {
 
     final nameField = find.byKey(const ValueKey('scriptImportName'));
     final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
+    final previewScrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('scriptImportPreview')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
     expect(tester.widget<TextField>(nameField).controller!.text, 'Original name');
-    await tester.scrollUntilVisible(confirm, 250);
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
 
-    await tester.scrollUntilVisible(nameField, -250);
+    await tester.scrollUntilVisible(
+      nameField,
+      -250,
+      scrollable: previewScrollable,
+    );
     await tester.enterText(nameField, 'Changed name');
     await tester.pump();
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(confirm, 250);
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
     await tester.tap(confirm);
     await tester.pumpAndSettle();
 
