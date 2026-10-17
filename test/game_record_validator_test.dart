@@ -123,6 +123,34 @@ void main() {
         containsAll(['totalDurationMs', 'script.contentHash']));
   });
 
+  test('enforces published Firestore document bounds before upload', () {
+    final longNameJson = validRecord().toJson();
+    (longNameJson['script'] as Map<String, dynamic>)['name'] = 'x' * 129;
+    final longName = GameRecord.fromJson(longNameJson);
+    expect(
+      validator.validate(longName).issues.map((issue) => issue.path),
+      contains('script.name'),
+    );
+
+    final tooManyPlayersJson = validRecord().toJson();
+    final samplePlayer = (tooManyPlayersJson['players'] as List).first
+        as Map<String, dynamic>;
+    tooManyPlayersJson['playerCount'] = 21;
+    tooManyPlayersJson['players'] = List.generate(
+      21,
+      (index) => {
+        ...samplePlayer,
+        'anonymizedPlayerId': 'player_${index.toString().padLeft(20, '0')}',
+        'position': index,
+      },
+    );
+    final tooManyPlayers = GameRecord.fromJson(tooManyPlayersJson);
+    expect(
+      validator.validate(tooManyPlayers).issues.map((issue) => issue.path),
+      contains('playerCount'),
+    );
+  });
+
   test('rejects missing consistency for players, phases and event references',
       () {
     final record = validRecord();
