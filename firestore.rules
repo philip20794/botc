@@ -79,32 +79,49 @@ service cloud.firestore {
       && player.endTeam in ['good', 'evil'];
   }
 
-  // Firestore Rules has no list iteration. BotC has at most 20 player seats,
-  // so each player record can still be checked completely without trusting a
-  // client-supplied nested map.
+  // Evaluate a small group of seats at a time. Long left-associated
+  // boolean chains re-evaluate too many expressions in real transactions.
+  // This preserves the complete schema validation of all 20 possible seats.
   function validPlayers(players, playerCount) {
     return players is list
       && players.size() == playerCount
       && playerCount >= 1 && playerCount <= 20
-      && validPlayer(players[0])
+      && firstFive(players, playerCount)
+      && secondFive(players, playerCount)
+      && thirdFive(players, playerCount)
+      && fourthFive(players, playerCount);
+  }
+
+  function firstFive(players, playerCount) {
+    return validPlayer(players[0])
       && (playerCount < 2 || validPlayer(players[1]))
       && (playerCount < 3 || validPlayer(players[2]))
       && (playerCount < 4 || validPlayer(players[3]))
-      && (playerCount < 5 || validPlayer(players[4]))
-      && (playerCount < 6 || validPlayer(players[5]))
+      && (playerCount < 5 || validPlayer(players[4]));
+  }
+
+  function secondFive(players, playerCount) {
+    return (playerCount < 6 || validPlayer(players[5]))
       && (playerCount < 7 || validPlayer(players[6]))
       && (playerCount < 8 || validPlayer(players[7]))
       && (playerCount < 9 || validPlayer(players[8]))
-      && (playerCount < 10 || validPlayer(players[9]))
-      && (playerCount < 11 || validPlayer(players[10]))
+      && (playerCount < 10 || validPlayer(players[9]));
+  }
+
+  function thirdFive(players, playerCount) {
+    return (playerCount < 11 || validPlayer(players[10]))
       && (playerCount < 12 || validPlayer(players[11]))
       && (playerCount < 13 || validPlayer(players[12]))
       && (playerCount < 14 || validPlayer(players[13]))
-      && (playerCount < 15 || validPlayer(players[14]))
-      && (playerCount < 16 || validPlayer(players[15]))
+      && (playerCount < 15 || validPlayer(players[14]));
+  }
+
+  function fourthFive(players, playerCount) {
+    return (playerCount < 16 || validPlayer(players[15]))
       && (playerCount < 17 || validPlayer(players[16]))
       && (playerCount < 18 || validPlayer(players[17]))
       && (playerCount < 19 || validPlayer(players[18]))
       && (playerCount < 20 || validPlayer(players[19]));
   }
+
 }
