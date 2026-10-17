@@ -94,14 +94,16 @@ class FirestoreGameRepository {
         _validator = validator;
 
   Future<GameRecordPublishResult> publish(GameRecord record) async {
-    if (!_validator.validate(record).isValid) {
-      return const GameRecordPublishResult(GameRecordPublishOutcome.invalid);
-    }
-
     final document = record.toJson();
     final serializedBytes = utf8.encode(jsonEncode(document)).length;
+    // Reject grossly oversized input before detailed schema validation;
+    // otherwise a huge field would be reported as "invalid" instead of
+    // "tooLarge" and needlessly consume validation work.
     if (serializedBytes > maxSerializedDocumentBytes) {
       return const GameRecordPublishResult(GameRecordPublishOutcome.tooLarge);
+    }
+    if (!_validator.validate(record).isValid) {
+      return const GameRecordPublishResult(GameRecordPublishOutcome.invalid);
     }
 
     try {
