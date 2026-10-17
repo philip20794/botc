@@ -144,6 +144,47 @@ const productionWrite = (record) => fetch(commitUrl, {
     }],
   }),
 });
+// The production Flutter writer does more than a bare commit: it begins a
+// read-write transaction and reads the missing document before creating it.
+// Exercise that complete sequence so the emulator cannot miss permission
+// checks triggered by transaction reads or its transaction token.
+const fullTransactionWrite = async (record) => {
+  const documentName =
+    `projects/${projectId}/databases/(default)/documents/games/${record.gameId}`;
+  const begin = await fetch(`${baseUrl}:beginTransaction`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ options: { readWrite: {} } }),
+  });
+  await expectStatus(begin, 200, 'begin Firestore transaction');
+  const { transaction } = await begin.json();
+  const read = await fetch(`${baseUrl}:batchGet`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ documents: [documentName], transaction }),
+  });
+  await expectStatus(read, 200, 'transactional read of missing game');
+  const readBody = await read.text();
+  if (!readBody.includes('missing')) {
+    throw new Error(`Expected missing document before create: ${readBody}`);
+  }
+  return fetch(commitUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      transaction,
+      writes: [{
+        update: { name: documentName, ...documentBody(record) },
+        currentDocument: { exists: false },
+      }],
+    }),
+  });
+};
+const transactionalRecord = structuredClone(fivePlayerRecord);
+transactionalRecord.gameId += '_transaction';
+await expectStatus(await fullTransactionWrite(transactionalRecord), 200,
+  'full 5-player transaction read and create');
+
 const invalidProductionWrite = structuredClone(fivePlayerRecord);
 invalidProductionWrite.gameId += '_invalid';
 delete invalidProductionWrite.players[0].endTeam;
