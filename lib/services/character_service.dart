@@ -5,6 +5,7 @@ import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
 import 'package:blood_on_the_clocktower/services/chronicle_service.dart';
+import 'package:blood_on_the_clocktower/services/role_multiplicity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -544,21 +545,32 @@ class CharacterService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addCharacter(Character character) {
-    if (!containsCharacter(_gameCharacters, character)) {
-      for (var i = 0; i < character.numberOfExemplars; i++) {
-        final hasMultipleInstances = character.numberOfExemplars > 1;
-        final preferredId =
-            hasMultipleInstances ? '${character.roleId}-$i' : character.roleId;
-        final gameCharacter =
-            character.copyWith(id: _uniqueInstanceId(preferredId));
-        _gameCharacters.add(gameCharacter);
-        _gameCharactersBackup.add(gameCharacter.copyWith());
-      }
-      _saveGameCharacters();
-      _saveGameCharactersBackup();
-      notifyListeners();
+  /// Adds an entire role group, retaining stable, distinct instance IDs.
+  /// The UI is responsible for choosing counts for Storyteller-led roles,
+  /// while fixed-count roles are never permitted to override the rules.
+  void addCharacter(Character character, {int? exemplars, int? playerCount}) {
+    if (containsCharacter(_gameCharacters, character)) return;
+    final count = RoleMultiplicity.storytellerChooses(character.roleId)
+        ? (exemplars ?? character.numberOfExemplars)
+        : RoleMultiplicity.automaticCount(character.roleId);
+    if (count < 1) throw ArgumentError.value(count, 'exemplars');
+    if (playerCount != null &&
+        !RoleMultiplicity.allowedCounts(character.roleId, playerCount)
+            .contains(count)) {
+      throw ArgumentError.value(count, 'exemplars',
+          'Invalid count for ${character.roleId} with $playerCount players');
     }
+    for (var i = 0; i < count; i++) {
+      final preferredId =
+          count > 1 ? '${character.roleId}-$i' : character.roleId;
+      final gameCharacter =
+          character.copyWith(id: _uniqueInstanceId(preferredId));
+      _gameCharacters.add(gameCharacter);
+      _gameCharactersBackup.add(gameCharacter.copyWith());
+    }
+    _saveGameCharacters();
+    _saveGameCharactersBackup();
+    notifyListeners();
   }
 
   void removeCharacter(Character character) {
