@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/models/script_import.dart';
 import 'package:blood_on_the_clocktower/screens/custom_script_import_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
@@ -126,16 +127,7 @@ void main() {
 
   testWidgets('requires a name before saving a nameless script',
       (tester) async {
-    final scripts = await _pumpImportScreen(
-      tester,
-      pickJson: () async => jsonEncode([
-        {'id': '_meta'},
-        'imp',
-      ]),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('scriptImportPickFile')));
-    await _waitForImportAnalysis(tester);
+    final scripts = await _pumpPreviewScreen(tester);
 
     final nameField = find.byKey(const ValueKey('scriptImportName'));
     final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
@@ -164,13 +156,11 @@ void main() {
 
   testWidgets('prefills the imported name and saves an edited one',
       (tester) async {
-    final scripts = await _pumpImportScreen(
+    final scripts = await _pumpPreviewScreen(
       tester,
-      pickJson: () async => _scriptJson('Original name'),
+      name: 'Original name',
     );
 
-    await tester.tap(find.byKey(const ValueKey('scriptImportPickFile')));
-    await _waitForImportAnalysis(tester);
     final nameField = find.byKey(const ValueKey('scriptImportName'));
     final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
     expect(tester.widget<TextField>(nameField).controller!.text, 'Original name');
@@ -232,6 +222,41 @@ void main() {
       _scriptJson('Keep this text'),
     );
   });
+}
+
+Future<ScriptService> _pumpPreviewScreen(
+  WidgetTester tester, {
+  String? name,
+}) async {
+  final scripts = ScriptService();
+  await scripts.ready;
+
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: scripts),
+        ChangeNotifierProvider(create: (_) => CharacterService()),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ScriptImportPreviewScreen(
+          initialDraft: ScriptImportResult(
+            name: name,
+            roles: const [
+              ImportedScriptRole(
+                index: 0,
+                sourceId: 'imp',
+                resolvedRoleId: 'imp',
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return scripts;
 }
 
 Future<ScriptService> _pumpImportScreen(
