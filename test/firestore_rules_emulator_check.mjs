@@ -79,6 +79,74 @@ delete missingPlayerField.players[0].endTeam;
 missingPlayerField.gameId = `${gameId}_player`;
 await expectStatus(await post(missingPlayerField.gameId, missingPlayerField), 403, 'incomplete player');
 
+
+// Reproduce the *actual production transport*: Flutter Web sends a Firestore
+// commit with a create precondition, and real games contain >1 player.
+const fivePlayerRecord = structuredClone(validRecord);
+fivePlayerRecord.gameId = `${gameId}_five_players`;
+fivePlayerRecord.playerCount = 5;
+fivePlayerRecord.script.scriptId = 'standard:trouble_brewing';
+fivePlayerRecord.script.name = 'Trouble Brewing';
+fivePlayerRecord.script.roleIds = [
+  'washerwoman', 'librarian', 'investigator', 'chef', 'empath',
+  'fortuneteller', 'mayor', 'monk', 'ravenkeeper', 'slayer',
+  'soldier', 'undertaker', 'virgin', 'butler', 'drunk',
+  'recluse', 'saint', 'baron', 'poisoner', 'scarletwoman',
+  'spy', 'imp', 'scapegoat', 'gunslinger', 'beggar', 'bureaucrat', 'thief',
+];
+fivePlayerRecord.players = [
+  ['imp', 'evil'], ['scarletwoman', 'evil'], ['soldier', 'good'],
+  ['slayer', 'good'], ['washerwoman', 'good'],
+].map(([roleId, team], index) => ({
+  anonymizedPlayerId: `player_test_${index}_abcdefgh`,
+  position: index,
+  actualStartRoleId: roleId,
+  displayedStartRoleId: roleId,
+  startTeam: team,
+  endRoleId: index === 1 ? 'imp' : roleId,
+  endTeam: team,
+}));
+fivePlayerRecord.phases = [
+  { phaseId: 'phase_aabbccdd0', type: 'night', round: 1,
+    startedAt: '2026-10-13T20:00:00.000', endedAt: '2026-10-13T20:01:00.000', durationMs: 60000 },
+  { phaseId: 'phase_aabbccdd1', type: 'day', round: 1,
+    startedAt: '2026-10-13T20:01:00.000', endedAt: '2026-10-13T20:03:00.000', durationMs: 120000 },
+  { phaseId: 'phase_aabbccdd2', type: 'night', round: 2,
+    startedAt: '2026-10-13T20:03:00.000', endedAt: '2026-10-13T20:04:00.000', durationMs: 60000 },
+  { phaseId: 'phase_aabbccdd3', type: 'day', round: 2,
+    startedAt: '2026-10-13T20:04:00.000', endedAt: '2026-10-13T20:10:00.000', durationMs: 360000 },
+];
+fivePlayerRecord.chronicleEvents = Array.from({ length: 16 }, (_, i) => ({
+  eventId: `event_test_${i}`,
+  occurredAt: '2026-10-13T20:04:00.000',
+  type: i % 2 ? 'lifeStatusChanged' : 'nightActionVisited',
+  phase: i % 2 ? 'day' : 'night',
+  round: 2,
+  actorPlayerId: fivePlayerRecord.players[i % 5].anonymizedPlayerId,
+  targetPlayerIds: [],
+  data: {
+    roleIds: { actorRoles: [fivePlayerRecord.players[i % 5].endRoleId] },
+    flags: { alive: false },
+  },
+}));
+const commitUrl =
+  `http://127.0.0.1:8080/v1/projects/${projectId}/databases/(default)/documents:commit`;
+const productionWrite = (record) => fetch(commitUrl, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    writes: [{
+      update: {
+        name: `projects/${projectId}/databases/(default)/documents/games/${record.gameId}`,
+        ...documentBody(record),
+      },
+      currentDocument: { exists: false },
+    }],
+  }),
+});
+await expectStatus(await productionWrite(fivePlayerRecord), 200,
+  'production-like 5-player game transaction create');
+
 await expectStatus(await post(gameId, validRecord), 200, 'valid create');
 await expectStatus(await fetch(`${baseUrl}/games/${gameId}`), 200, 'public read');
 await expectStatus(
