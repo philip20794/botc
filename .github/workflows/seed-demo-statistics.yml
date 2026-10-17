@@ -37,12 +37,12 @@ jobs:
       - name: Authenticate as Firebase service account
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: \${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B_O_T_C }}
 
       - name: Create at most 120 synthetic game documents
         env:
           GOOGLE_CLOUD_PROJECT: b-o-t-c
-          CONFIRMATION: \${{ inputs.confirmation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
         run: node scripts/statistics/seed-demo.mjs "$CONFIRMATION" --apply
 
       - name: Update aggregated statistics immediately
