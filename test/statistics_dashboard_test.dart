@@ -140,7 +140,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('stats-role-imp')));
     await tester.pumpAndSettle();
     expect(find.text('Role changes'), findsOneWidget);
-    await tester.pageBack();
+    // A modal bottom sheet has no AppBar back button; dismiss its barrier.
+    await tester.tapAt(const Offset(10, 100));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const ValueKey('stats-tab-2')));
