@@ -37,8 +37,15 @@ jobs:
       - name: Run Dart and widget tests
         run: flutter test
 
-      - name: Check Firestore rules with emulator
-        run: npx --yes firebase-tools@latest emulators:exec --only firestore --project b-o-t-c "node test/firestore_rules_emulator_check.mjs"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install statistics worker for emulator integration tests
+        run: npm install --prefix scripts/statistics --no-package-lock --no-audit --no-fund
+
+      - name: Test Firestore rules and incremental statistics worker
+        run: npx --yes firebase-tools@latest emulators:exec --only firestore --project b-o-t-c "node test/firestore_rules_emulator_check.mjs && node --test scripts/statistics/*.test.mjs"
 
   android-e2e:
     uses: ./.github/workflows/android-e2e.yml
