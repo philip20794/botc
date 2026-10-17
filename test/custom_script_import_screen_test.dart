@@ -13,9 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
+  setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await SharedPreferences.getInstance();
   });
 
   testWidgets('uses the Grimoire theme for custom script import',
@@ -53,9 +52,14 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('scriptImportPickFile')));
     await _waitForImportAnalysis(tester);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('scriptImportName')))
+          .controller!
+          .text,
+      'File import',
+    );
     await _scrollToImportOutput(tester);
-
-    expect(find.text('File import'), findsOneWidget);
     expect(find.byKey(const ValueKey('scriptImportPreview')), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -79,9 +83,14 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('scriptImportAnalyzeText')));
     await _waitForImportAnalysis(tester);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('scriptImportName')))
+          .controller!
+          .text,
+      'Pasted import',
+    );
     await _scrollToImportOutput(tester);
-
-    expect(find.text('Pasted import', skipOffstage: false), findsOneWidget);
     expect(find.byKey(const ValueKey('scriptImportPreview')), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -131,18 +140,22 @@ void main() {
     final nameField = find.byKey(const ValueKey('scriptImportName'));
     final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
     expect(tester.widget<TextField>(nameField).controller!.text, isEmpty);
+    await tester.scrollUntilVisible(confirm, 250);
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
 
+    await tester.scrollUntilVisible(nameField, -250);
     await tester.enterText(nameField, '   ');
     await tester.pump();
+    await tester.scrollUntilVisible(confirm, 250);
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
 
+    await tester.scrollUntilVisible(nameField, -250);
     await tester.enterText(nameField, '  New name  ');
     await tester.pump();
-    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await tester.ensureVisible(confirm);
+    await tester.scrollUntilVisible(confirm, 250);
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
     await tester.tap(confirm);
     await tester.pumpAndSettle();
 
@@ -161,13 +174,15 @@ void main() {
     final nameField = find.byKey(const ValueKey('scriptImportName'));
     final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
     expect(tester.widget<TextField>(nameField).controller!.text, 'Original name');
+    await tester.scrollUntilVisible(confirm, 250);
     expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
 
+    await tester.scrollUntilVisible(nameField, -250);
     await tester.enterText(nameField, 'Changed name');
     await tester.pump();
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await tester.ensureVisible(confirm);
+    await tester.scrollUntilVisible(confirm, 250);
     await tester.tap(confirm);
     await tester.pumpAndSettle();
 
