@@ -143,4 +143,61 @@ void main() {
     await restoredQueue.ready;
     expect(restoredQueue.records, isEmpty);
   });
+  test('sync dashboard receipts and last errors survive restart', () async {
+    final writer = FakeFirestoreGameDocumentWriter()..failWrites = true;
+    final repository = FirestoreGameRepository(writer: writer);
+    final queue = GameRecordUploadQueue();
+    final record = completeRecord();
+    await queue.enqueue(record);
+
+    expect(queue.confirmedUploadCount, 0);
+    expect(queue.pendingCount, 1);
+    expect(queue.issueFor(record.gameId), isNull);
+    final failed = await repository.publishPending(queue);
+    expect(failed.retainedForRetry, 1);
+    expect(queue.failedCount, 1);
+    expect(queue.issueFor(record.gameId)!.outcome, 'retryLater');
+    expect(queue.lastAttemptAt, isNotNull);
+    expect(queue.lastSuccessAt, isNull);
+    expect(queue.isUploading, isFalse);
+
+    final failedReload = GameRecordUploadQueue();
+    await failedReload.ready;
+    expect(failedReload.pendingCount, 1);
+    expect(failedReload.failedCount, 1);
+    expect(failedReload.lastAttemptAt, isNotNull);
+
+    writer.failWrites = false;
+    final success = await repository.publishPending(queue);
+    expect(success.confirmed, 1);
+    expect(queue.confirmedUploadCount, 1);
+    expect(queue.pendingCount, 0);
+    expect(queue.failedCount, 0);
+    expect(queue.lastSuccessAt, isNotNull);
+    expect(queue.confirmedUploads.single.scriptName, 'Test script');
+
+    final restored = GameRecordUploadQueue();
+    await restored.ready;
+    expect(restored.confirmedUploadCount, 1);
+    expect(restored.pendingCount, 0);
+    expect(restored.confirmedUploads.single.gameId, record.gameId);
+
+    // Replay of a previously confirmed upload: Firestore says alreadyExists.
+    // Keep exactly one receipt and never inflate the count.
+    expect(await restored.enqueue(record), isTrue);
+    final retry = await repository.publishPending(restored);
+    expect(retry.confirmed, 1);
+    expect(restored.confirmedUploadCount, 1);
+    expect(restored.pendingCount, 0);
+    expect(writer.documents, hasLength(1));
+  });
+
+  test('new installations do not guess historical upload totals', () async {
+    final queue = GameRecordUploadQueue();
+    await queue.ready;
+    expect(queue.confirmedUploadCount, 0);
+    expect(queue.confirmedUploads, isEmpty);
+    expect(queue.lastAttemptAt, isNull);
+  });
+
 }
