@@ -39,7 +39,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   void initState() {
     super.initState();
     _repository = widget.repository ?? CloudStatisticsRepository();
-    _global = _repository.loadOverview();
+    _global = _scheduled(_repository.loadOverview);
+  }
+
+  // Defer repository calls until after FutureBuilder can subscribe.
+  // This also makes immediate offline failures safe during widget tests.
+  Future<T> _scheduled<T>(Future<T> Function() load) async {
+    await Future<void>.delayed(Duration.zero);
+    return load();
   }
 
   @override
@@ -76,19 +83,19 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   void _selectTab(int tab) {
     setState(() {
       _tab = tab;
-      if (tab == 1) _roles ??= _repository.loadRoles();
-      if (tab == 2) _scripts ??= _repository.loadScripts();
+      if (tab == 1) _roles ??= _scheduled(_repository.loadRoles);
+      if (tab == 2) _scripts ??= _scheduled(_repository.loadScripts);
     });
   }
 
   void _refresh() {
     setState(() {
       if (_tab == 1) {
-        _roles = _repository.loadRoles();
+        _roles = _scheduled(_repository.loadRoles);
       } else if (_tab == 2) {
-        _scripts = _repository.loadScripts();
+        _scripts = _scheduled(_repository.loadScripts);
       } else {
-        _global = _repository.loadOverview();
+        _global = _scheduled(_repository.loadOverview);
       }
     });
   }
@@ -335,14 +342,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     ]);
   }
 
+  String _labelForRole(String id, Map<String, String> names) =>
+      names[id] ?? (id.isEmpty ? id : id[0].toUpperCase() + id.substring(1));
+
   List<StatisticsRole> _sortRoles(List<StatisticsRole> values,
       Map<String, String> names) {
     final query = _query.trim().toLowerCase();
     final result = values.where((r) => r.appearances > 0 &&
-      (names[r.id] ?? r.id).toLowerCase().contains(query)).toList();
+      _labelForRole(r.id, names).toLowerCase().contains(query)).toList();
     result.sort((a, b) {
       if (_sort == _Sort.name) {
-        return (names[a.id] ?? a.id).compareTo(names[b.id] ?? b.id);
+        return _labelForRole(a.id, names).compareTo(_labelForRole(b.id, names));
       }
       if (_sort == _Sort.winRate) {
         final samples = (b.appearances >= 10 ? 1 : 0)
@@ -367,6 +377,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GrimoirePressablePanel(
+        key: ValueKey('stats-role-' + role.id),
         onTap: () => _roleDetails(context, role, name),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(children: [
@@ -462,7 +473,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 if (ranked.isEmpty) _empty(context, s.statsNoResults)
                 else for (var i = 0; i < ranked.length; i++)
                   _roleTile(context, ranked[i],
-                    names[ranked[i].id] ?? ranked[i].id, i + 1),
+                    _labelForRole(ranked[i].id, names), i + 1),
               ],
             );
           },
