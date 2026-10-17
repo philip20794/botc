@@ -149,31 +149,44 @@ class FirestoreGameRepository {
     GameRecordUploadQueue queue,
   ) async {
     await queue.ready;
+    queue.setUploading(true);
     var confirmed = 0;
     var rejected = 0;
     var retainedForRetry = 0;
 
-    // Work on a snapshot: queue changes are persisted independently and may
-    // notify listeners while a confirmed entry is removed below.
-    for (final record in List<GameRecord>.from(queue.records)) {
-      final result = await publish(record);
-      if (result.isConfirmed) {
-        if (await queue.removeByGameId(record.gameId)) confirmed++;
-      } else if (result.outcome == GameRecordPublishOutcome.invalid ||
-          result.outcome == GameRecordPublishOutcome.tooLarge) {
-        // Do not upload partial data and do not silently discard a complete
-        // local report. It remains inspectable/retryable after future schema
-        // changes, but is never sent in this state.
-        rejected++;
-      } else {
-        retainedForRetry++;
+    try {
+      // Work on a snapshot: queue changes are persisted independently and may
+      // notify listeners while confirmed entries are removed below.
+      for (final record in List<GameRecord>.from(queue.records)) {
+        final result = await publish(record);
+        // Do not persist raw exception messages or personal information.
+        final error = result.error;
+        final stored = await queue.recordPublishResult(
+          record,
+          outcome: result.outcome.name,
+          errorCode: error is FirebaseException ? error.code : null,
+        );
+        if (result.isConfirmed) {
+          if (stored) {
+            confirmed++;
+          } else {
+            retainedForRetry++;
+          }
+        } else if (result.outcome == GameRecordPublishOutcome.invalid ||
+            result.outcome == GameRecordPublishOutcome.tooLarge) {
+          // Retain invalid/oversized reports for inspection or future repair.
+          rejected++;
+        } else {
+          retainedForRetry++;
+        }
       }
+      return GameRecordPublishBatchResult(
+        confirmed: confirmed,
+        rejected: rejected,
+        retainedForRetry: retainedForRetry,
+      );
+    } finally {
+      queue.setUploading(false);
     }
-
-    return GameRecordPublishBatchResult(
-      confirmed: confirmed,
-      rejected: rejected,
-      retainedForRetry: retainedForRetry,
-    );
   }
 }
