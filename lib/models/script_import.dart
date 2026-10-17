@@ -89,6 +89,15 @@ class ScriptImportResult {
     );
   }
 
+  ScriptImportResult withName(String name) {
+    return ScriptImportResult(
+      name: name.trim(),
+      author: author,
+      roles: roles,
+      validationIssues: validationIssues,
+    );
+  }
+
   ScriptImportResult withResolvedRole(
     int roleIndex,
     String roleId,

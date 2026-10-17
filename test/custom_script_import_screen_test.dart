@@ -115,6 +115,65 @@ void main() {
     );
   });
 
+  testWidgets('requires a name before saving a nameless script',
+      (tester) async {
+    final scripts = await _pumpImportScreen(
+      tester,
+      pickJson: () async => jsonEncode([
+        {'id': '_meta'},
+        'imp',
+      ]),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('scriptImportPickFile')));
+    await _waitForImportAnalysis(tester);
+
+    final nameField = find.byKey(const ValueKey('scriptImportName'));
+    final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
+    expect(tester.widget<TextField>(nameField).controller!.text, isEmpty);
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
+
+    await tester.enterText(nameField, '   ');
+    await tester.pump();
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
+
+    await tester.enterText(nameField, '  New name  ');
+    await tester.pump();
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+
+    expect(scripts.customScripts.single.name, 'New name');
+  });
+
+  testWidgets('prefills the imported name and saves an edited one',
+      (tester) async {
+    final scripts = await _pumpImportScreen(
+      tester,
+      pickJson: () async => _scriptJson('Original name'),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('scriptImportPickFile')));
+    await _waitForImportAnalysis(tester);
+    final nameField = find.byKey(const ValueKey('scriptImportName'));
+    final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
+    expect(tester.widget<TextField>(nameField).controller!.text, 'Original name');
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
+
+    await tester.enterText(nameField, 'Changed name');
+    await tester.pump();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+
+    expect(scripts.customScripts.single.name, 'Changed name');
+  });
+
   testWidgets('disables text analysis for empty or whitespace-only input',
       (tester) async {
     await _pumpImportScreen(tester);
@@ -160,7 +219,7 @@ void main() {
   });
 }
 
-Future<void> _pumpImportScreen(
+Future<ScriptService> _pumpImportScreen(
   WidgetTester tester, {
   Future<String?> Function()? pickJson,
   Future<bool> Function(Uri uri)? openUri,
@@ -182,6 +241,7 @@ Future<void> _pumpImportScreen(
     ),
   );
   await tester.pumpAndSettle();
+  return scripts;
 }
 
 String _scriptJson(String name) => jsonEncode([

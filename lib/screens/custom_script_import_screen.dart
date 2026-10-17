@@ -238,6 +238,7 @@ class ScriptImportPreviewScreen extends StatefulWidget {
 
 class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
   late ScriptImportResult _draft;
+  late final TextEditingController _nameController;
   bool _isSaving = false;
   double? _storytellerComplexity;
   double? _playerComplexity;
@@ -246,6 +247,13 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
   void initState() {
     super.initState();
     _draft = widget.initialDraft;
+    _nameController = TextEditingController(text: _draft.name ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   Future<void> _mapRole(ImportedScriptRole role) async {
@@ -273,11 +281,12 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
   }
 
   Future<void> _confirmImport() async {
-    if (!_draft.canBeConfirmed) return;
+    final namedDraft = _draft.withName(_nameController.text);
+    if (!namedDraft.canBeConfirmed || _isSaving) return;
     setState(() => _isSaving = true);
     try {
       await context.read<ScriptService>().confirmImport(
-            _draft,
+            namedDraft,
             storytellerComplexity: _storytellerComplexity,
             playerComplexity: _playerComplexity,
           );
@@ -319,6 +328,7 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context)!;
     final draft = _draft;
+    final canSave = draft.withName(_nameController.text).canBeConfirmed;
     return AppBackground(
       child: Theme(
         data: withScriptComplexityEditorTheme(GrimoireTheme.build()),
@@ -342,7 +352,14 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
                       Text(strings.scriptPreview,
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
-                      Text(draft.name ?? strings.scriptImportError),
+                      TextField(
+                        key: const ValueKey('scriptImportName'),
+                        controller: _nameController,
+                        enabled: !_isSaving,
+                        textCapitalization: TextCapitalization.sentences,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(labelText: strings.scriptName),
+                      ),
                       if (draft.author != null)
                         Text(strings.scriptAuthor(draft.author!)),
                       Text(strings.scriptRoleCount(draft.roles.length)),
@@ -400,15 +417,19 @@ class _ScriptImportPreviewScreenState extends State<ScriptImportPreviewScreen> {
                 onChanged: (value) => setState(() => _playerComplexity = value),
               ),
               const SizedBox(height: 16),
-              if (!draft.canBeConfirmed)
+              if (_nameController.text.trim().isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(strings.enterScriptNameBeforeSaving),
+                ),
+              if (draft.unresolvedRoles.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(strings.resolveRolesBeforeSaving),
                 ),
               ElevatedButton(
                 key: const ValueKey('scriptImportConfirm'),
-                onPressed:
-                    draft.canBeConfirmed && !_isSaving ? _confirmImport : null,
+                onPressed: canSave && !_isSaving ? _confirmImport : null,
                 child: Text(strings.confirmImport),
               ),
             ],

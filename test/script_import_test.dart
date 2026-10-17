@@ -161,6 +161,87 @@ void main() {
         orderedEquals(['imp', 'poisoner', 'fanggu']));
   });
 
+  test('unnamed scripts can be named before saving', () async {
+    final characters = CharacterService();
+    final scripts = ScriptService();
+    await scripts.ready;
+    final sources = [
+      jsonEncode([
+        {'id': '_meta'},
+        'imp',
+      ]),
+      jsonEncode([
+        {'id': '_meta', 'name': '   '},
+        'imp',
+      ]),
+      jsonEncode(['imp']),
+      jsonEncode({'roles': ['imp']}),
+    ];
+
+    for (var index = 0; index < sources.length; index++) {
+      final draft = await scripts.inspectImportJson(sources[index], characters);
+      expect(draft.name, isNull);
+      expect(draft.issues, isEmpty);
+      expect(draft.canBeConfirmed, isFalse);
+      await expectLater(scripts.confirmImport(draft), throwsStateError);
+      expect(scripts.customScripts, hasLength(index));
+
+      final named = draft.withName('  My custom script  ');
+      expect(named.name, 'My custom script');
+      expect(named.canBeConfirmed, isTrue);
+      final saved = await scripts.confirmImport(
+        named,
+        scriptId: 'custom:unnamed-$index',
+      );
+      expect(saved.name, 'My custom script');
+      expect(saved.roleIds, ['imp']);
+    }
+    final restored = ScriptService();
+    await restored.ready;
+    expect(restored.customScripts, hasLength(sources.length));
+  });
+
+  test('existing imported names can be changed before saving', () async {
+    final scripts = ScriptService();
+    await scripts.ready;
+    final draft = scripts.inspectImportJsonAgainstCatalog(
+      jsonEncode([
+        {'id': '_meta', 'name': 'Original'},
+        'imp',
+      ]),
+      await loadEnglishCatalog(),
+    );
+
+    expect(draft.name, 'Original');
+    expect(draft.withName('   ').canBeConfirmed, isFalse);
+    final saved = await scripts.confirmImport(
+      draft.withName('  Renamed  '),
+      scriptId: 'custom:renamed',
+    );
+    expect(saved.name, 'Renamed');
+    expect(draft.name, 'Original');
+  });
+
+  test('invalid metadata types still block import', () async {
+    final scripts = ScriptService();
+    await scripts.ready;
+    final catalog = await loadEnglishCatalog();
+    for (final source in [
+      jsonEncode([
+        {'id': '_meta', 'name': 42},
+        'imp',
+      ]),
+      jsonEncode({'_meta': 'not an object', 'roles': ['imp']}),
+    ]) {
+      final draft = scripts.inspectImportJsonAgainstCatalog(source, catalog);
+      expect(
+        draft.issues.map((issue) => issue.type),
+        contains(ScriptImportIssueType.invalidMetadata),
+      );
+      expect(draft.withName('Valid name').canBeConfirmed, isFalse);
+    }
+  });
+
   test('persists import complexities independently, including zero', () async {
     final characters = CharacterService();
     final scripts = ScriptService();
