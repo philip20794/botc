@@ -1,4 +1,3 @@
-import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/quick_flow.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
