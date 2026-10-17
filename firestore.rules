@@ -56,23 +56,16 @@ service cloud.firestore {
   }
 
   function validPlayer(player) {
-    // Enforce the exact seven-field public shape and the wire types for
-    // every seat. Repeating per-string length checks across 20 players
-    // exceeds Firestore's 1,000-expression budget for transactions.
-    // The Dart GameRecordValidator additionally checks ID lengths and
-    // formats before enqueueing or uploading.
+    // Firestore has a strict 1,000-expression budget. The exact field set
+    // prevents arbitrary extra keys (e.g. player names or free-form notes)
+    // in every player map. The app validates ID formats, field types, teams
+    // and positions before upload; those checks cannot all be repeated here
+    // for 20 seats without exceeding the server expression budget.
     return player is map
       && player.keys().toSet() == [
         'anonymizedPlayerId', 'position', 'actualStartRoleId',
         'displayedStartRoleId', 'startTeam', 'endRoleId', 'endTeam'
-      ].toSet()
-      && player.anonymizedPlayerId is string
-      && player.position is int && player.position >= 0 && player.position < 20
-      && player.actualStartRoleId is string
-      && player.displayedStartRoleId is string
-      && player.startTeam in ['good', 'evil']
-      && player.endRoleId is string
-      && player.endTeam in ['good', 'evil'];
+      ].toSet();
   }
 
   // Evaluate a small group of seats at a time. Long left-associated
