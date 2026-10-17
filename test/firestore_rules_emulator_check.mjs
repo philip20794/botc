@@ -260,4 +260,56 @@ await expectStatus(
   'delete denied',
 );
 
+// New versions attach uploadedAt using a SERVER transform. The time cannot
+// be chosen by the client: it is trusted as the incremental index cursor.
+for (const playerCount of [5, 20]) {
+  const timestampedRecord = structuredClone(fivePlayerRecord);
+  timestampedRecord.gameId = `${gameId}_stamp_${playerCount}`;
+  timestampedRecord.playerCount = playerCount;
+  timestampedRecord.players = Array.from({ length: playerCount }, (_, i) => ({
+    ...fivePlayerRecord.players[0],
+    anonymizedPlayerId: `player_stamp_${i}_abcdefgh`,
+    position: i,
+  }));
+  const docName =
+    `projects/${projectId}/databases/(default)/documents/games/${timestampedRecord.gameId}`;
+  await expectStatus(await fetch(commitUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      writes: [{
+        update: { name: docName, ...documentBody(timestampedRecord) },
+        updateTransforms: [{
+          fieldPath: 'uploadedAt', setToServerValue: 'REQUEST_TIME',
+        }],
+        currentDocument: { exists: false },
+      }],
+    }),
+  }), 200, `server-timestamped ${playerCount}-player create`);
+}
+
+const forgedTimestamp = structuredClone(validRecord);
+forgedTimestamp.gameId += '_forged_stamp';
+const forgedDocument = documentBody(forgedTimestamp);
+forgedDocument.fields.uploadedAt = {
+  timestampValue: '2020-01-01T00:00:00Z',
+};
+await expectStatus(await fetch(`${baseUrl}/games?documentId=${forgedTimestamp.gameId}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(forgedDocument),
+}), 403, 'client-supplied fake timestamp denied');
+
+await expectStatus(await fetch(`${baseUrl}/statistics/global`),
+  404, 'global statistic is publicly readable but not yet created');
+await expectStatus(await fetch(`${baseUrl}/statistics?documentId=global`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(documentBody({ games: 1000 })),
+  }), 403, 'client cannot forge global statistics');
+await expectStatus(await fetch(`${baseUrl}/statistics_private/progress`), 403,
+  'aggregation checkpoint remains private');
+await expectStatus(await fetch(`${baseUrl}/statistics_processed/test_game`), 403,
+  'processed-game receipts remain private');
+
 console.log('Firestore rules emulator checks passed.');
