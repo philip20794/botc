@@ -731,7 +731,7 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
       return RoleMultiplicity.allowedCounts(
         character.roleId,
         gameState.playerNames.length,
-        availableSlots: slots,
+        availableSlots: character.roleId == 'legion' ? null : slots,
       ).isNotEmpty;
     }).toList();
     if (possible.isEmpty) return false;
@@ -739,7 +739,7 @@ class _CharacterAuswahlScreenState extends State<CharacterAuswahlScreen> {
     final count = RoleMultiplicity.storytellerChooses(character.roleId)
         ? RoleMultiplicity.randomCount(
             character.roleId, gameState.playerNames.length,
-            availableSlots: slots)
+            availableSlots: character.roleId == 'legion' ? null : slots)
         : 1;
     characterService.addCharacter(character,
         exemplars: count, playerCount: gameState.playerNames.length);
