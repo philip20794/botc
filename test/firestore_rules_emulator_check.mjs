@@ -152,6 +152,30 @@ await expectStatus(await productionWrite(invalidProductionWrite), 403,
 await expectStatus(await productionWrite(fivePlayerRecord), 200,
   'production-like 5-player game transaction create');
 
+// Rule evaluation is not necessarily linear in the player count. In
+// particular, the 20-seat validation contains many nested expressions;
+// verify every representative real-game size, not just five players.
+for (const playerCount of [6, 10, 15, 20]) {
+  const record = structuredClone(fivePlayerRecord);
+  record.gameId = `${gameId}_${playerCount}_players`;
+  record.playerCount = playerCount;
+  record.players = Array.from({ length: playerCount }, (_, index) => {
+    const [roleId, team] = index === 0 ? ['imp', 'evil'] : ['monk', 'good'];
+    return {
+      anonymizedPlayerId: `player_test_${index}_abcdefgh`,
+      position: index,
+      actualStartRoleId: roleId,
+      displayedStartRoleId: roleId,
+      startTeam: team,
+      endRoleId: roleId,
+      endTeam: team,
+    };
+  });
+  record.chronicleEvents = [];
+  await expectStatus(await productionWrite(record), 200,
+    `production-like ${playerCount}-player transaction create`);
+}
+
 await expectStatus(await post(gameId, validRecord), 200, 'valid create');
 await expectStatus(await fetch(`${baseUrl}/games/${gameId}`), 200, 'public read');
 await expectStatus(
