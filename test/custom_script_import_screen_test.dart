@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
+import 'package:blood_on_the_clocktower/models/script_import.dart';
 import 'package:blood_on_the_clocktower/screens/custom_script_import_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
@@ -13,9 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
+  setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await SharedPreferences.getInstance();
   });
 
   testWidgets('uses the Grimoire theme for custom script import',
@@ -53,9 +53,14 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('scriptImportPickFile')));
     await _waitForImportAnalysis(tester);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('scriptImportName')))
+          .controller!
+          .text,
+      'File import',
+    );
     await _scrollToImportOutput(tester);
-
-    expect(find.text('File import'), findsOneWidget);
     expect(find.byKey(const ValueKey('scriptImportPreview')), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -79,9 +84,14 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('scriptImportAnalyzeText')));
     await _waitForImportAnalysis(tester);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('scriptImportName')))
+          .controller!
+          .text,
+      'Pasted import',
+    );
     await _scrollToImportOutput(tester);
-
-    expect(find.text('Pasted import', skipOffstage: false), findsOneWidget);
     expect(find.byKey(const ValueKey('scriptImportPreview')), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -113,6 +123,104 @@ void main() {
       tester.widget<TextField>(textField).controller!.text,
       '{ not valid JSON',
     );
+  });
+
+  testWidgets('requires a name before saving a nameless script',
+      (tester) async {
+    final scripts = await _pumpPreviewScreen(tester);
+
+    final nameField = find.byKey(const ValueKey('scriptImportName'));
+    final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
+    final previewScrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('scriptImportPreview')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    expect(tester.widget<TextField>(nameField).controller!.text, isEmpty);
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
+
+    await tester.scrollUntilVisible(
+      nameField,
+      -250,
+      scrollable: previewScrollable,
+    );
+    await tester.enterText(nameField, '   ');
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNull);
+
+    await tester.scrollUntilVisible(
+      nameField,
+      -250,
+      scrollable: previewScrollable,
+    );
+    await tester.enterText(nameField, '  New name  ');
+    await tester.pump();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+
+    expect(scripts.customScripts.single.name, 'New name');
+  });
+
+  testWidgets('prefills the imported name and saves an edited one',
+      (tester) async {
+    final scripts = await _pumpPreviewScreen(
+      tester,
+      name: 'Original name',
+    );
+
+    final nameField = find.byKey(const ValueKey('scriptImportName'));
+    final confirm = find.byKey(const ValueKey('scriptImportConfirm'));
+    final previewScrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('scriptImportPreview')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    expect(tester.widget<TextField>(nameField).controller!.text, 'Original name');
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
+    expect(tester.widget<ElevatedButton>(confirm).onPressed, isNotNull);
+
+    await tester.scrollUntilVisible(
+      nameField,
+      -250,
+      scrollable: previewScrollable,
+    );
+    await tester.enterText(nameField, 'Changed name');
+    await tester.pump();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      confirm,
+      250,
+      scrollable: previewScrollable,
+    );
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+
+    expect(scripts.customScripts.single.name, 'Changed name');
   });
 
   testWidgets('disables text analysis for empty or whitespace-only input',
@@ -160,7 +268,42 @@ void main() {
   });
 }
 
-Future<void> _pumpImportScreen(
+Future<ScriptService> _pumpPreviewScreen(
+  WidgetTester tester, {
+  String? name,
+}) async {
+  final scripts = ScriptService();
+  await scripts.ready;
+
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: scripts),
+        ChangeNotifierProvider(create: (_) => CharacterService()),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ScriptImportPreviewScreen(
+          initialDraft: ScriptImportResult(
+            name: name,
+            roles: const [
+              ImportedScriptRole(
+                index: 0,
+                sourceId: 'imp',
+                resolvedRoleId: 'imp',
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return scripts;
+}
+
+Future<ScriptService> _pumpImportScreen(
   WidgetTester tester, {
   Future<String?> Function()? pickJson,
   Future<bool> Function(Uri uri)? openUri,
@@ -182,6 +325,7 @@ Future<void> _pumpImportScreen(
     ),
   );
   await tester.pumpAndSettle();
+  return scripts;
 }
 
 String _scriptJson(String name) => jsonEncode([

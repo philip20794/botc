@@ -377,7 +377,7 @@ class ScriptService extends ChangeNotifier {
         ScriptImportIssue(
           type: ScriptImportIssueType.invalidStructure,
           message:
-              'Expected a script array with a _meta entry and role entries.',
+              'Expected a script array or object with role entries.',
         ),
       ]);
     }
@@ -386,20 +386,15 @@ class ScriptService extends ChangeNotifier {
     final meta = structure.meta;
     String? name;
     String? author;
-    if (meta == null) {
-      issues.add(ScriptImportIssue(
-        type: ScriptImportIssueType.invalidMetadata,
-        message: 'The script requires exactly one _meta entry.',
-      ));
-    } else {
+    if (meta != null) {
       final rawName = meta['name'];
-      if (rawName is! String || rawName.trim().isEmpty) {
+      if (rawName is String) {
+        if (rawName.trim().isNotEmpty) name = rawName.trim();
+      } else if (rawName != null) {
         issues.add(ScriptImportIssue(
           type: ScriptImportIssueType.invalidMetadata,
-          message: 'The _meta entry requires a non-empty name.',
+          message: 'The _meta name must be a string when provided.',
         ));
-      } else {
-        name = rawName.trim();
       }
       final rawAuthor = meta['author'];
       if (rawAuthor != null && rawAuthor is! String) {
@@ -410,6 +405,12 @@ class ScriptService extends ChangeNotifier {
       } else if (rawAuthor is String && rawAuthor.trim().isNotEmpty) {
         author = rawAuthor.trim();
       }
+    }
+    if (structure.hasInvalidMeta) {
+      issues.add(ScriptImportIssue(
+        type: ScriptImportIssueType.invalidMetadata,
+        message: 'The _meta entry must be an object.',
+      ));
     }
     if (structure.hasDuplicateMeta) {
       issues.add(ScriptImportIssue(
@@ -546,6 +547,7 @@ class ScriptService extends ChangeNotifier {
       final rawMeta = decoded['_meta'];
       return _ImportStructure(
         meta: rawMeta is Map<String, dynamic> ? rawMeta : null,
+        hasInvalidMeta: rawMeta != null && rawMeta is! Map<String, dynamic>,
         roles: rawRoles,
       );
     }
@@ -754,10 +756,12 @@ class _ImportStructure {
   final Map<String, dynamic>? meta;
   final List<dynamic> roles;
   final bool hasDuplicateMeta;
+  final bool hasInvalidMeta;
 
   const _ImportStructure({
     this.meta,
     required this.roles,
     this.hasDuplicateMeta = false,
+    this.hasInvalidMeta = false,
   });
 }

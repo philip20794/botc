@@ -135,6 +135,8 @@
   "openScriptTool": "Script Tool öffnen",
   "scriptToolError": "Das Script Tool konnte nicht geöffnet werden.",
   "scriptPreview": "Skriptvorschau",
+  "scriptName": "Skriptname",
+  "enterScriptNameBeforeSaving": "Gib vor dem Speichern einen Skriptnamen ein.",
   "scriptAuthor": "Autor: {author}",
   "scriptRoleCount": "Rollen: {count}",
   "storytellerComplexity": "Komplexität für die Spielleitung",
