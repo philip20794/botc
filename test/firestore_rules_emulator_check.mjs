@@ -144,6 +144,11 @@ const productionWrite = (record) => fetch(commitUrl, {
     }],
   }),
 });
+const invalidProductionWrite = structuredClone(fivePlayerRecord);
+invalidProductionWrite.gameId += '_invalid';
+delete invalidProductionWrite.players[0].endTeam;
+await expectStatus(await productionWrite(invalidProductionWrite), 403,
+  'transaction create must reject missing player endTeam');
 await expectStatus(await productionWrite(fivePlayerRecord), 200,
   'production-like 5-player game transaction create');
 
