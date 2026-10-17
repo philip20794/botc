@@ -217,6 +217,32 @@ for (const playerCount of [6, 10, 15, 20]) {
     `production-like ${playerCount}-player transaction create`);
 }
 
+// Keep negative coverage at the last seat; optimizing the rules must not
+// silently make player 19 unvalidated in a 20-seat game.
+const lastSeatRecord = structuredClone(fivePlayerRecord);
+lastSeatRecord.gameId = `${gameId}_last_seat_invalid`;
+lastSeatRecord.playerCount = 20;
+lastSeatRecord.players = Array.from({ length: 20 }, (_, i) => ({
+  ...fivePlayerRecord.players[0],
+  anonymizedPlayerId: `player_test_${i}_abcdefgh`,
+  position: i,
+}));
+lastSeatRecord.players[19].playerName = 'not allowed in public statistics';
+await expectStatus(await productionWrite(lastSeatRecord), 403,
+  'twentieth player must not include an extra field');
+
+const extraGameField = structuredClone(validRecord);
+extraGameField.gameId += '_extra_game';
+extraGameField.privateNotes = 'must not be uploaded';
+await expectStatus(await post(extraGameField.gameId, extraGameField), 403,
+  'top-level fields outside the public schema must be rejected');
+
+const extraScriptField = structuredClone(validRecord);
+extraScriptField.gameId += '_extra_script';
+extraScriptField.script.privateDetails = 'must not be uploaded';
+await expectStatus(await post(extraScriptField.gameId, extraScriptField), 403,
+  'script fields outside the public schema must be rejected');
+
 await expectStatus(await post(gameId, validRecord), 200, 'valid create');
 await expectStatus(await fetch(`${baseUrl}/games/${gameId}`), 200, 'public read');
 await expectStatus(
