@@ -133,7 +133,7 @@ void main() {
   });
 
   testWidgets(
-      'selection/info toggle highlights its actual mode and long press marks only good roles',
+      'setup long press toggles bluffs in either tap mode and Farmer has no badge',
       (tester) async {
     final gameState = await createService();
     final characterService = CharacterService();
@@ -151,6 +151,8 @@ void main() {
             body: SelectCharacterComponent(
               charactersToChooseFrom: [
                 character('washerwoman', Fraction.townsfolk),
+                character('villageidiot', Fraction.townsfolk),
+                character('farmer', Fraction.townsfolk),
                 character('poisoner', Fraction.minion),
               ],
               onConfirm: () {},
@@ -168,17 +170,38 @@ void main() {
 
     var toggle = tester.widget<ToggleButtons>(find.byType(ToggleButtons).first);
     expect(toggle.isSelected, orderedEquals([false, true]));
+    expect(
+      tester.widget<CharacterAvatar>(find.byType(CharacterAvatar).at(2))
+          .showExemplare,
+      isFalse,
+      reason: 'Farmer starts with one instance and needs no setup badge.',
+    );
+    expect(
+      tester.widget<CharacterAvatar>(find.byType(CharacterAvatar).at(1))
+          .showExemplare,
+      isTrue,
+      reason: 'Village Idiot still uses a setup multiplicity badge.',
+    );
 
     await tester.longPress(find.byType(CharacterAvatar).first);
     await tester.pump();
     expect(gameState.demonBluffRoleIds, orderedEquals(['washerwoman']));
+    expect(
+      tester.widget<CharacterAvatar>(find.byType(CharacterAvatar).first).isBluff,
+      isTrue,
+    );
     expect(characterService.gameCharacters, isEmpty,
         reason: 'Long press must not also select the role for the game.');
 
     await tester.tap(find.byType(CharacterAvatar).first);
     await tester.pump();
     expect(characterService.gameCharacters, isEmpty,
-        reason: 'A red token cannot become a game character directly.');
+        reason: 'A bluff cannot also be selected as a game character.');
+
+    await tester.longPress(find.byType(CharacterAvatar).first);
+    await tester.pump();
+    expect(gameState.demonBluffRoleIds, isEmpty,
+        reason: 'A second long press must remove the bluff.');
 
     await tester.tap(find.byIcon(Icons.help).first);
     await tester.pump();
@@ -187,8 +210,23 @@ void main() {
 
     await tester.longPress(find.byType(CharacterAvatar).at(1));
     await tester.pump();
-    expect(gameState.demonBluffRoleIds, orderedEquals(['washerwoman']),
-        reason: 'Information mode must not change bluff selection.');
+    expect(gameState.demonBluffRoleIds, orderedEquals(['villageidiot']),
+        reason: 'Village Idiot is a valid Townsfolk bluff, even in info mode.');
+    expect(characterService.gameCharacters, isEmpty);
+
+    await tester.longPress(find.byType(CharacterAvatar).at(1));
+    await tester.pump();
+    expect(gameState.demonBluffRoleIds, isEmpty,
+        reason: 'Info mode must also allow removing a bluff.');
+
+    await tester.longPress(find.byType(CharacterAvatar).at(2));
+    await tester.pump();
+    expect(gameState.demonBluffRoleIds, orderedEquals(['farmer']));
+
+    await tester.longPress(find.byType(CharacterAvatar).last);
+    await tester.pump();
+    expect(gameState.demonBluffRoleIds, orderedEquals(['farmer']),
+        reason: 'Minions are not valid Demon Bluffs.');
   });
 
   testWidgets(

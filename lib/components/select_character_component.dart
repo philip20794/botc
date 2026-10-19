@@ -261,17 +261,19 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
 
               return GestureDetector(
                   onLongPress: () {
-                    if (characterService.showInfoButtonOnCharacterSelection) {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) =>
-                            ShowCharacter(character: character)));
-                    } else if (widget.isForSetupGame &&
-                        !RoleMultiplicity.storytellerChooses(character.roleId)) {
+                    if (widget.isForSetupGame) {
+                      // Long press always toggles Demon Bluffs during setup,
+                      // regardless of the tap mode (selection or information).
                       gameStateService.toggleDemonBluff(
                         character.roleId,
                         isEligible: isEligibleBluff || isBluff,
                         isGameCharacter: isSelected,
                       );
+                    } else if (characterService
+                        .showInfoButtonOnCharacterSelection) {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) =>
+                            ShowCharacter(character: character)));
                     }
                   },
                   onTap: () async {
@@ -366,9 +368,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
         .where((role) => role.roleId == character.roleId)
         .length;
     if (selected > 0) return '$selected';
-    // Riot's final count is unknown until Minions transform on day 3;
-    // Farmer can generate more instances through nightly deaths.
-    if (character.roleId == 'riot' || character.roleId == 'farmer') {
+    // Riot can gain instances when Minions transform on day 3.
+    if (character.roleId == 'riot') {
       return 'n';
     }
     return RoleMultiplicity.storytellerChooses(character.roleId)

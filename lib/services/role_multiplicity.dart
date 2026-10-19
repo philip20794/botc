@@ -5,11 +5,12 @@ import 'dart:math';
 /// Riot starts as ONE Demon; Minions turn into Riot on the third night/day.
 /// Farmer starts as ONE Townsfolk; later conversions are actual role changes.
 abstract final class RoleMultiplicity {
+  // Only roles with a meaningful setup badge belong here.
+  // Farmer starts once; later copies are created during play.
   static const trackedRoles = {
     'villageidiot',
     'legion',
     'riot',
-    'farmer',
   };
 
   static bool storytellerChooses(String roleId) =>
