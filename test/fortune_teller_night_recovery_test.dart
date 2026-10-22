@@ -1,12 +1,11 @@
 import 'dart:convert';
 
-import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/night_order_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
