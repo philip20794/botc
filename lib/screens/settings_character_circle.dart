@@ -2,6 +2,7 @@ import 'package:blood_on_the_clocktower/components/character_circle_component.da
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
@@ -17,7 +18,8 @@ class SettingsCharacterCircle extends StatefulWidget {
 }
 
 class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
-  var numberOfCharacters = 11.0;
+  var numberOfCharacters =
+      ResponsiveLayoutDefaults.previewCharacterCount.toDouble();
   List<Character> randomCharacters = [];
 
   @override
@@ -306,7 +308,9 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                     await settingsService.resetSettings();
                     if (!mounted) return;
                     setState(() {
-                      updateNumberOfCharacters(11);
+                      updateNumberOfCharacters(
+                        ResponsiveLayoutDefaults.previewCharacterCount.toDouble(),
+                      );
                     });
                   },
                   icon: const Icon(Icons.restart_alt),
