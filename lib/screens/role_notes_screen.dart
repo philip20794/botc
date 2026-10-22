@@ -4,6 +4,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
+import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
@@ -90,20 +91,33 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final boardSize = constraints.biggest;
-                    final playerTokenSize = settingsService.characterKnobSize
-                        .clamp(76.0, 106.0)
-                        .toDouble();
-                    final maxRoleTokenSize = _roleBadgeSizeFor(1);
+                    // Use the same character and token sizing as Layout Settings.
+                    final playerTokenSize = settingsService.characterKnobSize;
+                    final roleBadgeScale = settingsService.tokenKnobSize /
+                        ResponsiveLayoutDefaults.forViewport(
+                          ResponsiveLayoutDefaults.referenceViewport,
+                        ).tokenKnobSize;
+                    final maxRoleTokenSize =
+                        _roleBadgeSizeFor(1) * roleBadgeScale;
                     final nodeSize = playerTokenSize + maxRoleTokenSize * 1.95;
                     final nodePadding = (nodeSize - playerTokenSize) / 2;
                     _lastBoardSize = boardSize;
                     _lastPlayerTokenSize = playerTokenSize;
 
                     if (roleNotesService.needsPositionSync(
-                        playerNames, boardSize, playerTokenSize)) {
+                      playerNames,
+                      boardSize,
+                      playerTokenSize,
+                      layoutSettings: settingsService,
+                    )) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
                         roleNotesService.ensureDefaultPositions(
-                            playerNames, boardSize, playerTokenSize);
+                          playerNames,
+                          boardSize,
+                          playerTokenSize,
+                          layoutSettings: settingsService,
+                        );
                       });
                     }
 
@@ -159,6 +173,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
                                 nodePadding,
                                 playerTokenSize,
                                 maxRoleTokenSize,
+                                roleBadgeScale,
                               ),
                         ],
                       ),
@@ -184,6 +199,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
     double nodePadding,
     double playerTokenSize,
     double maxRoleTokenSize,
+    double roleBadgeScale,
   ) {
     final roleNotesService =
         Provider.of<RoleNotesService>(context, listen: false);
@@ -197,6 +213,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
         nodeSize,
         playerTokenSize,
         maxRoleTokenSize,
+        roleBadgeScale,
         selectedRoleImages,
         duplicateRoleImages,
         roleNamesByImage,
@@ -246,6 +263,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
     double nodeSize,
     double playerTokenSize,
     double maxRoleTokenSize,
+    double roleBadgeScale,
     List<String> selectedRoleImages,
     Set<String> duplicateRoleImages,
     Map<String, String> roleNamesByImage, {
@@ -254,7 +272,8 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
     required VoidCallback onDragFinished,
     bool isDragging = false,
   }) {
-    final roleTokenSize = _roleBadgeSizeFor(selectedRoleImages.length);
+    final roleTokenSize =
+        _roleBadgeSizeFor(selectedRoleImages.length) * roleBadgeScale;
     final center = nodeSize / 2;
 
     return RepaintBoundary(
@@ -761,6 +780,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
       playerNames,
       _lastBoardSize,
       _lastPlayerTokenSize,
+      layoutSettings: Provider.of<SettingsService>(context, listen: false),
     );
   }
 
