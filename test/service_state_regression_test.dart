@@ -1,5 +1,6 @@
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
+import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
@@ -84,21 +85,38 @@ void main() {
     expect(restored.locale, const Locale('de'));
   });
 
-  test('layout reset restores offsets and survives a service restart',
+  test('layout reset restores responsive defaults and survives restart',
       () async {
-    final settings = SettingsService();
+    const viewport = Size(360, 708);
+    final defaults = ResponsiveLayoutDefaults.forViewport(viewport);
+    final settings = SettingsService(initialViewport: viewport);
     await settings.initialized;
     await settings.setTokenOffsetX(2);
     await settings.setTokenOffsetY(3);
-    await settings.setCharacterKnobSize(11);
+    await settings.setCharacterKnobSize(110);
+
     await settings.resetSettings();
-    expect(settings.tokenOffsetX, 45);
-    expect(settings.tokenOffsetY, 30);
-    expect(settings.characterKnobSize, 100);
-    final restored = SettingsService();
+    expect(settings.tokenOffsetX, closeTo(defaults.tokenOffsetX, 0.0001));
+    expect(settings.tokenOffsetY, closeTo(defaults.tokenOffsetY, 0.0001));
+    expect(settings.characterKnobSize,
+        closeTo(defaults.characterKnobSize, 0.0001));
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('layoutUsesResponsiveDefaults'), isTrue);
+    expect(prefs.containsKey('tokenOffsetX'), isFalse);
+    expect(prefs.containsKey('characterKnobSize'), isFalse);
+
+    final restored = SettingsService(initialViewport: viewport);
     await restored.initialized;
-    expect(restored.tokenOffsetX, 45);
-    expect(restored.tokenOffsetY, 30);
+    expect(restored.tokenOffsetX, closeTo(defaults.tokenOffsetX, 0.0001));
+    expect(restored.tokenOffsetY, closeTo(defaults.tokenOffsetY, 0.0001));
+
+    const biggerViewport = Size(393, 852);
+    restored.updateViewportSize(biggerViewport);
+    final biggerDefaults =
+        ResponsiveLayoutDefaults.forViewport(biggerViewport);
+    expect(restored.tokenOffsetX,
+        closeTo(biggerDefaults.tokenOffsetX, 0.0001));
   });
 
   test('character selection prevents duplicate roles and counts factions',
