@@ -120,8 +120,10 @@ void main() {
       ),
     );
 
-    await tester.tap(
-      find.byKey(const ValueKey('role-notes-standard-distribution')),
+    await tester.tapAt(
+      tester.getCenter(
+        find.byKey(const ValueKey('role-notes-standard-distribution')),
+      ),
     );
     await tester.pump();
     expect(taps, 1);
