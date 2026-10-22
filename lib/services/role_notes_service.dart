@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:blood_on_the_clocktower/services/settings_service.dart';
+import 'package:blood_on_the_clocktower/utils/character_layout_positions.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RoleNotesService extends ChangeNotifier {
   final String _storagePlayerPositionsKey = 'role_notes_player_positions';
   final String _storagePlayerRolesKey = 'role_notes_player_roles';
+  static const _storageLayoutSignatureKey = 'role_notes_layout_signature_v1';
+  String? _layoutSignature;
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   final Map<String, Offset> _playerPositions = {};
   final Map<String, List<String>> _playerRoleImages = {};
@@ -19,6 +23,7 @@ class RoleNotesService extends ChangeNotifier {
     final prefs = await _prefs;
     _loadPlayerPositions(prefs);
     _loadPlayerRoles(prefs);
+    _layoutSignature = prefs.getString(_storageLayoutSignatureKey);
     notifyListeners();
   }
 
@@ -33,8 +38,16 @@ class RoleNotesService extends ChangeNotifier {
     return _playerRoleImages.values.any((roles) => roles.isNotEmpty);
   }
 
+  /// Update stored positions when the shared layout or board dimensions change.
+  /// In between layout changes, manually dragged positions are retained.
   bool needsPositionSync(
-      List<String> playerNames, Size boardSize, double playerTokenSize) {
+      List<String> playerNames, Size boardSize, double playerTokenSize,
+      {SettingsService? layoutSettings}) {
+    final signature =
+        _signature(playerNames, boardSize, playerTokenSize, layoutSettings);
+    if (signature != null && signature != _layoutSignature) {
+      return true;
+    }
     final playerNameSet = playerNames.toSet();
     if (_playerPositions.keys.any((name) => !playerNameSet.contains(name))) {
       return true;
@@ -59,7 +72,7 @@ class RoleNotesService extends ChangeNotifier {
 
   Future<void> ensureDefaultPositions(
       List<String> playerNames, Size boardSize, double playerTokenSize,
-      {bool force = false}) async {
+      {bool force = false, SettingsService? layoutSettings}) async {
     if (boardSize.width <= 0 || boardSize.height <= 0 || playerNames.isEmpty) {
       return;
     }
@@ -80,6 +93,22 @@ class RoleNotesService extends ChangeNotifier {
       return shouldRemove;
     });
 
+    final signature =
+        _signature(playerNames, boardSize, playerTokenSize, layoutSettings);
+    final applyNewLayout =
+        force || (signature != null && signature != _layoutSignature);
+    final sharedPositions = layoutSettings == null
+        ? null
+        : CharacterLayoutPositions.calculate(
+            count: playerNames.length,
+            boardSize: boardSize,
+            characterSize: playerTokenSize,
+            radiusX: layoutSettings.radiusX,
+            radiusY: layoutSettings.radiusY,
+            startAngleDiv: layoutSettings.startAngleDiv,
+            offsetX: layoutSettings.offsetX,
+            offsetY: layoutSettings.offsetY,
+          );
     final radius = max(
       0.0,
       min(boardSize.width, boardSize.height) * 0.36 - playerTokenSize * 0.5,
@@ -91,17 +120,21 @@ class RoleNotesService extends ChangeNotifier {
 
     for (var i = 0; i < playerNames.length; i++) {
       final playerName = playerNames[i];
-      if (!force && _playerPositions.containsKey(playerName)) {
+      if (!applyNewLayout && _playerPositions.containsKey(playerName)) {
         continue;
       }
       final angle = -pi / 2 + (2 * pi * i / playerNames.length);
-      final nextPosition = Offset(
-        center.dx + cos(angle) * radius,
-        center.dy + sin(angle) * radius,
-      );
-      _playerPositions[playerName] =
+      final nextPosition = sharedPositions?[i] ??
+          Offset(
+            center.dx + cos(angle) * radius,
+            center.dy + sin(angle) * radius,
+          );
+      final clampedPosition =
           clampPlayerPosition(nextPosition, boardSize, playerTokenSize);
-      positionsChanged = true;
+      if (_playerPositions[playerName] != clampedPosition) {
+        _playerPositions[playerName] = clampedPosition;
+        positionsChanged = true;
+      }
     }
 
     if (positionsChanged) {
@@ -110,15 +143,37 @@ class RoleNotesService extends ChangeNotifier {
     if (rolesChanged) {
       await _savePlayerRoles();
     }
+    if (signature != null && _layoutSignature != signature) {
+      _layoutSignature = signature;
+      final prefs = await _prefs;
+      await prefs.setString(_storageLayoutSignatureKey, signature);
+    }
     if (positionsChanged || rolesChanged) {
       notifyListeners();
     }
   }
 
   Future<void> resetPositions(
-      List<String> playerNames, Size boardSize, double playerTokenSize) {
+      List<String> playerNames, Size boardSize, double playerTokenSize,
+      {SettingsService? layoutSettings}) {
     return ensureDefaultPositions(playerNames, boardSize, playerTokenSize,
-        force: true);
+        force: true, layoutSettings: layoutSettings);
+  }
+
+  String? _signature(List<String> playerNames, Size boardSize,
+      double playerTokenSize, SettingsService? settings) {
+    if (settings == null) return null;
+    return jsonEncode([
+      boardSize.width,
+      boardSize.height,
+      playerTokenSize,
+      settings.startAngleDiv.toInt(),
+      settings.radiusX,
+      settings.radiusY,
+      settings.offsetX,
+      settings.offsetY,
+      ...playerNames,
+    ]);
   }
 
   Future<void> setPlayerPosition(String playerName, Offset position,
