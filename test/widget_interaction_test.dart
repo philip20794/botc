@@ -4,6 +4,7 @@ import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/enums/gameset.dart';
+import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
 import 'package:blood_on_the_clocktower/screens/playername_screen.dart';
 import 'package:blood_on_the_clocktower/screens/settings_character_circle.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -125,7 +126,9 @@ void main() {
     await game.ready;
     final characters = CharacterService();
     await characters.init();
-    final settings = SettingsService();
+    const viewport = Size(360, 708);
+    final expected = ResponsiveLayoutDefaults.forViewport(viewport);
+    final settings = SettingsService(initialViewport: viewport);
     await settings.initialized;
 
     await tester.pumpWidget(app(SettingsCharacterCircle(),
@@ -137,8 +140,10 @@ void main() {
         const ValueKey('layout-settings-unselected-reminder-preview'));
     expect(selectedPreview, findsOneWidget);
     expect(unselectedPreview, findsOneWidget);
-    expect(tester.getSize(selectedPreview).width, 48);
-    expect(tester.getSize(unselectedPreview).width, 24);
+    expect(tester.getSize(selectedPreview).width,
+        closeTo(expected.selectedReminderTokenSize, 0.0001));
+    expect(tester.getSize(unselectedPreview).width,
+        closeTo(expected.unselectedReminderTokenSize, 0.0001));
 
     await settings.setSelectedReminderTokenSize(72, persist: false);
     await settings.setUnselectedReminderTokenSize(36, persist: false);
