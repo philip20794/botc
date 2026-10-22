@@ -30,6 +30,6 @@ class StandardRoleDistribution {
 
   static StandardRoleDistribution? forPlayerCount(int playerCount) {
     if (playerCount < 5) return null;
-    return _standardCounts[playerCount.clamp(5, 15)];
+    return _standardCounts[playerCount > 15 ? 15 : playerCount];
   }
 }
