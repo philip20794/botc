@@ -251,23 +251,38 @@ class CharacterService extends ChangeNotifier {
 
     _allCharacters.clear();
     _allCharacters.addAll(allCharacters);
-    var chronicleMigrated = false;
+    // Saved game roles can outlive catalog changes. Refresh the metadata
+    // that decides whether a role wakes, while preserving its instance id,
+    // player assignment, reminders, and current life state.
+    final catalogByRoleId = <String, Character>{
+      for (final character in allCharacters) character.roleId: character,
+    };
+    var metadataMigrated = false;
     for (final stored in [..._gameCharacters, ..._gameCharactersBackup]) {
-      for (final catalogCharacter in allCharacters) {
-        if (catalogCharacter.roleId == stored.roleId &&
-            catalogCharacter.chronicle != null) {
-          final canonical = catalogCharacter.chronicle!;
-          if (stored.chronicle == null ||
+      final canonical = catalogByRoleId[stored.roleId];
+      if (canonical == null) continue;
+      if (canonical.chronicle != null &&
+          (stored.chronicle == null ||
               jsonEncode(stored.chronicle!.toJson()) !=
-                  jsonEncode(canonical.toJson())) {
-            stored.chronicle = canonical;
-            chronicleMigrated = true;
-          }
-          break;
-        }
+                  jsonEncode(canonical.chronicle!.toJson()))) {
+        stored.chronicle = canonical.chronicle;
+        metadataMigrated = true;
+      }
+      if (jsonEncode(stored.nightWake.toJson()) !=
+          jsonEncode(canonical.nightWake.toJson())) {
+        stored.nightWake = canonical.nightWake;
+        metadataMigrated = true;
+      }
+      if (stored.wakeUpEveryNight != canonical.wakeUpEveryNight) {
+        stored.wakeUpEveryNight = canonical.wakeUpEveryNight;
+        metadataMigrated = true;
+      }
+      if (stored.wakeUpAtFirstNight != canonical.wakeUpAtFirstNight) {
+        stored.wakeUpAtFirstNight = canonical.wakeUpAtFirstNight;
+        metadataMigrated = true;
       }
     }
-    if (chronicleMigrated) {
+    if (metadataMigrated) {
       await Future.wait([
         _saveGameCharacters(),
         _saveGameCharactersBackup(),
