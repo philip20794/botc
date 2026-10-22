@@ -113,6 +113,7 @@
   "notInTheFirstNight": "*Not in the first night",
   "allCharactersOf": "All characters of",
   "layoutSettings": "Layout settings",
+  "resetLayoutDefaults": "Reset to defaults",
   "rules": "Rules",
   "characterSelection": "Character selection",
   "showCharactersToPlayers": "Show characters to players",
