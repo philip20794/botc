@@ -5,6 +5,7 @@ import 'package:blood_on_the_clocktower/screens/home_screen.dart';
 import 'package:blood_on_the_clocktower/screens/spielbereich_screen.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
+import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,7 +48,9 @@ class MyApp extends StatelessWidget {
         value: _systemUiOverlayStyle,
         child: ColoredBox(
           color: _backgroundColor,
-          child: child ?? const SizedBox.shrink(),
+          child: _LayoutViewportObserver(
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
       theme: theme.copyWith(
@@ -110,4 +113,35 @@ class _LaunchSplashState extends State<_LaunchSplash> {
       ),
     );
   }
+}
+
+/// Listens to MediaQuery changes without notifying Provider during build.
+/// The responsive values are applied after the frame, before the splash ends.
+class _LayoutViewportObserver extends StatefulWidget {
+  const _LayoutViewportObserver({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_LayoutViewportObserver> createState() =>
+      _LayoutViewportObserverState();
+}
+
+class _LayoutViewportObserverState extends State<_LayoutViewportObserver> {
+  Size? _lastViewport;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final viewport = MediaQuery.sizeOf(context);
+    if (_lastViewport == viewport) return;
+    _lastViewport = viewport;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SettingsService>().updateViewportSize(viewport);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

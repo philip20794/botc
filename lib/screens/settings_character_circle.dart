@@ -1,8 +1,8 @@
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
-import 'package:blood_on_the_clocktower/components/layout_diagnostics_panel.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
+import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
@@ -18,7 +18,8 @@ class SettingsCharacterCircle extends StatefulWidget {
 }
 
 class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
-  var numberOfCharacters = 12.0;
+  var numberOfCharacters =
+      ResponsiveLayoutDefaults.previewCharacterCount.toDouble();
   List<Character> randomCharacters = [];
 
   @override
@@ -217,6 +218,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                   });
                 },
                 helpText: 'Adjust the size of the character knob.',
+                persistOnEnd: false,
               ),
               Text(
                 localizedStrings.tokenSettings,
@@ -299,9 +301,25 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                 helpText: 'Adjust the Y-axis offset of the circle.',
               ),
               const SizedBox(height: 12),
-              LayoutDiagnosticsPanel(
-                settings: settingsService,
-                previewCharacterCount: numberOfCharacters.toInt(),
+              Center(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('layout-settings-reset-defaults'),
+                  onPressed: () async {
+                    await settingsService.resetSettings();
+                    if (!mounted) return;
+                    setState(() {
+                      updateNumberOfCharacters(
+                        ResponsiveLayoutDefaults.previewCharacterCount.toDouble(),
+                      );
+                    });
+                  },
+                  icon: const Icon(Icons.restart_alt),
+                  label: Text(localizedStrings.resetLayoutDefaults),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: GrimoireColors.ivory,
+                    side: const BorderSide(color: GrimoireColors.antiqueGold),
+                  ),
+                ),
               ),
             ],
           ),
@@ -318,6 +336,7 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
     required double max,
     required ValueChanged<double> onChanged,
     required String helpText,
+    bool persistOnEnd = true,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -337,8 +356,10 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                 onChanged(newValue);
               },
               onChangeEnd: (_) {
-                Provider.of<SettingsService>(context, listen: false)
-                    .saveSettings();
+                if (persistOnEnd) {
+                  Provider.of<SettingsService>(context, listen: false)
+                      .saveSettings();
+                }
               },
             ),
           ),
