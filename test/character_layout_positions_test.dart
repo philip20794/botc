@@ -24,12 +24,18 @@ void main() {
     final top = defaults.characterKnobSize / 2 + defaults.offsetY + centerY;
 
     expect(positions, hasLength(11));
-    expect(positions[0], Offset(left, top + itemHeight * 4));
-    expect(positions[4], Offset(left, top));
-    expect(positions[5], Offset(left + itemWidth, top));
-    expect(positions[6], Offset(left + itemWidth * 2, top));
-    expect(positions[7], Offset(left + itemWidth * 2, top + itemHeight));
-    expect(positions[10], Offset(left + itemWidth * 2, top + itemHeight * 4));
+    void expectNear(int index, Offset expected) {
+      final actual = positions[index]!;
+      expect(actual.dx, closeTo(expected.dx, 0.000001));
+      expect(actual.dy, closeTo(expected.dy, 0.000001));
+    }
+
+    expectNear(0, Offset(left, top + itemHeight * 4));
+    expectNear(4, Offset(left, top));
+    expectNear(5, Offset(left + itemWidth, top));
+    expectNear(6, Offset(left + itemWidth * 2, top));
+    expectNear(7, Offset(left + itemWidth * 2, top + itemHeight));
+    expectNear(10, Offset(left + itemWidth * 2, top + itemHeight * 4));
   });
 
   test('handles one, two and eighteen players with a stable position per player', () {
