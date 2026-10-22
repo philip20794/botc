@@ -5,6 +5,7 @@ import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
+import 'package:blood_on_the_clocktower/utils/character_layout_positions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -64,102 +65,16 @@ class CharacterCircleComponentState extends State<CharacterCircleComponent> {
       return;
     }
 
-    final characters = widget.characters;
-    final double width = settingsService.radiusX;
-    final double height = settingsService.radiusY;
-    final int numCols = settingsService.startAngleDiv.toInt();
-    final int numRows = (2 + (characters.length - numCols * 2) / 2).ceil();
-
-    // Berechne die verfügbare Fläche für jedes Element
-    final double availableWidth =
-        width - (settingsService.characterKnobSize * numCols);
-    final double availableHeight =
-        height - (settingsService.characterKnobSize * numRows);
-
-    final double itemWidth = (width - availableWidth) / numCols + width;
-    final double itemHeight = (height - availableHeight) / numRows + height;
-
-    final screenHeigth = MediaQuery.of(context).size.height;
-
-    final addToOffSetY = (screenHeigth - itemHeight * numRows) / 2;
-
-    var pos = 0;
-    final nextPositions = <int, Offset>{};
-
-    int top = 0;
-    int bottom = numRows - 1;
-    int left = 0;
-    int right = numCols - 1;
-
-    while (top <= bottom && left <= right) {
-      // Schritt 3: Links von unten nach oben (linke Spalte)
-      if (left <= right) {
-        for (int row = bottom; row >= top; row--) {
-          final double x = left * itemWidth +
-              settingsService.characterKnobSize / 2 +
-              settingsService.offsetX;
-          final double y = row * itemHeight +
-              settingsService.characterKnobSize / 2 +
-              settingsService.offsetY +
-              addToOffSetY;
-
-          nextPositions[pos] = Offset(x, y);
-          pos += 1;
-        }
-        left++; // Bewege den linken Rand eine Spalte nach rechts
-      }
-
-      // Schritt 4: Oben von links nach rechts (die oberste Reihe)
-      for (int col = left; col <= right; col++) {
-        // ÄNDERUNG: Jetzt von links nach rechts
-        if (top == 0) {
-          // Nur für die oberste Reihe
-          final double x = col * itemWidth +
-              settingsService.characterKnobSize / 2 +
-              settingsService.offsetX;
-          final double y = top * itemHeight +
-              settingsService.characterKnobSize / 2 +
-              settingsService.offsetY +
-              addToOffSetY;
-
-          nextPositions[pos] = Offset(x, y);
-          pos += 1;
-        }
-      }
-      top++;
-      // Schritt 1: Rechts von oben nach unten (rechte Spalte)
-      for (int row = top; row <= bottom; row++) {
-        final double x = right * itemWidth +
-            settingsService.characterKnobSize / 2 +
-            settingsService.offsetX;
-        final double y = row * itemHeight +
-            settingsService.characterKnobSize / 2 +
-            settingsService.offsetY +
-            addToOffSetY;
-
-        nextPositions[pos] = Offset(x, y);
-        pos += 1;
-      }
-      right--; // Bewege den rechten Rand eine Spalte nach links
-
-      // Schritt 2: Unten von links nach rechts (untere Reihe)
-      if (top <= bottom) {
-        for (int col = right; col >= left; col--) {
-          // ÄNDERUNG: Jetzt von rechts nach links
-          final double x = col * itemWidth +
-              settingsService.characterKnobSize / 2 +
-              settingsService.offsetX;
-          final double y = bottom * itemHeight +
-              settingsService.characterKnobSize / 2 +
-              settingsService.offsetY +
-              addToOffSetY;
-
-          nextPositions[pos] = Offset(x, y);
-          pos += 1;
-        }
-        bottom--; // Bewege den unteren Rand eine Reihe nach oben
-      }
-    }
+    final nextPositions = CharacterLayoutPositions.calculate(
+      count: widget.characters.length,
+      boardSize: MediaQuery.sizeOf(context),
+      characterSize: settingsService.characterKnobSize,
+      radiusX: settingsService.radiusX,
+      radiusY: settingsService.radiusY,
+      startAngleDiv: settingsService.startAngleDiv,
+      offsetX: settingsService.offsetX,
+      offsetY: settingsService.offsetY,
+    );
 
     characterService.setCharacterPositions(nextPositions);
   }
