@@ -1,3 +1,5 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:blood_on_the_clocktower/models/standard_role_distribution.dart';
 import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:flutter/material.dart';
