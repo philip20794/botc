@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
+import 'package:blood_on_the_clocktower/components/standard_role_distribution_indicator.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
@@ -179,6 +180,16 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
                       ),
                     );
                   },
+                ),
+              ),
+            // Keep the count in the centre of the board, above the connection
+            // lines. IgnorePointer allows dragging the players beneath it.
+            if (playerNames.length >= 5)
+              Positioned.fill(
+                child: Center(
+                  child: StandardRoleDistributionIndicator(
+                    playerCount: playerNames.length,
+                  ),
                 ),
               ),
           ],
