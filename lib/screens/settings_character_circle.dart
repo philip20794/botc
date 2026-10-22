@@ -1,6 +1,7 @@
 import 'package:blood_on_the_clocktower/components/character_circle_component.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
 import 'package:blood_on_the_clocktower/components/grimoire_ui.dart';
+import 'package:blood_on_the_clocktower/components/layout_diagnostics_panel.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/models/token.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
@@ -296,6 +297,11 @@ class _SettingsCharacterCircleState extends State<SettingsCharacterCircle> {
                   settingsService.setOffsetY(newValue, persist: false);
                 },
                 helpText: 'Adjust the Y-axis offset of the circle.',
+              ),
+              const SizedBox(height: 12),
+              LayoutDiagnosticsPanel(
+                settings: settingsService,
+                previewCharacterCount: numberOfCharacters.toInt(),
               ),
             ],
           ),
