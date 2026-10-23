@@ -306,6 +306,12 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                       } else {
                         characterService.addCharacter(character);
                       }
+                      // Refresh the visible selection in the same frame as
+                      // the service mutation. Do not rely on a later screen
+                      // navigation to rebuild the existing grid children.
+                      if (mounted) {
+                        setState(() {});
+                      }
                     } else {
                       setState(() {
                         selectCharacter(character);
