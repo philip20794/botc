@@ -148,6 +148,7 @@ class _RoleNotesCharacterPickerScreenState
                 ),
                 const Spacer(),
                 TextButton(
+                  key: const ValueKey('role-notes-cancel-selection'),
                   onPressed: () => Navigator.pop(context),
                   child: Text(strings.cancel),
                 ),
