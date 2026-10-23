@@ -61,10 +61,10 @@ void main() {
           ChangeNotifierProvider<ScriptService>.value(value: script),
           ChangeNotifierProvider<LanguageService>.value(value: language),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: RoleNotesScreen(),
+          home: const RoleNotesScreen(),
         ),
       ),
     );
