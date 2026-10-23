@@ -40,11 +40,13 @@ void main() {
       ]);
       await characters.loadAllCharactersFromJson(const Locale('en'));
       game.playerNames = ['Alice'];
+      final chef = characters.allCharacters
+          .singleWhere((character) => character.roleId == 'chef');
+      await notes.setRolesForPlayer('Alice', [chef.image]);
     });
 
     Character role(String id) => characters.allCharacters
         .singleWhere((character) => character.roleId == id);
-    await notes.setRolesForPlayer('Alice', [role('chef').image]);
 
     await tester.pumpWidget(
       MultiProvider(
