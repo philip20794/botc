@@ -17,6 +17,11 @@ class SelectCharacterComponent extends StatefulWidget {
   final List<Character> charactersToChooseFrom;
   final bool travellersAreSelectable;
   final bool fabledAreSelectable;
+  final bool loricAreSelectable;
+  /// When supplied, selection is controlled by the caller (e.g. Role Notes).
+  final Set<String>? selectedCharacterImages;
+  final ValueChanged<Character>? onCharacterSelectionChanged;
+  final bool hideEmptySections;
   final int numberOfCharactersToSelect;
   final bool isForSetupGame;
   final bool forSetupIsDone;
@@ -39,6 +44,10 @@ class SelectCharacterComponent extends StatefulWidget {
     this.onResult,
     this.travellersAreSelectable = false,
     this.fabledAreSelectable = false,
+    this.loricAreSelectable = false,
+    this.selectedCharacterImages,
+    this.onCharacterSelectionChanged,
+    this.hideEmptySections = false,
     this.numberOfCharactersToSelect = 1,
     this.isForSetupGame = false,
     this.forSetupIsDone = false,
@@ -105,6 +114,9 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
     List<Character> fabled = characterService.allCharacters
         .where((element) => element.fraction == Fraction.fabled)
         .toList();
+    List<Character> loric = widget.charactersToChooseFrom
+        .where((element) => element.fraction == Fraction.loric)
+        .toList();
 
     final content = Stack(
       children: [
@@ -130,6 +142,10 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                 if (widget.fabledAreSelectable) ...[
                   Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.22)),
                   _buildCharacterSection(context, 'Fabled', fabled, true),
+                ],
+                if (widget.loricAreSelectable) ...[
+                  Divider(color: GrimoireColors.antiqueGold.withValues(alpha: 0.22)),
+                  _buildCharacterSection(context, 'Loric', loric, false),
                 ],
               ],
             ),
@@ -164,6 +180,9 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
         Provider.of<GameStateService>(context, listen: false);
     final settingsService = Provider.of<SettingsService>(context);
     final characterService = Provider.of<CharacterService>(context);
+    if (widget.hideEmptySections && characters.isEmpty) {
+      return const SizedBox.shrink();
+    }
     bool hidden = false;
     var maxWidth = MediaQuery.of(context).size.width;
 
@@ -249,10 +268,12 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
               Character character = characters[index];
 
               // Prüfen, ob der Charakter bereits ausgewählt ist
-              bool isSelected = widget.isForSetupGame
-                  ? characterService.containsCharacter(
-                      characterService.gameCharacters, character)
-                  : result.contains(character);
+              bool isSelected = widget.selectedCharacterImages != null
+                  ? widget.selectedCharacterImages!.contains(character.image)
+                  : widget.isForSetupGame
+                      ? characterService.containsCharacter(
+                          characterService.gameCharacters, character)
+                      : result.contains(character);
               final isBluff = widget.isForSetupGame &&
                   gameStateService.isDemonBluff(character.roleId);
               final isEligibleBluff = widget.demonBluffsEnabled &&
@@ -281,6 +302,8 @@ class _SelectCharacterComponentState extends State<SelectCharacterComponent> {
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) =>
                             ShowCharacter(character: character)));
+                    } else if (widget.onCharacterSelectionChanged != null) {
+                      widget.onCharacterSelectionChanged!(character);
                     } else if (widget.isForSetupGame) {
                       if (isBluff) return;
                       if (isSelected) {

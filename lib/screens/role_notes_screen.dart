@@ -2,14 +2,12 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:blood_on_the_clocktower/components/app_background.dart';
-import 'package:blood_on_the_clocktower/models/character.dart';
-import 'package:blood_on_the_clocktower/models/enums/fraction.dart';
 import 'package:blood_on_the_clocktower/models/responsive_layout_defaults.dart';
+import 'package:blood_on_the_clocktower/screens/role_notes_character_picker_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
 import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
-import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
 import 'package:blood_on_the_clocktower/theme/grimoire_theme.dart';
 import 'package:blood_on_the_clocktower/utils/role_image_asset.dart';
@@ -289,6 +287,7 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
                 left: center - playerTokenSize / 2,
                 top: center - playerTokenSize / 2,
                 child: GestureDetector(
+                  key: ValueKey('role-notes-player-$playerName'),
                   behavior: HitTestBehavior.opaque,
                   onTap: () => _showRolePicker(context, playerName),
                   onPanStart: (_) => onDragStarted(),
@@ -452,324 +451,24 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
   }
 
   Future<void> _showRolePicker(BuildContext context, String playerName) async {
-    final localizedStrings = AppLocalizations.of(context)!;
-    final roleNotesService =
-        Provider.of<RoleNotesService>(context, listen: false);
     final characterService =
         Provider.of<CharacterService>(context, listen: false);
-    final scriptService = Provider.of<ScriptService>(context, listen: false);
-    final languageService =
-        Provider.of<LanguageService>(context, listen: false);
-
     if (characterService.allCharacters.isEmpty) {
+      final languageService =
+          Provider.of<LanguageService>(context, listen: false);
       await characterService.loadAllCharactersFromJson(languageService.locale);
-      if (!context.mounted) {
-        return;
-      }
+      if (!context.mounted) return;
     }
 
-    final availableRoles = _availableRoles(characterService, scriptService);
-    final selectedRoleImages =
-        roleNotesService.roleImagesFor(playerName).toList();
-    var query = '';
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final filteredRoles = availableRoles.where((character) {
-              return character.name.toLowerCase().contains(query.toLowerCase());
-            }).toList();
-            final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
-
-            return Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: SafeArea(
-                top: false,
-                child: FractionallySizedBox(
-                  heightFactor: 0.92,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: GrimoireColors.surface,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 10, 8, 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: AutoSizeText(
-                                  '${localizedStrings.chooseRolesFor} $playerName',
-                                  maxLines: 1,
-                                  minFontSize: 14,
-                                  maxFontSize: 20,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close,
-                                    color: Colors.white),
-                                onPressed: () => Navigator.pop(sheetContext),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildSelectedRoleChips(
-                            context,
-                            selectedRoleImages,
-                            (roleImage) {
-                              setDialogState(() {
-                                selectedRoleImages.remove(roleImage);
-                              });
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                          child: TextField(
-                            cursorColor: Colors.white,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: localizedStrings.searchRoles,
-                              labelStyle: const TextStyle(color: Colors.white),
-                              suffixIcon:
-                                  const Icon(Icons.search, color: Colors.white),
-                            ),
-                            onChanged: (value) {
-                              setDialogState(() {
-                                query = value;
-                              });
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: filteredRoles.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    localizedStrings.noRolesFound,
-                                    style:
-                                        const TextStyle(color: Colors.white70),
-                                  ),
-                                )
-                              : LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final crossAxisCount = max(
-                                        2, min(4, constraints.maxWidth ~/ 88));
-                                    final tileWidth =
-                                        constraints.maxWidth / crossAxisCount;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 0, 16, 12),
-                                      itemCount: filteredRoles.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: crossAxisCount,
-                                        childAspectRatio: 0.78,
-                                        crossAxisSpacing: 6,
-                                        mainAxisSpacing: 6,
-                                      ),
-                                      itemBuilder: (context, index) {
-                                        final character = filteredRoles[index];
-                                        final isSelected = selectedRoleImages
-                                            .contains(character.image);
-                                        return _buildRolePickerTile(
-                                          context,
-                                          character,
-                                          isSelected,
-                                          tileWidth,
-                                          () {
-                                            setDialogState(() {
-                                              if (isSelected) {
-                                                selectedRoleImages
-                                                    .remove(character.image);
-                                              } else if (selectedRoleImages
-                                                      .length <
-                                                  4) {
-                                                selectedRoleImages
-                                                    .add(character.image);
-                                              } else {
-                                                ScaffoldMessenger.of(
-                                                        this.context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                        localizedStrings
-                                                            .maxFourRoles),
-                                                  ),
-                                                );
-                                              }
-                                            });
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.25),
-                            border: const Border(
-                              top: BorderSide(color: Colors.white24),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              TextButton.icon(
-                                onPressed: () {
-                                  setDialogState(() {
-                                    selectedRoleImages.clear();
-                                  });
-                                },
-                                icon: const Icon(Icons.delete_outline,
-                                    color: Colors.white),
-                                label: Text(
-                                  localizedStrings.clearRoles,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () => Navigator.pop(sheetContext),
-                                child: Text(
-                                  localizedStrings.cancel,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF493131),
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed: () {
-                                  roleNotesService.setRolesForPlayer(
-                                    playerName,
-                                    selectedRoleImages,
-                                  );
-                                  Navigator.pop(sheetContext);
-                                },
-                                icon: const Icon(Icons.check),
-                                label: Text(localizedStrings.assign),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSelectedRoleChips(
-    BuildContext context,
-    List<String> selectedRoleImages,
-    Function(String roleImage) onRemove,
-  ) {
-    final localizedStrings = AppLocalizations.of(context)!;
-    final characterService = Provider.of<CharacterService>(context);
-
-    if (selectedRoleImages.isEmpty) {
-      return Text(
-        localizedStrings.noRoleNotesYet,
-        style: const TextStyle(color: Colors.white70),
-      );
-    }
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: selectedRoleImages.map((roleImage) {
-        final character =
-            _characterByImage(characterService.allCharacters, roleImage);
-        return Chip(
-          backgroundColor: const Color(0xFF493131),
-          deleteIcon: const Icon(Icons.close, color: Colors.white, size: 18),
-          onDeleted: () => onRemove(roleImage),
-          avatar: CircleAvatar(
-            backgroundColor: Colors.transparent,
-            backgroundImage: ResizeImage(
-              AssetImage(roleImageAssetPath(roleImage)),
-              width: _imageCacheWidth(context, 32),
-            ),
-          ),
-          label: Text(
-            character?.name ?? roleImage,
-            style: const TextStyle(color: Colors.white),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildRolePickerTile(
-    BuildContext context,
-    Character character,
-    bool isSelected,
-    double tileWidth,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? GrimoireColors.deepViolet.withValues(alpha: 0.95)
-              : GrimoireColors.background.withValues(alpha: 0.62),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? GrimoireColors.antiqueGold
-                : GrimoireColors.antiqueGold.withValues(alpha: 0.22),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Image.asset(
-                roleImageAssetPath(character.image),
-                cacheWidth: _imageCacheWidth(context, tileWidth),
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AutoSizeText(
-              character.name,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              minFontSize: 7,
-              maxFontSize: 11,
-              style: const TextStyle(color: GrimoireColors.ivory),
-            ),
-          ],
-        ),
+    final selectedImages = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RoleNotesCharacterPickerScreen(playerName: playerName),
       ),
     );
+    if (selectedImages == null || !context.mounted) return;
+    await Provider.of<RoleNotesService>(context, listen: false)
+        .setRolesForPlayer(playerName, selectedImages);
   }
 
   void _resetLayout(List<String> playerNames) {
@@ -817,51 +516,6 @@ class _RoleNotesScreenState extends State<RoleNotesScreen> {
         );
       },
     );
-  }
-
-  List<Character> _availableRoles(
-      CharacterService characterService, ScriptService scriptService) {
-    final roles = scriptService
-        .resolveCharacters(characterService.allCharacters)
-        .where((character) => character.fraction != Fraction.fabled)
-        .toList();
-    roles.sort((a, b) {
-      final fractionCompare =
-          _fractionOrder(a.fraction).compareTo(_fractionOrder(b.fraction));
-      if (fractionCompare != 0) {
-        return fractionCompare;
-      }
-      return a.name.compareTo(b.name);
-    });
-    return roles;
-  }
-
-  int _fractionOrder(Fraction fraction) {
-    switch (fraction) {
-      case Fraction.townsfolk:
-        return 0;
-      case Fraction.outsider:
-        return 1;
-      case Fraction.minion:
-        return 2;
-      case Fraction.demon:
-        return 3;
-      case Fraction.traveller:
-        return 4;
-      case Fraction.fabled:
-        return 5;
-      case Fraction.loric:
-        return 6;
-    }
-  }
-
-  Character? _characterByImage(List<Character> characters, String roleImage) {
-    for (final character in characters) {
-      if (character.image == roleImage) {
-        return character;
-      }
-    }
-    return null;
   }
 
   String _initialsFor(String playerName) {
