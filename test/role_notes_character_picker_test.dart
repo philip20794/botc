@@ -3,10 +3,8 @@ import 'package:blood_on_the_clocktower/components/select_character_component.da
 import 'package:blood_on_the_clocktower/l10n/app_localizations.dart';
 import 'package:blood_on_the_clocktower/models/character.dart';
 import 'package:blood_on_the_clocktower/screens/role_notes_character_picker_screen.dart';
-import 'package:blood_on_the_clocktower/screens/role_notes_screen.dart';
 import 'package:blood_on_the_clocktower/services/character_service.dart';
 import 'package:blood_on_the_clocktower/services/game_state_service.dart';
-import 'package:blood_on_the_clocktower/services/language_service.dart';
 import 'package:blood_on_the_clocktower/services/role_notes_service.dart';
 import 'package:blood_on_the_clocktower/services/script_service.dart';
 import 'package:blood_on_the_clocktower/services/settings_service.dart';
@@ -26,7 +24,6 @@ void main() {
     late RoleNotesService notes;
     late SettingsService settings;
     late ScriptService script;
-    late LanguageService language;
 
     await tester.runAsync(() async {
       characters = CharacterService();
@@ -34,14 +31,12 @@ void main() {
       notes = RoleNotesService();
       settings = SettingsService();
       script = ScriptService();
-      language = LanguageService();
       await Future.wait([
         characters.init(),
         game.ready,
         notes.init(),
         settings.initialized,
         script.ready,
-        language.initialized,
       ]);
       await characters.loadAllCharactersFromJson(const Locale('en'));
       game.playerNames = ['Alice'];
@@ -59,21 +54,36 @@ void main() {
           ChangeNotifierProvider<RoleNotesService>.value(value: notes),
           ChangeNotifierProvider<SettingsService>.value(value: settings),
           ChangeNotifierProvider<ScriptService>.value(value: script),
-          ChangeNotifierProvider<LanguageService>.value(value: language),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const RoleNotesScreen(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  final selected = await Navigator.push<List<String>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const RoleNotesCharacterPickerScreen(playerName: 'Alice'),
+                    ),
+                  );
+                  if (selected != null) {
+                    await notes.setRolesForPlayer('Alice', selected);
+                  }
+                },
+                child: const Text('Open Role Notes picker'),
+              ),
+            ),
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
     Future<void> openPicker() async {
-      await tester.tap(
-        find.byKey(const ValueKey('role-notes-player-Alice')),
-      );
+      await tester.tap(find.text('Open Role Notes picker'));
       await tester.pumpAndSettle();
       expect(find.byType(RoleNotesCharacterPickerScreen), findsOneWidget);
       expect(find.byType(SelectCharacterComponent), findsOneWidget);
